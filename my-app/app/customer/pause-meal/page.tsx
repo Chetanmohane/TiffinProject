@@ -15,7 +15,9 @@ export default function PauseMealPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem("pausedMeals");
-    if (saved) {setPausedList(JSON.parse(saved));
+    if (saved) {
+      setPausedList(JSON.parse(saved));
+    }
   }, []);
 
   useEffect(() => {

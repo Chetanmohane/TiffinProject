@@ -3,9 +3,9 @@ import Hero from "@/components/landing/Hero";
 import Services from "@/components/landing/Services";
 import Plans from "@/components/landing/Plans";
 import Contact from "@/components/landing/Contact";
-import { h1 } from "framer-motion/client";
 import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
+import Marquee from "@/components/landing/Marquee";
 
 
 const Page = () => {
@@ -20,10 +20,12 @@ const Page = () => {
         {/* 🔥 FULL WIDTH HERO */}
         <section
           id="home"
-          className="w-screen min-h-screen overflow-x-hidden"
+          className="w-full min-h-screen"
         >
           <Hero />
         </section>
+
+        <Marquee />
 
         {/* BOXED CONTENT BELOW */}
         <section id="about" className="pt-20">
