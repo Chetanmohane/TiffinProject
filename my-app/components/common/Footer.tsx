@@ -2,9 +2,19 @@
 
 import Link from "next/link";
 import { Facebook, Instagram, Twitter, MapPin, Phone, Mail } from "lucide-react";
-import { cinzel, greatVibes } from "./Navbar";
+import { cinzelClass, greatVibesClass } from "./Navbar";
+import { useState, useEffect } from "react";
 
 export default function Footer() {
+  const [settings, setSettings] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/settings")
+      .then(res => res.json())
+      .then(data => setSettings(data))
+      .catch(err => console.error("Footer: Failed to load settings", err));
+  }, []);
+
   return (
     <footer className="bg-gray-900 text-gray-300 w-full">
       <div
@@ -24,7 +34,7 @@ export default function Footer() {
             <div className="leading-tight select-none">
               {/* ANNAPURNA */}
               <h1
-                className={`${cinzel.className} text-3xl font-bold tracking-widest`}
+                className={`${cinzelClass} text-3xl font-bold tracking-widest`}
               >
                 <span className="bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
                   A
@@ -34,7 +44,7 @@ export default function Footer() {
 
               {/* DELIGHT */}
               <p
-                className={`${greatVibes.className} text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent tracking-wide flex justify-center sm:justify-start`}
+                className={`${greatVibesClass} text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent tracking-wide flex justify-center sm:justify-start`}
               >
                 Delight
               </p>
@@ -82,15 +92,15 @@ export default function Footer() {
           <ul className="space-y-4 text-sm">
             <li className="flex items-start justify-center sm:justify-start gap-3">
               <MapPin className="text-orange-500 mt-1" size={18} />
-              <span>Bhopal, Madhya Pradesh (M.P), India</span>
+              <span>{settings?.address || "Bhopal, Madhya Pradesh, India"}</span>
             </li>
             <li className="flex items-center justify-center sm:justify-start gap-3">
               <Phone className="text-orange-500" size={18} />
-              <span>+91</span>
+              <span>{settings?.phone || "+91 999 999"}</span>
             </li>
             <li className="flex items-center justify-center sm:justify-start gap-3">
               <Mail className="text-orange-500" size={18} />
-              <span>support@annapurnadelight.com</span>
+              <span>{settings?.email || "support@annapurnadelight.com"}</span>
             </li>
           </ul>
         </div>

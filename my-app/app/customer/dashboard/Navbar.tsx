@@ -5,11 +5,20 @@
 import { useState } from "react";
 import { cinzel, greatVibes } from "@/components/common/Navbar";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { LogOut, User } from "lucide-react";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    localStorage.clear(); // Safety measure to clear everything
+    window.location.href = "/login";
+  };
 
   const isActive = (path: string) =>
     pathname === path || pathname.startsWith(path + "/");
@@ -53,18 +62,19 @@ export default function Navbar() {
             <Link href="/customer/dashboard/payments" className={navLinkClass("/customer/dashboard/payments")}>Payments</Link>
           </div>
 
-          {/* ================= Profile ================= */}
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:block text-right">
-              <p className="text-xs font-extrabold">Chetan</p>
-              <p className="text-[10px] font-bold text-green-600">
-                Wallet ₹450
-              </p>
-            </div>
+          {/* ================= Profile & Logout ================= */}
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={handleLogout}
+              className="hidden sm:flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest"
+            >
+              <LogOut size={16} />
+              Logout
+            </button>
 
-            <div className="w-9 h-9 rounded-full bg-orange-100 text-orange-600
-                            flex items-center justify-center font-bold">
-              👤
+            <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600
+                            flex items-center justify-center font-bold shadow-inner">
+              <User size={20} />
             </div>
 
             {/* ================= Mobile Menu Button ================= */}
@@ -81,11 +91,18 @@ export default function Navbar() {
       {/* ================= Mobile Menu ================= */}
       {open && (
         <div className="sm:hidden bg-white border-t shadow-md">
-          <div className="flex flex-col px-4 py-3 space-y-2">
+          <div className="flex flex-col px-4 py-4 space-y-2">
             <Link onClick={() => setOpen(false)} href="/" className={navLinkClass("/")}>Dashboard</Link>
             <Link onClick={() => setOpen(false)} href="/customer/dashboard/menu" className={navLinkClass("/customer/dashboard/menu")}>Menu</Link>
             <Link onClick={() => setOpen(false)} href="/customer/dashboard/plan" className={navLinkClass("/customer/dashboard/plan")}>Plan</Link>
             <Link onClick={() => setOpen(false)} href="/customer/dashboard/payments" className={navLinkClass("/customer/dashboard/payments")}>Payments</Link>
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-3 py-4 text-red-600 font-black text-xs uppercase tracking-widest border-t border-gray-50 mt-2"
+            >
+              <LogOut size={18} />
+              Logout Account
+            </button>
           </div>
         </div>
       )}

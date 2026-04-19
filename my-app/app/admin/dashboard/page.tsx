@@ -1,49 +1,77 @@
 
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import { Users, ShoppingBag, PauseCircle, IndianRupee } from "lucide-react";
+import { useRBAC } from "@/hooks/useRBAC";
 
 export default function AdminDashboard() {
+  const { role, isAdmin } = useRBAC();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/admin/dashboard")
+      .then(res => res.json())
+      .then(json => {
+        setData(json);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-[80vh] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
   return (
     <section className="space-y-8">
       {/* HEADER */}
-      <header className="ml-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
+      <header className="sm:ml-8 ml-2 pt-20 sm:pt-0">
+        <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">
           Admin Dashboard
         </h1>
-        <p className="mt-1 text-gray-500">
-          Quick overview of today’s business performance
+        <p className="mt-1 text-sm font-medium text-gray-500">
+          Quick overview of today’s business performance (Live)
         </p>
       </header>
 
       {/* STATS */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Active Customers"
-          value="124"
-          Icon={Users}
-          gradient="from-orange-500 to-red-500"
-        />
+        {isAdmin && (
+          <StatCard
+            title="Active Customers"
+            value={data.totalCustomers.toString()}
+            Icon={Users}
+            gradient="from-orange-500 to-red-500"
+          />
+        )}
 
         <StatCard
           title="Today Orders"
-          value="56"
+          value={data.todaysDeliveries.toString()}
           Icon={ShoppingBag}
           gradient="from-amber-400 to-orange-500"
         />
 
         <StatCard
-          title="Paused Requests"
-          value="8"
+          title="Paused Customers"
+          value={data.pausedCustomers.toString()}
           Icon={PauseCircle}
-          gradient="from-gray-500 to-gray-700"
+          gradient="from-red-500 to-rose-700"
         />
 
-        <StatCard
-          title="Monthly Revenue"
-          value="₹25,000"
-          Icon={IndianRupee}
-          gradient="from-green-500 to-emerald-600"
-        />
+        {isAdmin && (
+          <StatCard
+            title="Total Revenue"
+            value={data.revenue}
+            Icon={IndianRupee}
+            gradient="from-green-500 to-emerald-600"
+          />
+        )}
       </div>
     </section>
   );

@@ -1,19 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/common/Navbar";
-import Footer from "@/components/common/Footer";
 import { Toaster } from "react-hot-toast";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Annapurna Delight - Premium Home-Style Tiffin Service",
@@ -28,11 +15,49 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased m-0 p-0 overflow-x-hidden`}
+        className="antialiased m-0 p-0 overflow-x-hidden font-sans"
       >
         {/* <Navbar /> */}
         {children}
-        <Toaster position="top-right" />
+        <Toaster 
+          position="top-center" 
+          reverseOrder={false}
+          toastOptions={{
+            duration: 4000,
+            className: 'font-sans tracking-tight',
+            style: {
+              padding: '16px 24px',
+              color: '#1f2937',
+              borderRadius: '100px',
+              fontSize: '14px',
+              fontWeight: '800',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              border: '1px solid #f3f4f6',
+            },
+            success: {
+              style: {
+                background: '#ecfdf5',
+                color: '#065f46',
+                border: '1px solid #10b981',
+              },
+              iconTheme: {
+                primary: '#10b981',
+                secondary: '#ecfdf5',
+              },
+            },
+            error: {
+              style: {
+                background: '#fef2f2',
+                color: '#991b1b',
+                border: '1px solid #ef4444',
+              },
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fef2f2',
+              },
+            },
+          }}
+        />
         {/* <Footer /> */}
       </body>
     </html>

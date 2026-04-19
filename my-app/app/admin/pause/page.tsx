@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import toast from "react-hot-toast";
+import React, { useState, useEffect } from "react";
 
 /* ---------------- TYPES ---------------- */
 
@@ -17,35 +18,53 @@ interface PauseEntry {
 /* ---------------- COMPONENT ---------------- */
 
 export default function PauseManagementPage() {
-  const [pausedCustomers, setPausedCustomers] = useState<PauseEntry[]>([
-    {
-      id: 1,
-      customerName: "Rahul Sharma",
-      phone: "9876543210",
-      planName: "Monthly Veg",
-      pauseFrom: "2026-01-20",
-      pauseTo: "2026-01-25",
-      reason: "Out of station",
-    },
-    {
-      id: 2,
-      customerName: "Anita Verma",
-      phone: "9123456789",
-      planName: "Weekly Combo",
-      pauseFrom: "2026-01-22",
-      pauseTo: "2026-01-22",
-      reason: "Personal",
-    },
-  ]);
+  const [pausedCustomers, setPausedCustomers] = useState<PauseEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/admin/pause")
+      .then(res => res.json())
+      .then(data => {
+        setPausedCustomers(data.pausedCustomers || []);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setPausedCustomers([]);
+        setLoading(false);
+      });
+  }, []);
 
   const today = new Date().toISOString().split("T")[0];
 
   const isPausedToday = (from: string, to: string) =>
     today >= from && today <= to;
 
-  const resumeDelivery = (id: number) => {
-    setPausedCustomers((prev) => prev.filter((entry) => entry.id !== id));
+  const resumeDelivery = async (id: number) => {
+    try {
+      setPausedCustomers((prev) => prev.filter((entry) => entry.id !== id));
+      const res = await fetch("/api/admin/pause", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "resume", id })
+      });
+      if (!res.ok) {
+        toast.error("Failed to resume delivery on server");
+        // Optionally refresh list if it fails
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error occurred while resuming");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
   /* ---------------- UI ---------------- */
 
@@ -79,7 +98,7 @@ export default function PauseManagementPage() {
             </thead>
 
             <tbody>
-              {pausedCustomers.length === 0 && (
+              {(!pausedCustomers || pausedCustomers.length === 0) && (
                 <tr>
                   <td colSpan={8} className="text-center py-10 text-gray-500">
                     🎉 No paused customers
@@ -87,7 +106,7 @@ export default function PauseManagementPage() {
                 </tr>
               )}
 
-              {pausedCustomers.map((entry) => {
+              {pausedCustomers?.map((entry) => {
                 const pausedToday = isPausedToday(
                   entry.pauseFrom,
                   entry.pauseTo,
@@ -123,7 +142,7 @@ export default function PauseManagementPage() {
                     <td className="px-4 py-4 italic">{entry.reason || "—"}</td>
                     <td className="px-4 py-4">
                       <button
-                        onClick={() => resumeDelivery(entry.id)}
+                         onClick={() => resumeDelivery(entry.id)}
                         className="px-4 py-1.5 rounded-lg bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 transition"
                       >
                         Resume
@@ -138,13 +157,13 @@ export default function PauseManagementPage() {
 
         {/* ================= MOBILE CARDS ================= */}
         <div className="md:hidden space-y-4">
-          {pausedCustomers.length === 0 && (
+          {(!pausedCustomers || pausedCustomers.length === 0) && (
             <div className="bg-white p-6 rounded-xl shadow text-center text-gray-500">
               🎉 No paused customers
             </div>
           )}
 
-          {pausedCustomers.map((entry) => {
+          {pausedCustomers?.map((entry) => {
             const pausedToday = isPausedToday(entry.pauseFrom, entry.pauseTo);
 
             return (

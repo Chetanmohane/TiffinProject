@@ -1,77 +1,116 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import toast from "react-hot-toast";
+import { useEffect, useMemo, useState } from "react";
 
 /* ---------------- TYPES ---------------- */
 
 type PaymentStatus = "SUCCESS" | "PENDING" | "FAILED";
 
 interface Payment {
-  id: number;
+  id: string;
   customerName: string;
-  phone: string;
-  planName: string;
-  amount: number;
-  paymentDate: string;
-  transactionId: string;
+  phone?: string;
+  planName?: string;
+  amount?: number | string;
+  paymentDate?: string;
+  date: string;
+  transactionId?: string;
   status: PaymentStatus;
+  amt: string; // From API
+  desc?: string;
 }
 
 /* ---------------- COMPONENT ---------------- */
 
 export default function PaymentManagementPage() {
-  const [payments, setPayments] = useState<Payment[]>([
-    {
-      id: 1,
-      customerName: "Rahul Sharma",
-      phone: "9876543210",
-      planName: "Monthly Veg",
-      amount: 2500,
-      paymentDate: "2026-01-20",
-      transactionId: "TXN123456",
-      status: "SUCCESS",
-    },
-    {
-      id: 2,
-      customerName: "Anita Verma",
-      phone: "9123456789",
-      planName: "Weekly Combo",
-      amount: 850,
-      paymentDate: "2026-01-22",
-      transactionId: "TXN789012",
-      status: "PENDING",
-    },
-    {
-      id: 3,
-      customerName: "Vikas Patel",
-      phone: "9001122334",
-      planName: "Monthly Non-Veg",
-      amount: 3200,
-      paymentDate: "2026-01-23",
-      transactionId: "TXN445566",
-      status: "FAILED",
-    },
-  ]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newPayment, setNewPayment] = useState({
+     customerName: "",
+     amt: "",
+     type: "Credit",
+     status: "Pending"
+  });
+
+  const fetchPayments = async () => {
+    setLoading(true);
+    const res = await fetch("/api/admin/payments");
+    const data = await res.json();
+    const normalized = (data.payments || []).map((p: any) => ({
+        ...p,
+        id: p._id || p.id,
+        status: p.status?.toUpperCase() || "PENDING",
+    }));
+    setPayments(normalized);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchPayments();
+  }, []);
+
+  const handleAddPayment = async (e: React.FormEvent) => {
+     e.preventDefault();
+     try {
+       const res = await fetch("/api/admin/payments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "add", payment: newPayment }),
+       });
+       if (res.ok) {
+         toast.success("Payment added successfully!");
+         setShowAddModal(false);
+         setNewPayment({ customerName: "", amt: "", type: "Credit", status: "Pending" });
+         fetchPayments();
+       } else {
+         const err = await res.json();
+         toast.error("Error: " + err.error);
+       }
+     } catch (err) {
+       console.error(err);
+       toast.error("Failed to add payment");
+     }
+  };
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<PaymentStatus | "ALL">("ALL");
 
   /* ---------------- ACTIONS ---------------- */
 
-  const verifyPayment = (id: number) => {
-    setPayments((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: "SUCCESS" } : p)),
-    );
+  const verifyPayment = async (id: string) => {
+    try {
+      const res = await fetch("/api/admin/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verify", id }),
+      });
+      if (res.ok) {
+        setPayments((prev) =>
+          prev.map((p) => (p.id === id ? { ...p, status: "SUCCESS" } : p)),
+        );
+        toast.success("Payment verified and wallet updated!");
+      } else {
+        const err = await res.json();
+        toast.error("Verification failed: " + err.error);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to verify payment");
+    }
   };
 
   /* ---------------- DERIVED DATA ---------------- */
 
   const filteredPayments = useMemo(() => {
     return payments.filter((p) => {
+      const searchStr = search.toLowerCase();
       const matchesSearch =
-        p.customerName.toLowerCase().includes(search.toLowerCase()) ||
-        p.phone.includes(search) ||
-        p.transactionId.toLowerCase().includes(search.toLowerCase());
+        p.customerName.toLowerCase().includes(searchStr) ||
+        (p.phone || "").includes(search) ||
+        (p.transactionId || "").toLowerCase().includes(searchStr) ||
+        (p.id || "").toLowerCase().includes(searchStr);
 
       const matchesFilter = filter === "ALL" || p.status === filter;
 
@@ -79,9 +118,26 @@ export default function PaymentManagementPage() {
     });
   }, [payments, search, filter]);
 
-  const totalRevenue = payments
-    .filter((p) => p.status === "SUCCESS")
-    .reduce((sum, p) => sum + p.amount, 0);
+  const totalRevenue = useMemo(() => {
+    return payments
+      .filter((p) => p.status === "SUCCESS")
+      .reduce((sum, p) => {
+        const value = typeof p.amt === "string" 
+          ? parseFloat(p.amt.replace(/[^\d.-]/g, "")) || 0 
+          : Number(p.amount || 0);
+        // Only count positive amounts (credits) as revenue if we want, 
+        // but here we just sum them up.
+        return sum + Math.abs(value); 
+      }, 0);
+  }, [payments]);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
   /* ---------------- UI HELPERS ---------------- */
 
@@ -102,11 +158,11 @@ export default function PaymentManagementPage() {
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* HEADER */}
-        <div className="mb-8 ml-6">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
+        <div className="mb-8 sm:ml-6 ml-2 pt-20 sm:pt-0">
+          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
             💳 Payment Management
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-sm font-bold text-gray-500 mt-1">
             Search, verify, and monitor all customer payments
           </p>
         </div>
@@ -127,12 +183,20 @@ export default function PaymentManagementPage() {
 
         {/* CONTROLS */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-          <input
-            placeholder="Search by name, phone or transaction ID..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full md:w-1/2 px-4 py-2 rounded-lg border focus:ring-2 focus:ring-orange-400 outline-none"
-          />
+          <div className="flex-1 flex gap-3">
+             <input
+                placeholder="Search by name, phone or transaction ID..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="flex-1 px-4 py-2 rounded-lg border focus:ring-2 focus:ring-orange-400 outline-none"
+             />
+             <button 
+                onClick={() => setShowAddModal(true)}
+                className="px-6 py-2 bg-gray-900 text-white rounded-lg font-bold hover:bg-black transition whitespace-nowrap"
+             >
+                + Receive Payment
+             </button>
+          </div>
 
           <div className="flex flex-wrap gap-2">
             {["ALL", "SUCCESS", "PENDING", "FAILED"].map((s) => (
@@ -151,6 +215,65 @@ export default function PaymentManagementPage() {
             ))}
           </div>
         </div>
+
+        {/* ADD PAYMENT MODAL */}
+        {showAddModal && (
+           <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+                 <h2 className="text-xl font-black mb-6">Receive New Payment</h2>
+                 <form onSubmit={handleAddPayment} className="space-y-4">
+                    <div>
+                       <label className="text-xs font-black uppercase text-gray-400">Customer Name</label>
+                       <input 
+                          type="text" 
+                          required 
+                          className="w-full border p-3 rounded-xl mt-1 outline-orange-500" 
+                          placeholder="e.g. Chetan Mohane"
+                          value={newPayment.customerName}
+                          onChange={(e) => setNewPayment({...newPayment, customerName: e.target.value})}
+                       />
+                    </div>
+                    <div>
+                       <label className="text-xs font-black uppercase text-gray-400">Amount (₹)</label>
+                       <input 
+                          type="text" 
+                          required 
+                          className="w-full border p-3 rounded-xl mt-1 outline-orange-500" 
+                          placeholder="e.g. 500"
+                          value={newPayment.amt}
+                          onChange={(e) => setNewPayment({...newPayment, amt: e.target.value})}
+                       />
+                    </div>
+                    <div>
+                       <label className="text-xs font-black uppercase text-gray-400">Type</label>
+                       <select 
+                          className="w-full border p-3 rounded-xl mt-1 outline-orange-500"
+                          value={newPayment.type}
+                          onChange={(e) => setNewPayment({...newPayment, type: e.target.value})}
+                       >
+                          <option value="Credit">Credit (Add Balance)</option>
+                          <option value="Debit">Debit (Charge User)</option>
+                       </select>
+                    </div>
+                    <div className="flex gap-4 mt-8">
+                       <button 
+                          type="button" 
+                          onClick={() => setShowAddModal(false)}
+                          className="flex-1 py-3 bg-gray-100 text-gray-800 rounded-xl font-bold uppercase text-xs tracking-widest"
+                       >
+                          Cancel
+                       </button>
+                       <button 
+                          type="submit" 
+                          className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-orange-200"
+                       >
+                          Post Payment
+                       </button>
+                    </div>
+                 </form>
+              </div>
+           </div>
+        )}
 
         {/* ================= DESKTOP TABLE ================= */}
         <div className="hidden md:block bg-white rounded-2xl shadow-lg overflow-x-auto">
@@ -177,11 +300,18 @@ export default function PaymentManagementPage() {
                     {p.customerName}
                     <div className="text-xs text-gray-500">{p.phone}</div>
                   </td>
-                  <td className="px-5 py-4">{p.planName}</td>
-                  <td className="px-5 py-4 font-bold">₹{p.amount}</td>
-                  <td className="px-5 py-4">{p.paymentDate}</td>
+                  <td className="px-5 py-4">
+                    {p.planName || p.description || p.desc}
+                    {p.endDate && (
+                      <span className="block text-xs text-orange-600 font-bold mt-1">Exp: {p.endDate}</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-4 font-bold">
+                    {p.amt || `₹${p.amount}`}
+                  </td>
+                  <td className="px-5 py-4">{p.paymentDate || p.date}</td>
                   <td className="px-5 py-4 text-xs font-mono text-gray-500">
-                    {p.transactionId}
+                    {p.transactionId || p.id}
                   </td>
                   <td className="px-5 py-4">
                     <span
@@ -244,10 +374,13 @@ export default function PaymentManagementPage() {
               </div>
 
               <div className="text-sm text-gray-700 space-y-1">
-                <p>📦 {p.planName}</p>
-                <p>💰 ₹{p.amount}</p>
-                <p>📅 {p.paymentDate}</p>
-                <p className="font-mono text-xs">🔁 {p.transactionId}</p>
+                <p>
+                  📦 {p.planName || p.description || p.desc}
+                  {p.endDate && <span className="ml-2 text-orange-600 font-bold text-xs">Exp: {p.endDate}</span>}
+                </p>
+                <p>💰 {p.amt || `₹${p.amount}`}</p>
+                <p>📅 {p.paymentDate || p.date}</p>
+                <p className="font-mono text-xs">🔁 {p.transactionId || p.id}</p>
               </div>
 
               {p.status === "PENDING" && (

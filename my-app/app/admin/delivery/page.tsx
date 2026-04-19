@@ -1,64 +1,66 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 /* ---------------- TYPES ---------------- */
 
 type MealType = "Veg" | "Non-Veg" | "Combo";
 
 interface DeliveryCustomer {
-  id: number;
-  name: string;
+  id: string; 
+  customerId: string;
+  customerName: string;
   phone: string;
   address: string;
-  mealType: MealType;
-  paused: boolean;
+  targetTime: string;
+  status: string;
+  type: string; // Lunch / Dinner
+  paused?: boolean;
 }
 
 /* ---------------- COMPONENT ---------------- */
 
 export default function DailyDeliveryPage() {
   const today = new Date().toISOString().split("T")[0];
-
   const [filter, setFilter] = useState<MealType | "ALL">("ALL");
+  const [deliveries, setDeliveries] = useState<DeliveryCustomer[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const deliveries: DeliveryCustomer[] = [
-    {
-      id: 1,
-      name: "Rahul Sharma",
-      phone: "9876543210",
-      address: "Flat 12, Shanti Nagar, Indore",
-      mealType: "Veg",
-      paused: false,
-    },
-    {
-      id: 2,
-      name: "Anita Verma",
-      phone: "9123456789",
-      address: "B-203, Vijay Nagar, Indore",
-      mealType: "Non-Veg",
-      paused: true,
-    },
-    {
-      id: 3,
-      name: "Suresh Patel",
-      phone: "9001122334",
-      address: "Near Tower Square, Indore",
-      mealType: "Combo",
-      paused: false,
-    },
-  ];
+  useEffect(() => {
+    fetch("/api/admin/delivery")
+      .then(res => res.json())
+      .then(data => {
+        setDeliveries(data.deliveries);
+        setLoading(false);
+      });
+  }, []);
+
+  const [search, setSearch] = useState("");
 
   /* ---------------- DERIVED DATA ---------------- */
 
   const filteredDeliveries = useMemo(() => {
-    if (filter === "ALL") return deliveries;
-    return deliveries.filter((d) => d.mealType === filter);
-  }, [filter, deliveries]);
+    return deliveries.filter((d) => {
+      const matchesFilter = filter === "ALL" || d.type === filter;
+      const matchesSearch = 
+        d.customerName?.toLowerCase().includes(search.toLowerCase()) ||
+        d.address?.toLowerCase().includes(search.toLowerCase()) ||
+        d.phone?.includes(search);
+      return matchesFilter && matchesSearch;
+    });
+  }, [filter, search, deliveries]);
 
-  const total = deliveries.length;
-  const deliverCount = deliveries.filter((d) => !d.paused).length;
-  const pausedCount = deliveries.filter((d) => d.paused).length;
+  const total = filteredDeliveries.length;
+  const deliverCount = filteredDeliveries.filter((d) => !d.paused).length;
+  const pausedCount = filteredDeliveries.filter((d) => d.paused).length;
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
   /* ---------------- UI ---------------- */
 
@@ -66,11 +68,11 @@ export default function DailyDeliveryPage() {
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* HEADER */}
-        <div className="mb-8 ml-6">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 flex items-center gap-2">
+        <div className="mb-8 sm:ml-6 ml-2 pt-20 sm:pt-0">
+          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 flex items-center gap-2">
             🚚 Daily Delivery List
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-sm font-bold text-gray-500 mt-1">
             Delivery schedule for <b className="text-gray-900">{today}</b>
           </p>
         </div>
@@ -82,22 +84,31 @@ export default function DailyDeliveryPage() {
           <StatCard title="Paused" value={pausedCount} danger />
         </div>
 
-        {/* FILTER */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {["ALL", "Veg", "Non-Veg", "Combo"].map((type) => (
-            <button
-              key={type}
-              onClick={() => setFilter(type as any)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition
-                ${
-                  filter === type
-                    ? "bg-orange-500 text-white"
-                    : "bg-white border hover:bg-orange-50"
-                }`}
-            >
-              {type}
-            </button>
-          ))}
+        {/* CONTROLS */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+          <input
+            placeholder="Search by name, address or phone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full md:w-1/2 px-4 py-2 rounded-lg border focus:ring-2 focus:ring-orange-400 outline-none"
+          />
+
+          <div className="flex flex-wrap gap-2">
+            {["ALL", "Lunch", "Dinner"].map((type) => (
+              <button
+                key={type}
+                onClick={() => setFilter(type as any)}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition
+                  ${
+                    filter === type
+                      ? "bg-orange-500 text-white"
+                      : "bg-white border hover:bg-orange-50"
+                  }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ================= DESKTOP TABLE ================= */}
@@ -121,7 +132,7 @@ export default function DailyDeliveryPage() {
                   }`}
                 >
                   <td className="px-5 py-4">
-                    <p className="font-semibold text-gray-900">{item.name}</p>
+                    <p className="font-semibold text-gray-900">{item.customerName}</p>
                     <p className="text-xs text-gray-500">📞 {item.phone}</p>
                   </td>
 
@@ -129,7 +140,7 @@ export default function DailyDeliveryPage() {
 
                   <td className="px-5 py-4">
                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                      {item.mealType}
+                      {item.type}
                     </span>
                   </td>
 
@@ -170,13 +181,13 @@ export default function DailyDeliveryPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-bold text-lg text-gray-900">
-                    {item.name}
+                    {item.customerName}
                   </h3>
                   <p className="text-sm text-gray-500">📞 {item.phone}</p>
                 </div>
 
                 <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100">
-                  {item.mealType}
+                  {item.type}
                 </span>
               </div>
 

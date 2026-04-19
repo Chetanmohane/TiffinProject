@@ -1,240 +1,99 @@
 "use client";
 
-import { useState } from "react";
-
-/* ---------------- TYPES ---------------- */
-
-type MealCategory = "Veg" | "Non-Veg";
-
-interface MenuItem {
-  id: number;
-  name: string;
-  category: MealCategory;
-  image?: string;
-}
-
-interface DailyMenu {
-  date: string;
-  items: MenuItem[];
-}
-
-/* ---------------- COMPONENT ---------------- */
+import toast from "react-hot-toast";
+import { useEffect, useState } from "react";
 
 export default function MenuManagementPage() {
-  const [menuDate, setMenuDate] = useState("");
-  const [mealName, setMealName] = useState("");
-  const [mealCategory, setMealCategory] = useState<MealCategory>("Veg");
-  const [mealImage, setMealImage] = useState<string | null>(null);
+  const [menus, setMenus] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [menus, setMenus] = useState<DailyMenu[]>([]);
+  useEffect(() => {
+    fetch("/api/admin/menu")
+      .then(res => res.json())
+      .then(data => {
+        setMenus(data.menu);
+        setLoading(false);
+      });
+  }, []);
 
-  const handleImageUpload = (file: File) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setMealImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+  const handleChange = (index: number, field: string, value: string) => {
+    const updated = [...menus];
+    updated[index][field] = value;
+    setMenus(updated);
   };
 
-  const addMealToDate = () => {
-    if (!menuDate || !mealName) return;
-
-    const newMeal: MenuItem = {
-      id: Date.now(),
-      name: mealName,
-      category: mealCategory,
-      image: mealImage || undefined,
-    };
-
-    setMenus((prev) => {
-      const existingMenu = prev.find((m) => m.date === menuDate);
-
-      if (existingMenu) {
-        return prev.map((m) =>
-          m.date === menuDate ? { ...m, items: [...m.items, newMeal] } : m,
-        );
+  const saveMenu = async () => {
+    try {
+      const res = await fetch("/api/admin/menu", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ menu: menus })
+      });
+      if (res.ok) {
+        toast.success("Menu updated for all customers!");
+      } else {
+        toast.error("Failed to update menu");
       }
-
-      return [...prev, { date: menuDate, items: [newMeal] }];
-    });
-
-    setMealName("");
-    setMealImage(null);
+    } catch (err) {
+      console.error(err);
+      toast.error("Error saving menu");
+    }
   };
 
-  const removeMeal = (date: string, id: number) => {
-    setMenus((prev) =>
-      prev.map((m) =>
-        m.date === date
-          ? {
-              ...m,
-              items: m.items.filter((item) => item.id !== id),
-            }
-          : m,
-      ),
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
     );
-  };
-
-  /* ---------------- UI ---------------- */
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
         {/* HEADER */}
-        <div className="mb-8 ml-6">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
-            🍽 Menu Management
-          </h1>
-          <p className="text-gray-600">Create & update daily menus</p>
-        </div>
-
-        {/* FORM CARD */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Add Meal</h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
-            {/* DATE */}
-            <div>
-              <label className="text-xs font-semibold text-gray-600">
-                Menu Date
-              </label>
-              <input
-                type="date"
-                value={menuDate}
-                onChange={(e) => setMenuDate(e.target.value)}
-                className="mt-1 w-full rounded-lg border px-4 py-2
-                  focus:ring-2 focus:ring-orange-400 focus:outline-none"
-              />
-            </div>
-
-            {/* MEAL NAME */}
-            <div>
-              <label className="text-xs font-semibold text-gray-600">
-                Meal Name
-              </label>
-              <input
-                type="text"
-                placeholder="Dal Tadka"
-                value={mealName}
-                onChange={(e) => setMealName(e.target.value)}
-                className="mt-1 w-full rounded-lg border px-4 py-2
-                  focus:ring-2 focus:ring-orange-400 focus:outline-none"
-              />
-            </div>
-
-            {/* CATEGORY */}
-            <div>
-              <label className="text-xs font-semibold text-gray-600">
-                Category
-              </label>
-              <select
-                value={mealCategory}
-                onChange={(e) =>
-                  setMealCategory(e.target.value as MealCategory)
-                }
-                className="mt-1 w-full rounded-lg border px-4 py-2
-                  focus:ring-2 focus:ring-orange-400 focus:outline-none"
-              >
-                <option value="Veg">Veg</option>
-                <option value="Non-Veg">Non-Veg</option>
-              </select>
-            </div>
-
-            {/* IMAGE */}
-            <div>
-              <label className="text-xs font-semibold text-gray-600">
-                Meal Photo
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) =>
-                  e.target.files && handleImageUpload(e.target.files[0])
-                }
-                className="mt-1 block w-full text-sm"
-              />
-            </div>
-
-            {/* BUTTON */}
-            <div className="flex items-end sm:col-span-2 md:col-span-1">
-              <button
-                onClick={addMealToDate}
-                className="w-full rounded-lg bg-orange-500 px-4 py-2
-                  font-semibold text-white hover:bg-orange-600
-                  active:scale-95 transition"
-              >
-                ➕ Add Meal
-              </button>
-            </div>
+        <div className="mb-8 sm:ml-6 ml-2 pt-20 sm:pt-0 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+              🍽 Menu Management
+            </h1>
+            <p className="text-sm font-bold text-gray-500 mt-1">Update global weekly menus</p>
           </div>
-
-          {/* IMAGE PREVIEW */}
-          {mealImage && (
-            <div className="mt-4">
-              <p className="text-xs font-semibold text-gray-600 mb-1">
-                Preview
-              </p>
-              <img
-                src={mealImage}
-                alt="Meal Preview"
-                className="h-28 w-28 rounded-lg object-cover border"
-              />
-            </div>
-          )}
-        </div>
-
-        {/* MENU LIST */}
-        {menus.length === 0 && (
-          <div className="bg-white rounded-xl shadow p-6 text-center text-gray-500">
-            No menu created yet
-          </div>
-        )}
-
-        {menus.map((menu) => (
-          <div
-            key={menu.date}
-            className="bg-white rounded-2xl shadow-md p-4 sm:p-6 mb-6"
+          <button 
+            onClick={saveMenu} 
+            className="w-full sm:w-auto bg-orange-500 text-white px-8 py-3 rounded-2xl font-black shadow-lg shadow-orange-200 hover:bg-orange-600 transition active:scale-95 uppercase text-xs tracking-widest"
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              📅 {menu.date}
-            </h3>
+            Save Global Menu
+          </button>
+        </div>
 
-            <ul className="space-y-3">
-              {menu.items.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex flex-col sm:flex-row sm:items-center gap-4
-                    rounded-lg border px-4 py-3
-                    hover:bg-orange-50 transition"
-                >
-                  {item.image && (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="h-16 w-16 rounded-md object-cover"
-                    />
-                  )}
-
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{item.name}</p>
-                    <p className="text-xs text-gray-500">{item.category}</p>
-                  </div>
-
-                  <button
-                    onClick={() => removeMeal(menu.date, item.id)}
-                    className="self-start sm:self-auto
-                      text-xs font-semibold text-red-500 hover:text-red-600"
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
+        {menus.map((menu, i) => (
+          <div key={menu.day} className="bg-white rounded-2xl shadow-sm border p-4 sm:p-6 mb-6">
+            <h3 className="text-lg font-extrabold text-gray-900 mb-4">{menu.day}</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="text-sm font-bold text-orange-600 mb-1 block">Lunch</label>
+                <textarea 
+                  value={menu.lunch}
+                  onChange={(e) => handleChange(i, 'lunch', e.target.value)}
+                  className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-orange-400 outline-none h-20"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-bold text-indigo-500 mb-1 block">Dinner</label>
+                <textarea 
+                  value={menu.dinner}
+                  onChange={(e) => handleChange(i, 'dinner', e.target.value)}
+                  className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-indigo-400 outline-none h-20"
+                />
+              </div>
+            </div>
           </div>
         ))}
 
         <p className="mt-6 text-green-600 font-medium">
-          ✅ Changes reflect instantly on the customer menu.
+          ✅ Changes reflect instantly on the customer dashboard.
         </p>
       </div>
     </div>

@@ -1,163 +1,174 @@
-
+"use client";
+import toast from "react-hot-toast";
+import { useEffect, useState } from "react";
+import { CreditCard, History, Wallet, Sparkles, Loader2, IndianRupee } from "lucide-react";
 
 export default function PaymentsPage() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [rechargeAmount, setRechargeAmount] = useState<string>("");
+  const [processing, setProcessing] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem("user");
+    const currentUser = userStr ? JSON.parse(userStr) : null;
+    setUser(currentUser);
+    fetchData(currentUser);
+  }, []);
+
+  const fetchData = async (currentUser: any) => {
+    try {
+      setLoading(true);
+      const emailQuery = currentUser?.email ? `?email=${encodeURIComponent(currentUser.email)}` : "";
+      const res = await fetch(`/api/customer/payments${emailQuery}`);
+      const json = await res.json();
+      setData(json);
+    } catch (error) {
+      console.error("Fetch error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRecharge = async (amount: number | string) => {
+    const finalAmount = Number(amount);
+    if (!finalAmount || finalAmount <= 0) {
+      toast.success("Please enter a valid amount");
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      const res = await fetch("/api/customer/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: finalAmount,
+          email: user?.email,
+          name: user?.name
+        })
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        toast.success(`Successfully recharged ₹${finalAmount}!`);
+        setRechargeAmount("");
+        fetchData(user);
+        // Trigger global wallet update event
+        window.dispatchEvent(new Event("walletUpdate"));
+      } else {
+        toast.error(result.error || "Recharge failed");
+      }
+    } catch (error) {
+      console.error("Recharge error:", error);
+      toast.success("Something went wrong");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-100 border-t-orange-500"></div>
+          <p className="text-sm font-bold text-gray-500">Fetching wallet details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data?.error) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center p-8 bg-red-50 rounded-3xl border border-red-100">
+          <p className="text-red-500 font-bold">{data.error}</p>
+          <button onClick={() => window.location.reload()} className="mt-4 px-6 py-2 bg-red-500 text-white rounded-xl font-bold">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50">
-     
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {/* Header */}
-        <div className="text-center mb-8 sm:mb-10">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
-            Payments & Balance 💳
+    <div className="min-h-screen pb-20">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="mb-8">
+          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+             My Wallet <Wallet className="text-orange-500" />
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-2">
-            Manage your wallet, recharges and transactions
-          </p>
-        </div>
-
-        {/* Wallet + Recharge */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-10 sm:mb-12">
-          {/* Wallet Card */}
-          <div
-            className="lg:col-span-2 relative rounded-3xl p-6 sm:p-10 
-                          text-white shadow-2xl overflow-hidden
-                          bg-gradient-to-br from-orange-500 to-red-400"
-          >
-            <div className="relative z-10">
-              <p className="text-white/80 text-xs sm:text-sm font-semibold uppercase">
-                Available Balance
-              </p>
-
-              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black mt-2">
-                ₹450.00
-              </h2>
-
-              <div className="flex items-center gap-3 sm:gap-4 mt-6 sm:mt-10">
-                <div className="w-12 h-9 sm:w-14 sm:h-10 bg-white/20 rounded-lg"></div>
-                <span className="text-xs text-white/80">Tiffin Wallet</span>
+          <p className="text-sm font-bold text-gray-400 mt-1">Manage your balance and view transaction history</p>
+        </div>        <div className="grid grid-cols-1 gap-8 mb-10">
+          {/* Status Card */}
+          <div className="relative rounded-[2.5rem] p-8 sm:p-10 text-white shadow-2xl shadow-orange-200/50 overflow-hidden bg-gradient-to-br from-orange-500 to-red-500">
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-8">
+              <div>
+                <div className="flex items-center gap-2 mb-2 opacity-80">
+                  <Sparkles size={16} />
+                  <p className="text-xs sm:text-sm font-black uppercase tracking-widest">Payment Support</p>
+                </div>
+                <h2 className="text-4xl sm:text-5xl font-black mt-2 tracking-tighter">
+                  Direct Payments Enabled
+                </h2>
+                <p className="mt-4 text-white/80 font-bold max-w-md">All your subscriptions are now processed directly via secure payment gateways for instant activation.</p>
+              </div>
+              <div className="flex flex-col items-center sm:items-end">
+                 <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30 mb-4">
+                    <CreditCard size={32} />
+                 </div>
+                 <span className="text-xs font-black uppercase tracking-widest bg-white text-orange-600 px-4 py-2 rounded-full shadow-lg">Secure Gateway</span>
               </div>
             </div>
-
-            {/* Decorative Circles */}
-            <div className="absolute -top-16 -right-16 w-52 sm:w-64 h-52 sm:h-64 bg-white/5 rounded-full"></div>
-            <div className="absolute -bottom-20 -left-20 w-60 sm:w-72 h-60 sm:h-72 bg-orange-400/20 rounded-full"></div>
-          </div>
-
-          {/* Recharge Card */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-md hover:shadow-xl transition">
-            <h3 className="font-extrabold text-gray-800 mb-5 sm:mb-6 text-sm sm:text-base">
-              ⚡ Quick Recharge
-            </h3>
-
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-5">
-              {["₹200", "₹500", "₹1000"].map((amt) => (
-                <button
-                  key={amt}
-                  className="py-2 rounded-full border font-bold text-xs sm:text-sm
-                             hover:border-orange-500 hover:text-orange-600 transition"
-                >
-                  {amt}
-                </button>
-              ))}
-            </div>
-
-            <input
-              type="number"
-              placeholder="Enter custom amount"
-              className="w-full p-2.5 sm:p-3 border rounded-xl text-xs sm:text-sm outline-none
-                         focus:border-orange-500 mb-4 sm:mb-5"
-            />
-
-            <button
-              className="w-full py-2.5 sm:py-3 rounded-xl 
-                               bg-gradient-to-r from-orange-500 to-orange-400
-                               text-white font-bold shadow-lg hover:opacity-90 transition"
-            >
-              Proceed to Pay
-            </button>
+            
+            {/* Design Elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-80 h-80 bg-red-400/20 rounded-full -ml-32 -mb-32 blur-3xl"></div>
           </div>
         </div>
 
-        {/* Transaction History */}
-        <div className="bg-white rounded-3xl shadow-md overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b bg-gray-50">
-            <div className="flex items-center gap-2">
-              <span>🧾</span>
-              <h3 className="font-extrabold text-xs sm:text-sm text-gray-700">
-                Wallet History
-              </h3>
+        {/* Transactions Table */}
+        <div className="bg-white rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
+          <div className="flex items-center justify-between px-8 py-6 border-b border-gray-50">
+            <div className="flex items-center gap-3 text-gray-800">
+              <div className="bg-gray-100 p-2 rounded-xl">
+                 <History size={18} />
+              </div>
+              <h3 className="font-black tracking-tight uppercase text-sm">Wallet History</h3>
             </div>
-            <span className="text-[10px] sm:text-xs text-gray-400">
-              Last Transactions
-            </span>
+            <span className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest">Live Updates</span>
           </div>
 
-          {/* History List */}
-          <div className="divide-y">
-            {[
-              {
-                date: "25 Jan 2026",
-                desc: "Daily Meal - Lunch",
-                type: "Debit",
-                amt: "-₹120",
-                status: "Success",
-              },
-              {
-                date: "20 Jan 2026",
-                desc: "Wallet Recharge - UPI",
-                type: "Credit",
-                amt: "+₹2000",
-                status: "Success",
-              },
-            ].map((row, i) => (
-              <div
-                key={i}
-                className="flex flex-col sm:flex-row sm:items-center sm:justify-between
-                           px-4 sm:px-6 py-4 sm:py-5 gap-3 hover:bg-gray-50 transition"
-              >
-                {/* Left */}
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div
-                    className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-base
-                    ${
-                      row.type === "Credit"
-                        ? "bg-green-100 text-green-600"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {row.type === "Credit" ? "⬇️" : "⬆️"}
+          <div className="divide-y divide-gray-50">
+            {data?.history?.length > 0 ? (
+              data.history.map((row: any, i: number) => (
+                <div key={i} className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-8 py-5 gap-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-sm ${row.type === "Credit" ? "bg-green-100 text-green-600" : "bg-orange-50 text-orange-600"}`}>
+                      {row.type === "Credit" ? "↓" : "↑"}
+                    </div>
+                    <div>
+                      <p className="font-black text-gray-900 text-sm">{row.desc}</p>
+                      <p className="text-[10px] font-bold text-gray-400 mt-0.5">{row.date}</p>
+                    </div>
                   </div>
-
-                  <div>
-                    <p className="font-bold text-gray-800 text-xs sm:text-sm">
-                      {row.desc}
+                  <div className="flex items-center justify-between sm:flex-col sm:items-end gap-1">
+                    <p className={`font-black text-base sm:text-lg ${row.type === "Credit" ? "text-green-600" : "text-gray-900"}`}>
+                      {row.amt}
                     </p>
-                    <p className="text-[10px] sm:text-xs text-gray-400">
-                      {row.date}
-                    </p>
+                    <span className={`text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest ${row.status === "Success" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                      {row.status}
+                    </span>
                   </div>
                 </div>
-
-                {/* Right */}
-                <div className="text-left sm:text-right">
-                  <p
-                    className={`font-extrabold text-xs sm:text-sm
-                    ${row.amt.includes("+") ? "text-green-600" : "text-gray-800"}`}
-                  >
-                    {row.amt}
-                  </p>
-                  <span
-                    className="inline-block mt-1 text-[9px] sm:text-[10px] 
-                                   font-bold text-green-600 bg-green-50 
-                                   px-3 py-1 rounded-full"
-                  >
-                    {row.status}
-                  </span>
+              ))
+            ) : (
+              <div className="p-20 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-50 rounded-full mb-4">
+                   <History size={32} className="text-gray-300" />
                 </div>
+                <p className="text-gray-400 font-bold">No transactions yet</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </main>
