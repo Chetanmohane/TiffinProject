@@ -188,14 +188,14 @@ export default function PlanPage() {
 
     setLoading(true);
     try {
-      // Update delivery profile first
+      // Update delivery profile address only (do not overwrite profile name)
       await fetch("/api/customer/settings", {
          method: "POST",
          headers: { "Content-Type": "application/json" },
          body: JSON.stringify({ 
            email: user.email, 
-           address: fullAddress,
-           name: deliveryInfo.name
+           address: fullAddress
+           // Removed name: deliveryInfo.name to keep profile name separate
          }),
       });
 
