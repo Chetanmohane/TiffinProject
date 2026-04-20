@@ -28,6 +28,7 @@ interface Plan {
   duration: number;
   mealsPerDay: number;
   visible: boolean;
+  image?: string;
 }
 
 const emptyPlan: Plan = {
@@ -38,6 +39,7 @@ const emptyPlan: Plan = {
   duration: 30,
   mealsPerDay: 2,
   visible: true,
+  image: "",
 };
 
 export default function PlanManagement() {
@@ -172,17 +174,21 @@ export default function PlanManagement() {
               >
                 {/* Visual Header */}
                 {viewMode === 'grid' && (
-                  <div className="bg-slate-50 p-8 flex items-center justify-center relative">
-                    <div className="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center text-4xl group-hover:scale-110 transition-transform duration-500">
-                      🍱
-                    </div>
+                  <div className="bg-slate-50 relative aspect-video overflow-hidden border-b border-slate-50">
+                    {plan.image ? (
+                       <img src={plan.image} alt={plan.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    ) : (
+                       <div className="w-full h-full flex items-center justify-center text-4xl bg-orange-50 text-orange-400 group-hover:scale-110 transition-transform duration-500">
+                         🍱
+                       </div>
+                    )}
                     {plan.tag && (
-                       <div className="absolute top-4 right-4 bg-orange-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">
+                       <div className="absolute top-4 right-4 bg-orange-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter shadow-lg">
                           {plan.tag}
                        </div>
                     )}
                     {!plan.visible && (
-                       <div className="absolute top-4 left-4 bg-slate-400 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter flex items-center gap-1">
+                       <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter flex items-center gap-1 shadow-lg">
                           <EyeOff size={10} /> Hidden
                        </div>
                     )}
@@ -192,8 +198,12 @@ export default function PlanManagement() {
                 <div className={`p-8 ${viewMode === 'list' ? 'flex-1 py-4 flex items-center justify-between' : ''}`}>
                   <div className={viewMode === 'list' ? 'flex items-center gap-6' : ''}>
                      {viewMode === 'list' && (
-                        <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-xl">
-                          🍱
+                        <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center text-xl overflow-hidden shadow-inner">
+                          {plan.image ? (
+                             <img src={plan.image} alt={plan.name} className="w-full h-full object-cover" />
+                          ) : (
+                             "🍱"
+                          )}
                         </div>
                      )}
                      <div>
@@ -309,6 +319,27 @@ export default function PlanManagement() {
                            />
                            <TagIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                         </div>
+                     </div>
+                     <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-slate-400 tracking-widest pl-1">Plan Image URL</label>
+                        <div className="relative">
+                           <input 
+                              name="image"
+                              value={form.image}
+                              onChange={handleChange}
+                              placeholder="Eg: https://example.com/plan-image.jpg"
+                              className="w-full bg-slate-50 border-0 rounded-2xl p-4 pl-12 font-bold text-slate-900 focus:ring-2 focus:ring-orange-500 transition-all outline-none"
+                           />
+                           <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                        </div>
+                        {form.image && (
+                           <div className="mt-2 rounded-2xl overflow-hidden border-2 border-slate-50 aspect-video relative group">
+                              <img src={form.image} alt="Preview" className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                 <p className="text-white text-[10px] font-black uppercase tracking-widest">Image Preview</p>
+                              </div>
+                           </div>
+                        )}
                      </div>
                      <div className="space-y-2">
                         <label className="text-xs font-black uppercase text-slate-400 tracking-widest pl-1">Plan Description</label>

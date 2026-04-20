@@ -519,7 +519,7 @@ export default function PlanPage() {
                       >
                          <div className="relative w-full h-44 sm:h-56 rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden mb-6 sm:mb-8">
                             <img 
-                              src={idx === 0 ? "/img3.webp" : (idx === 1 ? "/img4.webp" : "/img5.webp")} 
+                              src={plan.image || (idx === 0 ? "/img3.webp" : (idx === 1 ? "/img4.webp" : "/img5.webp"))} 
                               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
                               alt={plan.name}
                             />

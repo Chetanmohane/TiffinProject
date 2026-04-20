@@ -7,6 +7,7 @@ export interface IPlan extends Document {
   mealsPerDay: number;
   visible: boolean;
   description?: string;
+  image?: string;
 }
 
 const PlanSchema = new Schema<IPlan>(
@@ -17,6 +18,7 @@ const PlanSchema = new Schema<IPlan>(
     mealsPerDay: { type: Number, default: 1 },
     visible: { type: Boolean, default: true },
     description: { type: String, default: "" },
+    image: { type: String, default: "" },
   },
   { timestamps: true }
 );
