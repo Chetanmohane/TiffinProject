@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/common/Navbar";
-import { Mail, MapPin, Phone, Send, Bot, User as UserIcon, Clock, ShieldCheck, Zap } from "lucide-react";
+import { Mail, MapPin, Phone, Send, Bot, User as UserIcon, Clock, ShieldCheck, Zap, Globe } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function ContactPage() {
