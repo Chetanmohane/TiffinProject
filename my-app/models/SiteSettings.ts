@@ -83,7 +83,7 @@ const SiteSettingsSchema = new Schema<ISiteSettings>(
       titleLine1: { type: String, default: "More Than Just a" },
       titleAccent: { type: String, default: "Tiffin Service" },
       description: { type: String, default: "We understand that food is more than just fuel—it's an emotion. Our mission is to serve happiness in every bite." },
-      image: { type: String, default: "/food3.jpg" },
+      image: { type: String, default: "/food2.PNG" },
       image2: { type: String, default: "/food2.PNG" },
     },
     services: {

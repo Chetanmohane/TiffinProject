@@ -39,7 +39,7 @@ export default function AboutPage() {
   const missionTitle1 = cms?.mission?.titleLine1 || "More Than Just a";
   const missionAccent = cms?.mission?.titleAccent || "Tiffin Service";
   const missionDesc = cms?.mission?.description || "We understand that food is more than just fuel—it's an emotion. Our mission is to serve happiness in every bite.";
-  const story2Img = cms?.mission?.image || "/food3.jpg";
+  const story2Img = cms?.mission?.image || "/food2.PNG";
 
   // Feature Details
   const f1Title = cms?.about?.feature1Title || "Pure Veg";
