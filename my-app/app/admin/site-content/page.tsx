@@ -55,7 +55,10 @@ export default function SiteContentManagement() {
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/settings");
+      const res = await fetch("/api/admin/settings", { 
+        cache: 'no-store',
+        next: { revalidate: 0 }
+      });
       const data = await res.json();
       if (data.success && data.settings) {
         setSettings({

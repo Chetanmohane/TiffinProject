@@ -18,7 +18,10 @@ const Hero = () => {
 
     const fetchCms = async () => {
       try {
-        const res = await fetch("/api/admin/settings");
+        const res = await fetch("/api/admin/settings", { 
+          cache: 'no-store',
+          next: { revalidate: 0 } 
+        });
         const data = await res.json();
         if (data.success && data.settings) {
           setCms(data.settings.hero);
