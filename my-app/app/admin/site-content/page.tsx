@@ -236,16 +236,23 @@ export default function SiteContentManagement() {
                       <Input label="Accent Title" value={settings.mission.titleAccent} onChange={(val:any) => setSettings({...settings, mission: {...settings.mission, titleAccent: val}})} accent={true} />
                    </div>
                    <Input label="Main Purpose Title Line" value={settings.mission.titleLine1} onChange={(val:any) => setSettings({...settings, mission: {...settings.mission, titleLine1: val}})} />
-                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
                       <div className="space-y-10">
                          <div className="space-y-3">
                             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mission Narrative</label>
                             <textarea rows={6} value={settings.mission.description} onChange={(e) => setSettings({...settings, mission: {...settings.mission, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-100 rounded-[2.5rem] p-8 font-bold text-slate-600 outline-none" />
                          </div>
                          <Input label="Primary Image URL" value={settings.mission.image} onChange={(val:any) => setSettings({...settings, mission: {...settings.mission, image: val}})} icon={ImageIcon} />
+                         <Input label="Secondary Image URL (Why We Do It)" value={settings.mission.image2} onChange={(val:any) => setSettings({...settings, mission: {...settings.mission, image2: val}})} icon={ImageIcon} />
                       </div>
-                      <div className="relative rounded-[3.5rem] overflow-hidden border-[14px] border-slate-50 shadow-3xl aspect-video">
-                          <img src={settings.mission.image} alt="Mission Preview" className="w-full h-full object-cover" />
+                      <div className="relative rounded-[3.5rem] border-[14px] border-slate-50 shadow-3xl aspect-[9/12] bg-slate-50 p-4 flex flex-col gap-4">
+                          <div className="h-1/2 rounded-2xl overflow-hidden border-2 border-white shadow-sm">
+                            <img src={settings.mission.image} alt="Preview 1" className="w-full h-full object-cover" />
+                          </div>
+                          <div className="h-1/2 rounded-2xl overflow-hidden border-2 border-white shadow-sm">
+                            <img src={settings.mission.image2} alt="Preview 2" className="w-full h-full object-cover" />
+                          </div>
+                          <p className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/80 text-white text-[8px] font-black uppercase px-3 py-1 rounded-full backdrop-blur-sm">Dual Section Preview</p>
                       </div>
                    </div>
                 </div>

@@ -34,12 +34,12 @@ export default function AboutPage() {
   const experienceText = cms?.about?.experienceText || "10+";
   const experienceSub = cms?.about?.experienceSub || "YEARS OF LOVE";
 
-  // Mission Section Fallbacks
+  // Mission & Story 2 Fallbacks
   const missionHeading = cms?.mission?.heading || "WHY WE DO IT";
   const missionTitle1 = cms?.mission?.titleLine1 || "More Than Just a";
   const missionAccent = cms?.mission?.titleAccent || "Tiffin Service";
   const missionDesc = cms?.mission?.description || "We understand that food is more than just fuel—it's an emotion. Our mission is to serve happiness in every bite.";
-  const missionImg = cms?.mission?.image || "/food3.jpg";
+  const story2Img = cms?.mission?.image || "/food3.jpg";
 
   // Feature Details
   const f1Title = cms?.about?.feature1Title || "Pure Veg";
@@ -131,7 +131,7 @@ export default function AboutPage() {
           >
             <div className="relative rounded-[2rem] sm:rounded-[3rem] overflow-hidden shadow-xl">
               <Image
-                src={missionImg}
+                src={story2Img}
                 alt="Delicious Tiffin Meal"
                 width={800}
                 height={600}
