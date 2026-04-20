@@ -225,7 +225,7 @@ export default function MealHero({ meal }: MealHeroProps) {
                   ? "You have cancelled today's meal. See you tomorrow! 🙏"
                   : data.items}
               </p>
-            </motion.div>    </motion.div>
+            </motion.div>
 
             {/* Action Buttons */}
             <motion.div
