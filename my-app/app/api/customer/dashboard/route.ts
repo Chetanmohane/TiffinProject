@@ -40,7 +40,6 @@ export async function GET(req: Request) {
     return NextResponse.json({
       user: {
         name: customer.name,
-        walletBalance: customer.walletBalance || 0,
         subscriptionStatus: isPaused ? "Paused" : (sub.status || "Inactive"),
         nextRenewal: sub.nextRenewal || "N/A",
         activePlanName: sub.planName || "No Plan",
@@ -65,13 +64,6 @@ export async function GET(req: Request) {
           icon: "👑",
           subtext: `Status: ${isPaused ? "Paused" : (sub.status || "Inactive")}`,
           subtextClass: isPaused ? "text-red-500 font-bold" : "text-orange-600 font-bold",
-        },
-        {
-          title: "Wallet Balance",
-          value: `₹${customer.walletBalance || 0}`,
-          icon: "💳",
-          subtext: "Add funds for uninterrupted service",
-          buttonText: "Top Up Wallet",
         },
         {
           title: "Delivery Status",

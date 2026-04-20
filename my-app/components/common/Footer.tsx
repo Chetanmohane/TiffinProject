@@ -9,7 +9,7 @@ export default function Footer() {
   const [settings, setSettings] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/admin/settings", { cache: 'no-store' })
+    fetch("/api/admin/settings?t=" + new Date().getTime(), { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         if (data.success && data.settings) {
@@ -122,11 +122,11 @@ export default function Footer() {
             Stay Connected
           </h3>
           <p className="text-sm text-gray-400 mb-4">
-            Subscribe for daily menu updates & offers.
+            {contact?.footerMsg || "Subscribe for daily menu updates & offers."}
           </p>
 
           <h1 className="text-orange-500 font-bold text-xl font-serif">
-            Annapurna Delight Tiffin Centre
+            {contact?.footerTitle || "Annapurna Delight Tiffin Centre"}
           </h1>
         </div>
       </div>

@@ -90,7 +90,7 @@ export default function PaymentManagementPage() {
         setPayments((prev) =>
           prev.map((p) => (p.id === id ? { ...p, status: "SUCCESS" } : p)),
         );
-        toast.success("Payment verified and wallet updated!");
+        toast.success("Payment verified successfully!");
       } else {
         const err = await res.json();
         toast.error("Verification failed: " + err.error);
@@ -243,17 +243,6 @@ export default function PaymentManagementPage() {
                           value={newPayment.amt}
                           onChange={(e) => setNewPayment({...newPayment, amt: e.target.value})}
                        />
-                    </div>
-                    <div>
-                       <label className="text-xs font-black uppercase text-gray-400">Type</label>
-                       <select 
-                          className="w-full border p-3 rounded-xl mt-1 outline-orange-500"
-                          value={newPayment.type}
-                          onChange={(e) => setNewPayment({...newPayment, type: e.target.value})}
-                       >
-                          <option value="Credit">Credit (Add Balance)</option>
-                          <option value="Debit">Debit (Charge User)</option>
-                       </select>
                     </div>
                     <div className="flex gap-4 mt-8">
                        <button 

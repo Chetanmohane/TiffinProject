@@ -36,6 +36,7 @@ export interface ISiteSettings extends Document {
   services: {
     heading: string;
     title: string;
+    subDesc: string;
     item1Title: string;
     item1Desc: string;
     item2Title: string;
@@ -49,6 +50,8 @@ export interface ISiteSettings extends Document {
     address: string;
     instagram: string;
     facebook: string;
+    footerMsg: string;
+    footerTitle: string;
   };
 }
 
@@ -89,6 +92,7 @@ const SiteSettingsSchema = new Schema<ISiteSettings>(
     services: {
       heading: { type: String, default: "OUR SERVICES" },
       title: { type: String, default: "We Provide Best Quality Items" },
+      subDesc: { type: String, default: "We don't just deliver food; we deliver health, convenience, and a taste of home. Here is why we are unique." },
       item1Title: { type: String, default: "Fresh Ingredients" },
       item1Desc: { type: String, default: "We use only the freshest produce and ingredients." },
       item2Title: { type: String, default: "On-Time Delivery" },
@@ -102,6 +106,8 @@ const SiteSettingsSchema = new Schema<ISiteSettings>(
       address: { type: String, default: "Indore, India" },
       instagram: { type: String, default: "#" },
       facebook: { type: String, default: "#" },
+      footerMsg: { type: String, default: "Subscribe for daily menu updates & offers." },
+      footerTitle: { type: String, default: "Annapurna Delight Tiffin Centre" },
     }
   },
   { timestamps: true }

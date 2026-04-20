@@ -19,26 +19,22 @@ import {
 export default function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const [userData, setUserData] = useState({ name: "User", wallet: 0, role: "customer" });
+  const [userData, setUserData] = useState({ name: "User", role: "customer" });
 
   useEffect(() => {
      async function loadUser() {
         const userStr = localStorage.getItem("user");
         const user = userStr ? JSON.parse(userStr) : null;
         if (user?.email) {
-           const res = await fetch(`/api/customer/dashboard?email=${encodeURIComponent(user.email)}`);
-           const data = await res.json();
-           setUserData({
-              name: data.user?.name || "User",
-              wallet: data.user?.walletBalance || 0,
-              role: user.role || "customer"
-           });
+            const res = await fetch(`/api/customer/dashboard?email=${encodeURIComponent(user.email)}`);
+            const data = await res.json();
+            setUserData({
+               name: data.user?.name || "User",
+               role: user.role || "customer"
+            });
         }
      }
      loadUser();
-     // Listen for wallet updates
-     window.addEventListener("walletUpdate", loadUser);
-     return () => window.removeEventListener("walletUpdate", loadUser);
   }, []);
 
   const isActive = (path: string) =>

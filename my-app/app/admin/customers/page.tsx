@@ -9,7 +9,6 @@ import {
   Phone, 
   MapPin, 
   Calendar, 
-  Wallet, 
   Trash2,
   Edit,
   ShieldCheck,
@@ -24,6 +23,7 @@ import { useRBAC } from "@/hooks/useRBAC";
 export default function AdminCustomers() {
   const { can } = useRBAC();
   const [customers, setCustomers] = useState<any[]>([]);
+  const [serverStats, setServerStats] = useState({ total: 0, active: 0, paused: 0 });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
@@ -39,6 +39,7 @@ export default function AdminCustomers() {
       const data = await res.json();
       if (data.success) {
         setCustomers(data.customers);
+        setServerStats(data.stats || { total: 0, active: 0, paused: 0 });
       }
     } catch (err) {
       console.error("Failed to fetch customers");
@@ -63,6 +64,7 @@ export default function AdminCustomers() {
       toast.error("Error deleting customer");
     }
   };
+
   const handleMakeStaff = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to promote ${name} to Staff? They will be moved out of the Customers section.`)) return;
 
@@ -86,6 +88,7 @@ export default function AdminCustomers() {
       toast.error("Error promoting customer");
     }
   };
+
   const handleEditClick = (customer: any) => {
     setEditingCustomer({ ...customer });
     setIsEditModalOpen(true);
@@ -102,8 +105,7 @@ export default function AdminCustomers() {
           updates: {
             name: editingCustomer.name,
             phone: editingCustomer.phone,
-            address: editingCustomer.address,
-            walletBalance: Number(editingCustomer.walletBalance)
+            address: editingCustomer.address
           }
         })
       });
@@ -159,11 +161,10 @@ export default function AdminCustomers() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-         <StatItem label="Total Users" value={customers.length} icon={<Users size={20}/>} color="bg-blue-500" />
-         <StatItem label="Active Subscriptions" value={customers.filter(c => c.subscription?.status === 'Active').length} icon={<CheckCircle2 size={20}/>} color="bg-green-500" />
-         <StatItem label="Paused Service" value={customers.filter(c => c.subscription?.status === 'Paused').length} icon={<Clock size={20}/>} color="bg-orange-500" />
-         <StatItem label="Total Wallet" value={`₹${customers.reduce((acc, c) => acc + (c.walletBalance || 0), 0)}`} icon={<Wallet size={20}/>} color="bg-purple-500" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+         <StatItem label="Total Users" value={serverStats.total} icon={<Users size={20}/>} color="bg-blue-500" />
+         <StatItem label="Active Subscriptions" value={serverStats.active} icon={<CheckCircle2 size={20}/>} color="bg-green-500" />
+         <StatItem label="Paused Service" value={serverStats.paused} icon={<Clock size={20}/>} color="bg-orange-500" />
       </div>
 
       {/* Main Container */}
@@ -175,7 +176,6 @@ export default function AdminCustomers() {
               <tr className="bg-gray-50/50">
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 border-b border-gray-100">Customer Details</th>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 border-b border-gray-100">Subscription</th>
-                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 border-b border-gray-100 text-center">Wallet</th>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 border-b border-gray-100">Address</th>
                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 border-b border-gray-100 text-right">Actions</th>
               </tr>
@@ -213,7 +213,7 @@ export default function AdminCustomers() {
                             </p>
                           )}
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                            customer.subscription.status === 'Active' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'
+                            customer.subscription.status?.toLowerCase() === 'active' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'
                           }`}>
                             {customer.subscription.status}
                           </span>
@@ -221,11 +221,6 @@ export default function AdminCustomers() {
                     ) : (
                       <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">No Active Plan</span>
                     )}
-                  </td>
-                  <td className="px-8 py-6 text-center">
-                    <div className="inline-block bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
-                      <p className="text-blue-600 font-black text-lg">₹{customer.walletBalance || 0}</p>
-                    </div>
                   </td>
                   <td className="px-8 py-6 max-w-[200px]">
                     <p className="text-xs font-bold text-gray-500 truncate leading-relaxed">
@@ -290,10 +285,6 @@ export default function AdminCustomers() {
                          <p className="text-[10px] font-bold text-gray-400">{customer.phone}</p>
                       </div>
                    </div>
-                   <div className="text-right">
-                      <p className="text-blue-600 font-black text-sm">₹{customer.walletBalance || 0}</p>
-                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Wallet</p>
-                   </div>
                 </div>
 
                 <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
@@ -301,7 +292,7 @@ export default function AdminCustomers() {
                       <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Subscription</p>
                       {customer.subscription ? (
                         <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                          customer.subscription.status === 'Active' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'
+                          customer.subscription.status?.toLowerCase() === 'active' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'
                         }`}>
                           {customer.subscription.status}
                         </span>
@@ -369,7 +360,7 @@ export default function AdminCustomers() {
               <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-orange-50/30">
                 <div>
                   <h2 className="text-2xl font-black text-gray-900 tracking-tight">Edit Customer</h2>
-                  <p className="text-gray-500 text-sm font-medium">Update profile and wallet information</p>
+                  <p className="text-gray-500 text-sm font-medium">Update profile information</p>
                 </div>
                 <button onClick={() => setIsEditModalOpen(false)} className="p-3 text-gray-400 hover:text-gray-900 transition-colors bg-white rounded-2xl shadow-sm border border-gray-100">
                   <X size={20} />
@@ -396,20 +387,6 @@ export default function AdminCustomers() {
                         className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-3 px-4 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-bold"
                         value={editingCustomer?.phone || ""}
                         onChange={(e) => setEditingCustomer({...editingCustomer, phone: e.target.value})}
-                      />
-                   </div>
-                </div>
-
-                <div className="space-y-2">
-                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Wallet Balance (₹)</label>
-                   <div className="relative">
-                      <Wallet className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                      <input 
-                        type="number" 
-                        required
-                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-bold"
-                        value={editingCustomer?.walletBalance || 0}
-                        onChange={(e) => setEditingCustomer({...editingCustomer, walletBalance: e.target.value})}
                       />
                    </div>
                 </div>

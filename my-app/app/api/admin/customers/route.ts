@@ -19,26 +19,37 @@ export async function GET() {
     }).lean();
 
     const merged = customers.map((c: any) => {
+      const customerName = (c.name || "").trim().toLowerCase();
       const activePause = pauses.find(
-        (p: any) => p.customerName === c.name
+        (p: any) => (p.customerName || "").trim().toLowerCase() === customerName
       );
+
+      let finalStatus = "Inactive";
+      if (activePause) {
+        finalStatus = "Paused";
+      } else if (c.subscription && c.subscription.status) {
+        finalStatus = c.subscription.status;
+      }
+
       return {
         ...c,
-        id: c._id,
-        walletBalance: c.walletBalance || 0,
-        isPaused: !!activePause,
-        pauseEntry: activePause || null,
-        subscription: c.subscription
-          ? {
-              ...c.subscription,
-              status: activePause ? "Paused" : (c.subscription.status || "Inactive"),
-            }
-          : null,
+        id: c._id?.toString(),
+        subscription: {
+          ...(c.subscription || {}),
+          status: finalStatus
+        }
       };
     });
 
-    return NextResponse.json({ success: true, customers: merged });
+    const stats = {
+      total: merged.length,
+      active: merged.filter(c => c.subscription.status.toLowerCase() === 'active').length,
+      paused: merged.filter(c => c.subscription.status.toLowerCase() === 'paused').length,
+    };
+
+    return NextResponse.json({ success: true, customers: merged, stats });
   } catch (error: any) {
+    console.error("Customers API Error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

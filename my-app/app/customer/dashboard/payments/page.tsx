@@ -1,13 +1,11 @@
 "use client";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
-import { CreditCard, History, Wallet, Sparkles, Loader2, IndianRupee } from "lucide-react";
+import { CreditCard, History, Sparkles, IndianRupee } from "lucide-react";
 
 export default function PaymentsPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [rechargeAmount, setRechargeAmount] = useState<string>("");
-  const [processing, setProcessing] = useState(false);
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -31,49 +29,12 @@ export default function PaymentsPage() {
     }
   };
 
-  const handleRecharge = async (amount: number | string) => {
-    const finalAmount = Number(amount);
-    if (!finalAmount || finalAmount <= 0) {
-      toast.success("Please enter a valid amount");
-      return;
-    }
-
-    try {
-      setProcessing(true);
-      const res = await fetch("/api/customer/payments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: finalAmount,
-          email: user?.email,
-          name: user?.name
-        })
-      });
-
-      const result = await res.json();
-      if (result.success) {
-        toast.success(`Successfully recharged ₹${finalAmount}!`);
-        setRechargeAmount("");
-        fetchData(user);
-        // Trigger global wallet update event
-        window.dispatchEvent(new Event("walletUpdate"));
-      } else {
-        toast.error(result.error || "Recharge failed");
-      }
-    } catch (error) {
-      console.error("Recharge error:", error);
-      toast.success("Something went wrong");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-100 border-t-orange-500"></div>
-          <p className="text-sm font-bold text-gray-500">Fetching wallet details...</p>
+          <p className="text-sm font-bold text-gray-500">Loading your transactions...</p>
         </div>
       </div>
     );
@@ -95,34 +56,36 @@ export default function PaymentsPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mb-8">
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-             My Wallet <Wallet className="text-orange-500" />
+             Payment History <History className="text-orange-500" />
           </h1>
-          <p className="text-sm font-bold text-gray-400 mt-1">Manage your balance and view transaction history</p>
-        </div>        <div className="grid grid-cols-1 gap-8 mb-10">
+          <p className="text-sm font-bold text-gray-400 mt-1">Track your recent transactions and plan activations</p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-8 mb-10">
           {/* Status Card */}
-          <div className="relative rounded-[2.5rem] p-8 sm:p-10 text-white shadow-2xl shadow-orange-200/50 overflow-hidden bg-gradient-to-br from-orange-500 to-red-500">
+          <div className="relative rounded-[2.5rem] p-8 sm:p-10 text-white shadow-2xl shadow-gray-200/50 overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800">
             <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-8">
               <div>
                 <div className="flex items-center gap-2 mb-2 opacity-80">
                   <Sparkles size={16} />
-                  <p className="text-xs sm:text-sm font-black uppercase tracking-widest">Payment Support</p>
+                  <p className="text-xs sm:text-sm font-black uppercase tracking-widest">Active System</p>
                 </div>
-                <h2 className="text-4xl sm:text-5xl font-black mt-2 tracking-tighter">
-                  Direct Payments Enabled
+                <h2 className="text-3xl sm:text-4xl font-black mt-2 tracking-tighter">
+                  Direct Plan Subscription
                 </h2>
-                <p className="mt-4 text-white/80 font-bold max-w-md">All your subscriptions are now processed directly via secure payment gateways for instant activation.</p>
+                <p className="mt-4 text-white/60 font-bold max-w-md">Payments are now directly linked to plan activations for a faster, simpler experience.</p>
               </div>
               <div className="flex flex-col items-center sm:items-end">
-                 <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30 mb-4">
+                 <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/10 mb-4">
                     <CreditCard size={32} />
                  </div>
-                 <span className="text-xs font-black uppercase tracking-widest bg-white text-orange-600 px-4 py-2 rounded-full shadow-lg">Secure Gateway</span>
+                 <span className="text-[10px] font-black uppercase tracking-widest bg-orange-600 text-white px-5 py-2 rounded-full shadow-lg">Pay Direct</span>
               </div>
             </div>
             
             {/* Design Elements */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-80 h-80 bg-red-400/20 rounded-full -ml-32 -mb-32 blur-3xl"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/10 rounded-full -ml-32 -mb-32 blur-3xl"></div>
           </div>
         </div>
 
@@ -131,11 +94,11 @@ export default function PaymentsPage() {
           <div className="flex items-center justify-between px-8 py-6 border-b border-gray-50">
             <div className="flex items-center gap-3 text-gray-800">
               <div className="bg-gray-100 p-2 rounded-xl">
-                 <History size={18} />
+                 <IndianRupee size={18} />
               </div>
-              <h3 className="font-black tracking-tight uppercase text-sm">Wallet History</h3>
+              <h3 className="font-black tracking-tight uppercase text-sm">Transaction Logs</h3>
             </div>
-            <span className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest">Live Updates</span>
+            <span className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest">Secure History</span>
           </div>
 
           <div className="divide-y divide-gray-50">

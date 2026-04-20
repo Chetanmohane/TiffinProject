@@ -11,7 +11,7 @@ export default function AboutPage() {
   useEffect(() => {
     const fetchCms = async () => {
       try {
-        const res = await fetch("/api/admin/settings", { 
+        const res = await fetch("/api/admin/settings?t=" + new Date().getTime(), { 
           cache: 'no-store',
           next: { revalidate: 0 }
         });
@@ -39,7 +39,11 @@ export default function AboutPage() {
   const missionTitle1 = cms?.mission?.titleLine1 || "More Than Just a";
   const missionAccent = cms?.mission?.titleAccent || "Tiffin Service";
   const missionDesc = cms?.mission?.description || "We understand that food is more than just fuel—it's an emotion. Our mission is to serve happiness in every bite.";
-  const story2Img = cms?.mission?.image || "/food2.PNG";
+  
+  // Robust image check: if CMS has /food3.jpg (which we know is missing) or is empty, use img2.webp
+  const story2Img = (cms?.mission?.image && cms?.mission?.image !== "/food3.jpg") 
+    ? cms.mission.image 
+    : "/img2.webp";
 
   // Feature Details
   const f1Title = cms?.about?.feature1Title || "Pure Veg";

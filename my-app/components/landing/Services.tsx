@@ -58,7 +58,7 @@ const Services = () => {
   useEffect(() => {
     const fetchCms = async () => {
       try {
-        const res = await fetch("/api/admin/settings", { 
+        const res = await fetch("/api/admin/settings?t=" + new Date().getTime(), { 
           cache: 'no-store',
           next: { revalidate: 0 }
         });
@@ -71,7 +71,7 @@ const Services = () => {
 
   const heading = cms?.heading || "The Annapurna Advantage";
   const title = cms?.title || "Why Thousands Trust Us";
-  const subDesc = "We don't just deliver food; we deliver health, convenience, and a taste of home. Here is why we are unique.";
+  const subDesc = cms?.subDesc || "We don't just deliver food; we deliver health, convenience, and a taste of home. Here is why we are unique.";
 
   // Overwrite some services if provided by CMS
   const currentServices = [...services];
