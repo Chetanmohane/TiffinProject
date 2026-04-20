@@ -1,11 +1,33 @@
-import mongoose from "mongoose";
+import mongoose, { Schema, Document, Model } from "mongoose";
 
-const SiteSettingsSchema = new mongoose.Schema({
-  email: { type: String, default: "support@tiffin.app" },
-  phone: { type: String, default: "+91 99999 99999" },
-  address: { type: String, default: "123 Tech Park, Indore, MP" },
-  workingHours: { type: String, default: "9:00 AM - 10:00 PM" },
-  updatedAt: { type: Date, default: Date.now }
-});
+export interface ISiteSettings extends Document {
+  hero: {
+    line1: string;
+    accentLine: string;
+    redLine: string;
+    description: string;
+    mainImage: string;
+    ratingText: string;
+    activeUsersText: string;
+  };
+}
 
-export default mongoose.models.SiteSettings || mongoose.model("SiteSettings", SiteSettingsSchema);
+const SiteSettingsSchema = new Schema<ISiteSettings>(
+  {
+    hero: {
+      line1: { type: String, default: "Taste the" },
+      accentLine: { type: String, default: "Comfort" },
+      redLine: { type: String, default: "Home-Cooked Meals" },
+      description: { type: String, default: "Fresh, hygienic, and deliciously crafted tiffin meals delivered daily. We bring the warmth of a mother's kitchen straight to your doorstep." },
+      mainImage: { type: String, default: "/img1.webp" },
+      ratingText: { type: String, default: "4.9/5 Rating" },
+      activeUsersText: { type: String, default: "500+ Active" },
+    }
+  },
+  { timestamps: true }
+);
+
+const SiteSettings: Model<ISiteSettings> =
+  mongoose.models.SiteSettings || mongoose.model<ISiteSettings>("SiteSettings", SiteSettingsSchema);
+
+export default SiteSettings;

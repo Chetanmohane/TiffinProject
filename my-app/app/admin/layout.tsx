@@ -39,6 +39,7 @@ export default function AdminLayout({
     { name: "Payments", href: "/admin/payments", icon: <CreditCard size={20} />, roles: ["admin"] },
     { name: "Daily Delivery", href: "/admin/delivery", icon: <Truck size={20} />, roles: ["admin", "editor", "viewer"] },
     { name: "Menu", href: "/admin/menu", icon: <Utensils size={20} />, roles: ["admin", "editor"] },
+    { name: "Site Content", href: "/admin/site-content", icon: <Home size={20} />, roles: ["admin", "editor"] },
     { name: "Settings", href: "/admin/settings", icon: <Settings size={20} />, roles: ["admin"] },
   ];
 

@@ -8,13 +8,33 @@ import { useEffect, useState } from "react";
 
 const Hero = () => {
   const [user, setUser] = useState<any>(null);
+  const [cms, setCms] = useState<any>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try { setUser(JSON.parse(storedUser)); } catch (e) {}
     }
+
+    const fetchCms = async () => {
+      try {
+        const res = await fetch("/api/admin/settings");
+        const data = await res.json();
+        if (data.success && data.settings) {
+          setCms(data.settings.hero);
+        }
+      } catch (err) {}
+    };
+    fetchCms();
   }, []);
+
+  const heroLine1 = cms?.line1 || "Taste the";
+  const heroAccent = cms?.accentLine || "Comfort";
+  const heroFocus = cms?.redLine || "Home-Cooked";
+  const heroDesc = cms?.description || "Fresh, hygienic, and deliciously crafted tiffin meals delivered daily. We bring the warmth of a mother's kitchen straight to your doorstep.";
+  const heroImg = cms?.mainImage || "/food2.PNG";
+  const ratingText = cms?.ratingText || "4.9/5 Rating";
+  const activeText = cms?.activeUsersText || "500+ Active";
 
   return (
     <section className="relative w-full min-h-screen pt-20 sm:pt-24 pb-12 overflow-hidden bg-gradient-to-b from-orange-50/50 to-white">
@@ -37,14 +57,14 @@ const Hero = () => {
           </div>
 
           <h1 className="text-3xl sm:text-5xl lg:text-7xl font-extrabold text-gray-900 leading-[1.1] mb-4 sm:mb-6">
-            Taste the <span className="text-orange-600 italic">Comfort</span> of{" "}
+            {heroLine1} <span className="text-orange-600 italic">{heroAccent}</span> of{" "}
             <span className="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-              Home-Cooked
+              {heroFocus}
             </span>{" "}Meals
           </h1>
 
           <p className="text-base sm:text-xl text-gray-600 max-w-xl mx-auto lg:mx-0 mb-6 sm:mb-8 leading-relaxed">
-            Fresh, hygienic, and deliciously crafted tiffin meals delivered daily. We bring the warmth of a mother&apos;s kitchen straight to your doorstep.
+            {heroDesc}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4">
@@ -98,7 +118,7 @@ const Hero = () => {
           <div className="relative z-10">
             <div className="relative rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border-4 sm:border-8 border-white shadow-2xl">
               <Image
-                src="/food2.PNG"
+                src={heroImg}
                 alt="Delicious Tiffin Food"
                 width={800}
                 height={800}
@@ -113,7 +133,7 @@ const Hero = () => {
                 <Star size={14} fill="currentColor" />
               </div>
               <div>
-                <p className="text-xs sm:text-sm font-bold text-gray-900">4.9/5 Rating</p>
+                <p className="text-xs sm:text-sm font-bold text-gray-900">{ratingText}</p>
                 <p className="text-[10px] sm:text-xs text-gray-500">From 2k+ Users</p>
               </div>
             </div>
@@ -127,7 +147,7 @@ const Hero = () => {
                 ))}
               </div>
               <div>
-                <p className="text-xs sm:text-sm font-bold text-gray-900">500+ Active</p>
+                <p className="text-xs sm:text-sm font-bold text-gray-900">{activeText}</p>
                 <p className="text-[10px] sm:text-xs text-gray-500">Daily Subscribers</p>
               </div>
             </div>
