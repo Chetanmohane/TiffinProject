@@ -24,9 +24,32 @@ export default function SiteContentManagement() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<any>({
-    hero: { line1: "", accentLine: "", redLine: "", description: "", mainImage: "", ratingText: "", activeUsersText: "" },
-    about: { heading: "", titleLine1: "", titleAccent: "", titleLine2: "", description: "", image: "", experienceText: "", experienceSub: "" },
-    mission: { heading: "", titleLine1: "", titleAccent: "", description: "", image: "" }
+    hero: { 
+      line1: "Taste the", 
+      accentLine: "Comfort", 
+      redLine: "Home-Cooked Meals", 
+      description: "Fresh, hygienic, and deliciously crafted tiffin meals delivered daily. We bring the warmth of a mother's kitchen straight to your doorstep.", 
+      mainImage: "/food2.PNG", 
+      ratingText: "4.9/5 Rating", 
+      activeUsersText: "500+ Active" 
+    },
+    about: { 
+      heading: "OUR HUMBLE BEGINNINGS", 
+      titleLine1: "Cooking with", 
+      titleAccent: "Tradition", 
+      titleLine2: "Serving with Soul", 
+      description: "Annapurna Delight started in a small kitchen with a big dream: to provide the warmth and comfort of 'Ghar Ka Khana' to everyone living away from home.", 
+      image: "/food1.PNG", 
+      experienceText: "10+", 
+      experienceSub: "YEARS OF LOVE" 
+    },
+    mission: { 
+      heading: "WHY WE DO IT", 
+      titleLine1: "More Than Just a", 
+      titleAccent: "Tiffin Service", 
+      description: "We understand that food is more than just fuel—it's an emotion. Our mission is to serve happiness in every bite.", 
+      image: "/food3.jpg" 
+    }
   });
 
   const fetchSettings = async () => {
