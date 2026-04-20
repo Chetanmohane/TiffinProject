@@ -18,15 +18,36 @@ import toast from "react-hot-toast";
 export default function SiteContentManagement() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [settings, setSettings] = useState<any>(null);
+  const [settings, setSettings] = useState<any>({
+    hero: {
+      line1: "",
+      accentLine: "",
+      redLine: "",
+      description: "",
+      mainImage: "",
+      ratingText: "",
+      activeUsersText: ""
+    }
+  });
 
   const fetchSettings = async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/admin/settings");
       const data = await res.json();
-      if (data.success) {
-        setSettings(data.settings);
+      if (data.success && data.settings) {
+        setSettings({
+          ...data.settings,
+          hero: data.settings.hero || {
+            line1: "",
+            accentLine: "",
+            redLine: "",
+            description: "",
+            mainImage: "",
+            ratingText: "",
+            activeUsersText: ""
+          }
+        });
       }
     } catch (err) {
       toast.error("Failed to load settings");
