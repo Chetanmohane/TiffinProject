@@ -361,18 +361,18 @@ export default function PlanPage() {
                           </div>
                        </div>
 
-                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-10">
+                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-10">
                           <div className="bg-white/5 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-white/10">
                              <p className="text-gray-500 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mb-1 sm:mb-2">Member Since</p>
-                             <p className="text-sm sm:text-xl font-black tracking-tight">{planData?.startDate || "--"}</p>
+                             <p className="text-xs sm:text-xl font-black tracking-tight">{planData?.startDate || "--"}</p>
                           </div>
                           <div className="bg-white/5 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-white/10">
                              <p className="text-gray-500 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mb-1 sm:mb-2">Cycle</p>
-                             <p className="text-sm sm:text-xl font-black tracking-tight capitalize">{planData?.frequency || "Monthly"}</p>
+                             <p className="text-xs sm:text-xl font-black tracking-tight capitalize">{planData?.frequency || "Monthly"}</p>
                           </div>
-                          <div className="bg-orange-500 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-orange-400 col-span-2 md:col-span-1 shadow-lg shadow-orange-500/20">
+                          <div className="bg-orange-500 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-orange-400 shadow-lg shadow-orange-500/20">
                              <p className="text-orange-100 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mb-1 sm:mb-2">Subscription</p>
-                             <p className="text-sm sm:text-xl font-black tracking-tight">{planData?.status || "Inactive"}</p>
+                             <p className="text-xs sm:text-xl font-black tracking-tight">{planData?.status || "Inactive"}</p>
                           </div>
                        </div>
                     </div>
