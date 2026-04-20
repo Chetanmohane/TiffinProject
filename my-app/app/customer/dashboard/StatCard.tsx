@@ -50,14 +50,14 @@ export default function StatCard({
       </div>
 
       {/* Value */}
-      <div className="mt-2 overflow-hidden">
-        <h3 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-black text-gray-900 leading-tight truncate">
+      <div className="mt-2">
+        <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-gray-900 leading-tight">
           {value}
         </h3>
 
         {subtext && (
           <p
-            className={`text-[10px] sm:text-xs font-bold mt-1.5 line-clamp-1 ${
+            className={`text-[10px] sm:text-xs font-bold mt-1.5 ${
               subtextClass ?? "text-gray-500"
             }`}
           >
