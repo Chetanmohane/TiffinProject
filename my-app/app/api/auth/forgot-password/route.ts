@@ -38,7 +38,9 @@ export async function POST(req: Request) {
     // Setup email transporter
     // NOTE: User needs to provide EMAIL_USER and EMAIL_PASS in .env.local
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true, // true for 465, false for other ports
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -46,7 +48,7 @@ export async function POST(req: Request) {
     });
 
     const mailOptions = {
-      from: '"Tiffin Project Support" <support@tiffinproject.com>',
+      from: `"Annapurna Tiffin Support" <${process.env.EMAIL_USER}>`,
       to: user.email,
       subject: "Password Reset Request - Tiffin Project",
       html: `
