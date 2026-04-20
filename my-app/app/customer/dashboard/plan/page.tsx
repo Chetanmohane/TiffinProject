@@ -24,6 +24,39 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRef } from "react";
+import dynamic from "next/dynamic";
+
+// Simple celebration effect
+const SuccessCelebration = () => (
+  <div className="fixed inset-0 pointer-events-none z-[1000] overflow-hidden">
+    {[...Array(20)].map((_, i) => (
+      <motion.div
+        key={i}
+        initial={{ 
+          top: "-10%", 
+          left: `${Math.random() * 100}%`,
+          rotate: 0,
+          scale: 0
+        }}
+        animate={{ 
+          top: "110%", 
+          rotate: 360 * 5,
+          scale: [0, 1, 1, 0.5]
+        }}
+        transition={{ 
+          duration: Math.random() * 2 + 2, 
+          repeat: Infinity,
+          delay: Math.random() * 5
+        }}
+        className="absolute w-2 h-6 sm:w-3 sm:h-8"
+        style={{ 
+          backgroundColor: ["#f97316", "#ef4444", "#3b82f6", "#22c55e"][Math.floor(Math.random() * 4)],
+          borderRadius: '4px'
+        }}
+      />
+    ))}
+  </div>
+);
 
 export default function PlanPage() {
   const [planData, setPlanData] = useState<any>(null);
@@ -31,6 +64,7 @@ export default function PlanPage() {
   const [availablePlans, setAvailablePlans] = useState<any[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // AI Chat States
   const [chatOpen, setChatOpen] = useState(false);
@@ -235,7 +269,7 @@ export default function PlanPage() {
     // Check payment redirect statuses
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") {
-       toast.success("🎉 Plan purchased successfully via Cashfree! Enjoy your gourmet meals.");
+       setShowSuccess(true);
        window.history.replaceState(null, "", window.location.pathname);
     } else if (params.get("error")) {
        toast.error("⚠️ Payment failed or canceled: " + params.get("error"));
@@ -750,6 +784,61 @@ export default function PlanPage() {
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ================= SUCCESS CELEBRATION MODAL ================= */}
+      <AnimatePresence>
+        {showSuccess && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-gray-900/80 backdrop-blur-xl"
+            />
+            
+            <SuccessCelebration />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: 50 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 50 }}
+              className="relative w-full max-w-lg bg-white rounded-[3rem] p-10 sm:p-16 text-center shadow-2xl border border-white/20"
+            >
+              <motion.div 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", damping: 12, stiffness: 200, delay: 0.1 }}
+                className="w-24 h-24 sm:w-32 sm:h-32 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-8 sm:mb-12 shadow-lg shadow-green-500/30"
+              >
+                 <CheckCircle2 size={64} className="text-white" />
+              </motion.div>
+
+              <h2 className="text-4xl sm:text-5xl font-black text-gray-900 tracking-tighter mb-4 uppercase">
+                Payment <span className="text-green-600">Successful!</span>
+              </h2>
+              
+              <div className="w-16 h-1.5 bg-orange-500 mx-auto rounded-full mb-8"></div>
+
+              <p className="text-gray-500 text-lg sm:text-xl font-bold leading-relaxed mb-12 opacity-80">
+                Congratulations! You have successfully subscribed to your new plan. Your premium home-style gourmet experience starts now.
+              </p>
+
+              <button 
+                onClick={() => {
+                  setShowSuccess(false);
+                  fetchPlan(); // Refresh the plan data
+                }}
+                className="w-full py-5 bg-gray-900 text-white rounded-2xl font-black uppercase text-xs sm:text-sm tracking-[0.3em] overflow-hidden relative group active:scale-95 shadow-xl hover:shadow-orange-200 transition-all"
+              >
+                <div className="absolute inset-0 bg-orange-600 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
+                <span className="relative z-10 flex items-center justify-center gap-3">
+                  Back to Dashboard <ArrowRight size={18} />
+                </span>
+              </button>
             </motion.div>
           </div>
         )}
