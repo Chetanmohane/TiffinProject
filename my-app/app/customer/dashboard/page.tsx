@@ -121,14 +121,15 @@ export default function Order() {
       )}
 
       {/* Hero & Quick Actions Grid */}
+      {/* Hero & Subscription Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
         <div className="lg:col-span-2 rounded-[3rem] shadow-2xl shadow-gray-200/40 overflow-hidden h-fit">
           <MealHero meal={dashboardData?.todayMeal} />
         </div>
         
-        <div className="lg:col-span-1 space-y-6 flex flex-col">
+        <div className="lg:col-span-1">
           {/* Plan Summary Card */}
-          <div className="flex-1 bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800 rounded-[3rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-gray-400/20 group">
+          <div className="h-full bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800 rounded-[3rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-gray-400/20 group">
              <div className="relative z-10 h-full flex flex-col">
                 <div className="flex items-center gap-2 mb-6">
                    <div className="bg-orange-500/20 backdrop-blur-md p-2.5 rounded-xl border border-orange-500/20">
@@ -158,39 +159,39 @@ export default function Order() {
                    </Link>
                 </div>
              </div>
-             {/* Decorative Background Icon */}
              <div className="absolute -bottom-10 -right-10 text-white/[0.03] transform -rotate-12 pointer-events-none group-hover:scale-110 group-hover:rotate-0 transition-all duration-700">
                 <Package size={220} />
              </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-4 sm:gap-5">
-            <Action 
-              label="Active Plan" 
-              icon="📝" 
-              link="/customer/dashboard/plan" 
-              gradient="from-blue-600 to-indigo-700" 
-            />
-            <Action 
-              label="Pause Meal" 
-              icon="⏸️" 
-              link="/customer/pause-meal" 
-              gradient="from-rose-500 to-red-600" 
-            />
-            <Action 
-              label="Daily Menu" 
-              icon="🍽️" 
-              link="/customer/dashboard/menu" 
-              gradient="from-orange-500 to-amber-600" 
-            />
-            <Action 
-              label="Settings" 
-              icon="⚙️" 
-              link="/customer/settings" 
-              gradient="from-emerald-500 to-teal-600" 
-            />
-          </div>
         </div>
+      </div>
+
+      {/* QUICK ACTIONS ROW */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+        <Action 
+          label="Active Plan" 
+          icon="📝" 
+          link="/customer/dashboard/plan" 
+          gradient="from-blue-600 to-indigo-700" 
+        />
+        <Action 
+          label="Pause Meal" 
+          icon="⏸️" 
+          link="/customer/pause-meal" 
+          gradient="from-rose-500 to-red-600" 
+        />
+        <Action 
+          label="Daily Menu" 
+          icon="🍽️" 
+          link="/customer/dashboard/menu" 
+          gradient="from-orange-500 to-amber-600" 
+        />
+        <Action 
+          label="Settings" 
+          icon="⚙️" 
+          link="/customer/settings" 
+          gradient="from-emerald-500 to-teal-600" 
+        />
       </div>
 
       {/* STATS */}
