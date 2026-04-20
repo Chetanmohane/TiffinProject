@@ -184,48 +184,66 @@ export default function SettingsPage() {
                </div>
             </div>
 
-            {/* Security & Access Card */}
-            <div className="bg-white rounded-[2.5rem] p-8 sm:p-10 shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden relative">
-               <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full blur-3xl -mr-16 -mt-16"></div>
+            {/* Password & Security - Screenshot Style */}
+            <div className="bg-[#0A0A0A] rounded-[2.5rem] p-8 sm:p-12 shadow-2xl border border-white/5 relative overflow-hidden group mb-10">
+               {/* Subtle background glow */}
+               <div className="absolute top-0 right-0 w-64 h-64 bg-orange-600/10 rounded-full blur-[100px] -mr-32 -mt-32"></div>
                
-               <div className="flex items-center gap-3 mb-10 relative z-10">
-                  <div className="bg-orange-100 p-2.5 rounded-2xl text-orange-600">
-                     <Shield size={20} />
+               <div className="flex items-center gap-4 mb-12 relative z-10">
+                  <div className="bg-orange-500/10 p-3 rounded-2xl text-orange-500 border border-orange-500/20">
+                     <Shield size={24} />
                   </div>
-                  <div>
-                    <h3 className="font-black text-gray-900 uppercase text-sm tracking-tight">Security & Access Control</h3>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Manage how you access your account</p>
-                  </div>
+                  <h3 className="font-black text-white uppercase text-xl tracking-[0.2em]">Password & Security</h3>
                </div>
 
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-                  {/* Option 1: Manual Update */}
-                  <div className="space-y-4 p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
-                     <div className="flex items-center gap-2 mb-2">
-                        <CheckCircle2 size={16} className="text-green-500" />
-                        <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight">Update Password</p>
+               <div className="space-y-10 relative z-10">
+                  {/* Current Password - Full Width */}
+                  <div className="space-y-4">
+                     <div className="flex items-center gap-2">
+                        <Shield size={14} className="text-gray-500" />
+                        <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Current Password</label>
                      </div>
-                     <p className="text-[10px] font-bold text-gray-400 mb-4 leading-relaxed">If you know your current password, type the new one below to update it instantly.</p>
-                     <div className="relative">
-                        <Shield size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                     <input 
+                       type="password" 
+                       placeholder="••••••••"
+                       className="w-full px-6 py-5 bg-white/5 border border-white/10 rounded-2xl text-white font-bold outline-none focus:ring-2 focus:ring-orange-500/40 transition-all placeholder:text-gray-700" 
+                     />
+                  </div>
+
+                  {/* New & Confirm - Side by Side */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                     <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                           <Shield size={14} className="text-gray-500" />
+                           <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest">New Password</label>
+                        </div>
                         <input 
                           type="password" 
-                          placeholder="New Password" 
+                          placeholder="••••••••"
                           value={form.password}
                           onChange={(e) => setForm({...form, password: e.target.value})}
-                          className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-orange-500/20 transition-all shadow-sm" 
+                          className="w-full px-6 py-5 bg-white/5 border border-white/10 rounded-2xl text-white font-bold outline-none focus:ring-2 focus:ring-orange-500/40 transition-all placeholder:text-gray-700" 
+                        />
+                     </div>
+                     <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                           <Shield size={14} className="text-gray-500" />
+                           <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Confirm New Password</label>
+                        </div>
+                        <input 
+                          type="password" 
+                          placeholder="••••••••"
+                          className="w-full px-6 py-5 bg-white/5 border border-white/10 rounded-2xl text-white font-bold outline-none focus:ring-2 focus:ring-orange-500/40 transition-all placeholder:text-gray-700" 
                         />
                      </div>
                   </div>
 
-                  {/* Option 2: Forgot Password Recovery */}
-                  <div className="space-y-4 p-6 bg-orange-50/30 rounded-[2rem] border border-orange-100/50 flex flex-col">
-                     <div className="flex items-center gap-2 mb-2">
-                        <AlertCircle size={16} className="text-orange-500" />
-                        <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight">Forgot Password?</p>
+                  {/* Forgot Password Link - At the Bottom */}
+                  <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6">
+                     <div className="space-y-1 text-center sm:text-left">
+                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-tight">Need to reset your credentials?</p>
+                        <p className="text-[10px] font-bold text-gray-600 italic">We&apos;ll send a secure magic link to {form.email}.</p>
                      </div>
-                     <p className="text-[10px] font-bold text-gray-400 mb-auto leading-relaxed">Can&apos;t remember your password? No worries. We&apos;ll send a secure link to your email <span className="font-black text-orange-600">{form.email}</span>.</p>
-                     
                      <button 
                         disabled={emailSending}
                         onClick={async () => {
@@ -237,7 +255,7 @@ export default function SettingsPage() {
                              });
                              const data = await res.json();
                              if (data.success) {
-                               setMessage({ type: "success", text: "Recovery link sent to your inbox! 🎉" });
+                               setMessage({ type: "success", text: "Magic link sent successfully! 🎉" });
                              } else {
                                setMessage({ type: "error", text: data.error || "Failed to send link" });
                              }
@@ -248,31 +266,31 @@ export default function SettingsPage() {
                            }
                         }}
                         className={`
-                          mt-4 w-full py-3.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2
-                          ${emailSending ? "bg-gray-100 text-gray-400" : "bg-gray-900 text-white hover:bg-orange-600 active:scale-95 shadow-lg shadow-gray-200"}
+                          px-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3
+                          ${emailSending ? "bg-white/5 text-gray-500" : "bg-orange-600 text-white hover:bg-orange-700 shadow-xl shadow-orange-600/20 active:scale-95"}
                         `}
                       >
-                        {emailSending ? <Loader2 className="animate-spin" size={12} /> : <Mail size={12} />}
+                        {emailSending ? <Loader2 className="animate-spin" size={14} /> : <Mail size={14} />}
                         {emailSending ? "Sending..." : "Recover Password"}
                       </button>
                   </div>
                </div>
             </div>
 
-            <div className="flex items-center justify-end gap-4 pt-4">
+            <div className="flex items-center justify-end gap-6 pt-4">
                <button 
                  onClick={() => window.location.reload()}
-                 className="px-8 py-4 bg-white text-gray-400 border border-gray-100 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-colors"
+                 className="px-10 py-5 bg-transparent text-gray-500 text-[10px] font-black uppercase tracking-widest hover:text-gray-900 transition-colors"
                >
-                 Discard
+                 Discard changes
                </button>
                <button 
                  onClick={handleSave} 
                  disabled={saving}
-                 className="px-10 py-4 bg-orange-600 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-orange-200 hover:bg-orange-700 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-3"
+                 className="px-12 py-5 bg-gray-900 text-white rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-orange-600 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-4"
                >
-                 {saving ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
-                 {saving ? "Saving Changes..." : "Secure My Profile"}
+                 {saving ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
+                 {saving ? "Processing..." : "Update Security"}
                </button>
             </div>
           </div>
