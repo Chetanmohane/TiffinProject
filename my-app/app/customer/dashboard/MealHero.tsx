@@ -172,7 +172,8 @@ export default function MealHero({ meal }: MealHeroProps) {
           className="absolute -top-40 -right-20 w-[600px] h-[600px] bg-orange-600 rounded-full blur-[120px] pointer-events-none"
         />
 
-        {/* Conte         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 h-full">
+        {/* Content */}
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 h-full">
           {/* Left Block */}
           <div className="space-y-3 sm:space-y-4 max-w-xl">
             {/* Badges */}
