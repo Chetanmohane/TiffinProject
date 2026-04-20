@@ -9,11 +9,22 @@ export default function Footer() {
   const [settings, setSettings] = useState<any>(null);
 
   useEffect(() => {
-    fetch("/api/admin/settings")
+    fetch("/api/admin/settings", { cache: 'no-store' })
       .then(res => res.json())
-      .then(data => setSettings(data))
+      .then(data => {
+        if (data.success && data.settings) {
+          setSettings(data.settings);
+        }
+      })
       .catch(err => console.error("Footer: Failed to load settings", err));
   }, []);
+
+  const contact = settings?.contact;
+  const address = contact?.address || "Indore, Madhya Pradesh, India";
+  const phone = contact?.phone || "+91 91316 48092";
+  const email = contact?.email || "support@annapurnadelight.com";
+  const instagram = contact?.instagram || "#";
+  const facebook = contact?.facebook || "#";
 
   return (
     <footer className="bg-gray-900 text-gray-300 w-full">
@@ -58,10 +69,10 @@ export default function Footer() {
 
           {/* SOCIAL ICONS */}
           <div className="flex justify-center sm:justify-start gap-4 mt-5">
-            <a href="#" className="hover:text-orange-500 transition" aria-label="Facebook">
+            <a href={facebook} className="hover:text-orange-500 transition" aria-label="Facebook">
               <Facebook />
             </a>
-            <a href="#" className="hover:text-orange-500 transition" aria-label="Instagram">
+            <a href={instagram} className="hover:text-orange-500 transition" aria-label="Instagram">
               <Instagram />
             </a>
             <a href="#" className="hover:text-orange-500 transition" aria-label="Twitter">
@@ -92,15 +103,15 @@ export default function Footer() {
           <ul className="space-y-4 text-sm">
             <li className="flex items-start justify-center sm:justify-start gap-3">
               <MapPin className="text-orange-500 mt-1" size={18} />
-              <span>{settings?.address || "Bhopal, Madhya Pradesh, India"}</span>
+              <span>{address}</span>
             </li>
             <li className="flex items-center justify-center sm:justify-start gap-3">
               <Phone className="text-orange-500" size={18} />
-              <span>{settings?.phone || "+91 999 999"}</span>
+              <span>{phone}</span>
             </li>
             <li className="flex items-center justify-center sm:justify-start gap-3">
               <Mail className="text-orange-500" size={18} />
-              <span>{settings?.email || "support@annapurnadelight.com"}</span>
+              <span>{email}</span>
             </li>
           </ul>
         </div>

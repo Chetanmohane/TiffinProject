@@ -40,6 +40,13 @@ export default function AboutPage() {
   const missionAccent = cms?.mission?.titleAccent || "Tiffin Service";
   const missionDesc = cms?.mission?.description || "We understand that food is more than just fuel—it's an emotion. Our mission is to serve happiness in every bite.";
   const missionImg = cms?.mission?.image || "/food3.jpg";
+
+  // Feature Details
+  const f1Title = cms?.about?.feature1Title || "Pure Veg";
+  const f1Sub = cms?.about?.feature1Sub || "Strictly vegetarian & fresh";
+  const f2Title = cms?.about?.feature2Title || "Best Quality";
+  const f2Sub = cms?.about?.feature2Sub || "Premium masalas & oil";
+  const quoteText = cms?.about?.quoteText || "Every meal we prepare is treated as if it's for our own family. That is the Annapurna promise.";
   return (
     <section id="about" className="w-full bg-white py-16 sm:py-24 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16 sm:space-y-24">
@@ -96,8 +103,8 @@ export default function AboutPage() {
                   <Utensils size={20} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-gray-900 mb-0.5">Pure Veg</h4>
-                  <p className="text-sm text-gray-500 italic">Strictly vegetarian & fresh</p>
+                  <h4 className="font-bold text-gray-900 mb-0.5">{f1Title}</h4>
+                  <p className="text-sm text-gray-500 italic">{f1Sub}</p>
                 </div>
               </div>
               <div className="flex gap-3 sm:gap-4">
@@ -105,8 +112,8 @@ export default function AboutPage() {
                   <Award size={20} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-gray-900 mb-0.5">Best Quality</h4>
-                  <p className="text-sm text-gray-500 italic">Premium masalas & oil</p>
+                  <h4 className="font-bold text-gray-900 mb-0.5">{f2Title}</h4>
+                  <p className="text-sm text-gray-500 italic">{f2Sub}</p>
                 </div>
               </div>
             </div>
@@ -157,7 +164,7 @@ export default function AboutPage() {
             <div className="p-5 sm:p-8 bg-gray-50 rounded-[1.5rem] sm:rounded-[2rem] border-l-4 border-orange-500">
               <Heart className="text-orange-600 mb-3" size={28} fill="currentColor" opacity={0.2} />
               <p className="text-gray-900 font-bold italic text-base sm:text-xl">
-                &quot;Every meal we prepare is treated as if it&apos;s for our own family. That is the Annapurna promise.&quot;
+                &quot;{quoteText}&quot;
               </p>
             </div>
           </motion.div>

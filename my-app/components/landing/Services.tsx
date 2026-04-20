@@ -50,7 +50,41 @@ const services = [
   },
 ];
 
+import { useEffect, useState } from "react";
+
 const Services = () => {
+  const [cms, setCms] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchCms = async () => {
+      try {
+        const res = await fetch("/api/admin/settings", { 
+          cache: 'no-store',
+          next: { revalidate: 0 }
+        });
+        const data = await res.json();
+        if (data.success && data.settings) setCms(data.settings.services);
+      } catch (err) {}
+    };
+    fetchCms();
+  }, []);
+
+  const heading = cms?.heading || "The Annapurna Advantage";
+  const title = cms?.title || "Why Thousands Trust Us";
+  const subDesc = "We don't just deliver food; we deliver health, convenience, and a taste of home. Here is why we are unique.";
+
+  // Overwrite some services if provided by CMS
+  const currentServices = [...services];
+  if (cms?.item1Title) {
+    currentServices[0] = { ...services[0], title: cms.item1Title, desc: cms.item1Desc || services[0].desc };
+  }
+  if (cms?.item2Title) {
+    currentServices[1] = { ...services[1], title: cms.item2Title, desc: cms.item2Desc || services[1].desc };
+  }
+  if (cms?.item3Title) {
+    currentServices[2] = { ...services[2], title: cms.item3Title, desc: cms.item3Desc || services[2].desc };
+  }
+
   return (
     <section id="services" className="w-full bg-gray-50 py-24 sm:py-32 relative overflow-hidden">
       {/* Decorative Elements */}
@@ -66,7 +100,7 @@ const Services = () => {
             viewport={{ once: true }}
             className="text-orange-600 font-bold uppercase tracking-widest text-sm mb-4"
           >
-            The Annapurna Advantage
+            {heading}
           </motion.h4>
           <motion.h2 
             initial={{ opacity: 0, y: 20 }}
@@ -75,7 +109,7 @@ const Services = () => {
             transition={{ delay: 0.1 }}
             className="text-4xl sm:text-5xl font-black text-gray-900 mb-6 tracking-tight"
           >
-            Why Thousands <span className="text-orange-600 italic underline decoration-orange-200">Trust</span> Us
+            {title}
           </motion.h2>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -84,13 +118,13 @@ const Services = () => {
             transition={{ delay: 0.2 }}
             className="text-gray-500 text-lg sm:text-xl max-w-2xl mx-auto"
           >
-            We don&apos;t just deliver food; we deliver health, convenience, and a taste of home. Here is why we are unique.
+            {subDesc}
           </motion.p>
         </div>
 
         {/* SERVICES GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map((item, index) => (
+          {currentServices.map((item, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, scale: 0.9, y: 20 }}

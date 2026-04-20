@@ -7,64 +7,41 @@ import {
   Image as ImageIcon, 
   Layout, 
   Loader2,
-  AlertCircle,
   Star,
   Users,
   Info,
   Target,
   ChevronRight,
-  CheckCircle2
+  CheckCircle2,
+  Utensils,
+  Phone,
+  Mail,
+  MapPin,
+  Quote
 } from "lucide-react";
 import toast from "react-hot-toast";
 
-type Tab = 'hero' | 'about' | 'mission';
+type Tab = 'hero' | 'about' | 'mission' | 'services' | 'contact';
 
 export default function SiteContentManagement() {
   const [activeTab, setActiveTab] = useState<Tab>('hero');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<any>({
-    hero: { 
-      line1: "Taste the", 
-      accentLine: "Comfort", 
-      redLine: "Home-Cooked Meals", 
-      description: "Fresh, hygienic, and deliciously crafted tiffin meals delivered daily. We bring the warmth of a mother's kitchen straight to your doorstep.", 
-      mainImage: "/food2.PNG", 
-      ratingText: "4.9/5 Rating", 
-      activeUsersText: "500+ Active" 
-    },
-    about: { 
-      heading: "OUR HUMBLE BEGINNINGS", 
-      titleLine1: "Cooking with", 
-      titleAccent: "Tradition", 
-      titleLine2: "Serving with Soul", 
-      description: "Annapurna Delight started in a small kitchen with a big dream: to provide the warmth and comfort of 'Ghar Ka Khana' to everyone living away from home.", 
-      image: "/food1.PNG", 
-      experienceText: "10+", 
-      experienceSub: "YEARS OF LOVE" 
-    },
-    mission: { 
-      heading: "WHY WE DO IT", 
-      titleLine1: "More Than Just a", 
-      titleAccent: "Tiffin Service", 
-      description: "We understand that food is more than just fuel—it's an emotion. Our mission is to serve happiness in every bite.", 
-      image: "/food3.jpg" 
-    }
+    hero: { line1: "Taste the", accentLine: "Comfort", redLine: "Home-Cooked Meals", description: "Fresh, hygienic, and deliciously crafted tiffin meals delivered daily.", mainImage: "/food2.PNG", ratingText: "4.9/5 Rating", activeUsersText: "500+ Active" },
+    about: { heading: "OUR HUMBLE BEGINNINGS", titleLine1: "Cooking with", titleAccent: "Tradition", titleLine2: "Serving with Soul", description: "Annapurna Delight started in a small kitchen with a big dream.", image: "/food1.PNG", experienceText: "10+", experienceSub: "YEARS OF LOVE", feature1Title: "Pure Veg", feature1Sub: "Strictly vegetarian", feature2Title: "Best Quality", feature2Sub: "Premium masalas", quoteText: "Every meal we prepare is treated as if it's for our own family." },
+    mission: { heading: "WHY WE DO IT", titleLine1: "More Than Just a", titleAccent: "Tiffin Service", description: "We understand that food is more than just fuel—it's an emotion.", image: "/food3.jpg", image2: "/food2.PNG" },
+    services: { heading: "OUR SERVICES", title: "We Provide Best Quality Items", item1Title: "Fresh Ingredients", item1Desc: "Freshest produce.", item2Title: "On-Time Delivery", item2Desc: "Hot meals delivered right when you need them.", item3Title: "Customizable Plans", item3Desc: "Variety of options." },
+    contact: { phone: "+91 91316 48092", email: "support@annapurnadelight.com", address: "Indore, India", instagram: "#", facebook: "#" }
   });
 
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/settings", { 
-        cache: 'no-store',
-        next: { revalidate: 0 }
-      });
+      const res = await fetch("/api/admin/settings", { cache: 'no-store', next: { revalidate: 0 } });
       const data = await res.json();
       if (data.success && data.settings) {
-        setSettings({
-          ...settings,
-          ...data.settings
-        });
+        setSettings({ ...settings, ...data.settings });
       }
     } catch (err) {
       toast.error("Failed to load settings");
@@ -78,7 +55,6 @@ export default function SiteContentManagement() {
   }, []);
 
   const handleSave = async () => {
-    console.log("Attempting to save Site Settings:", settings);
     setSaving(true);
     try {
       const res = await fetch("/api/admin/settings", {
@@ -88,29 +64,23 @@ export default function SiteContentManagement() {
       });
       const data = await res.json();
       if (data.success) {
-        toast.success("Site content updated successfully! 🎉");
-        console.log("Successfully saved settings:", data.settings);
-      } else {
-        toast.error(data.error || "Failed to save");
+        toast.success("Site content pushed live! 🎉");
       }
     } catch (err) {
-      console.error("Frontend Save Error:", err);
-      toast.error("Network error: Failed to save settings");
+      toast.error("Failed to save settings");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-12 w-12 text-orange-500 animate-spin" />
-          <p className="text-slate-400 font-bold">Loading Web Assets...</p>
-        </div>
+  if (loading) return (
+    <div className="flex h-[60vh] items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="h-12 w-12 text-orange-500 animate-spin" />
+        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Loading CMS Engine...</p>
       </div>
-    );
-  }
+    </div>
+  );
 
   const SectionTitle = ({ icon: Icon, title, subtitle }: any) => (
     <div className="flex items-center gap-4 mb-10">
@@ -119,287 +89,201 @@ export default function SiteContentManagement() {
       </div>
       <div>
         <h2 className="text-2xl font-black text-slate-900 uppercase tracking-widest leading-none">{title}</h2>
-        <p className="text-slate-400 text-xs font-bold mt-1 uppercase tracking-wider">{subtitle}</p>
+        <p className="text-slate-400 text-[10px] font-black mt-1.5 uppercase tracking-[0.2em]">{subtitle}</p>
+      </div>
+    </div>
+  );
+
+  const Input = ({ label, value, onChange, placeholder, accent = false, icon: Icon = null }: any) => (
+    <div className="space-y-3">
+      <label className={`text-[10px] font-black uppercase tracking-widest ml-1 ${accent ? "text-orange-500" : "text-slate-400"}`}>{label}</label>
+      <div className="relative">
+        <input 
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`w-full ${accent ? "bg-orange-50/50 border-orange-100 text-orange-600" : "bg-slate-50 border-slate-100 text-slate-900"} border rounded-2xl p-5 font-bold outline-none focus:ring-2 focus:ring-orange-500 transition-all ${Icon ? 'pl-14' : ''}`}
+        />
+        {Icon && <Icon size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" />}
       </div>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      <div className="max-w-[1200px] mx-auto p-4 md:p-10 pb-32">
+      <div className="max-w-[1400px] mx-auto p-4 md:p-10 pb-32">
         
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-16 px-4">
           <div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-              <Layout className="text-orange-500" size={36} />
-              Website <span className="text-orange-500">CMS</span>
+            <h1 className="text-5xl font-black text-slate-900 tracking-tighter flex items-center gap-4">
+              <Layout className="text-orange-500" size={44} />
+              Website <span className="text-orange-510 bg-orange-100 px-3 rounded-2xl">CMS</span>
             </h1>
-            <p className="text-slate-500 font-medium mt-2">Manage all primary text and images on your landing page.</p>
+            <p className="text-slate-400 font-bold mt-3 text-lg uppercase tracking-tight opacity-70">Hyper-Granular Live Content Management</p>
           </div>
           
           <button 
              onClick={handleSave}
              disabled={saving}
-             className="flex items-center gap-3 px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black hover:bg-slate-800 transition-all shadow-2xl shadow-slate-200 disabled:opacity-50 active:scale-95"
+             className="flex items-center gap-3 px-12 py-6 bg-slate-900 text-white rounded-[2.5rem] font-black hover:bg-slate-800 transition-all shadow-3xl shadow-slate-200 disabled:opacity-50 active:scale-95 text-lg"
           >
-             {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-             {saving ? "Deploying..." : "Push Updates Live"}
+             {saving ? <Loader2 className="animate-spin" size={24} /> : <Save size={24} />}
+             {saving ? "Deploying Assets..." : "Push Updates Live"}
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex flex-wrap gap-2 mb-10 bg-white p-2 rounded-3xl shadow-sm border border-slate-100 w-fit">
+        {/* Dynamic Tab Navigation */}
+        <div className="flex flex-wrap gap-2 mb-12 bg-white p-3 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 w-fit mx-4">
            {[
-             { id: 'hero', name: 'Hero Section', icon: Home },
-             { id: 'about', name: 'About Section', icon: Info },
-             { id: 'mission', name: 'Our Mission', icon: Target }
+             { id: 'hero', name: 'Hero Header', icon: Home },
+             { id: 'about', name: 'Story & Details', icon: Info },
+             { id: 'mission', name: 'Mission Content', icon: Target },
+             { id: 'services', name: 'Service Cards', icon: Utensils },
+             { id: 'contact', name: 'Contact & Social', icon: Phone }
            ].map((tab) => (
              <button
                key={tab.id}
                onClick={() => setActiveTab(tab.id as Tab)}
                className={`
-                 flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all
-                 ${activeTab === tab.id ? 'bg-orange-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}
+                 flex items-center gap-3 px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300
+                 ${activeTab === tab.id ? 'bg-orange-500 text-white shadow-2xl scale-105' : 'text-slate-400 hover:bg-slate-50'}
                `}
              >
-               <tab.icon size={16} />
+               <tab.icon size={18} />
                {tab.name}
              </button>
            ))}
         </div>
 
-        <div className="grid gap-10">
+        <div className="grid gap-12 px-4">
            {/* Section Card */}
-           <div className="bg-white rounded-[3rem] p-8 sm:p-16 shadow-2xl shadow-slate-200/40 border border-white">
+           <div className="bg-white rounded-[4rem] p-10 md:p-20 shadow-3xl shadow-slate-200/40 border-4 border-white/50">
               
-              {/* HERO TAB */}
               {activeTab === 'hero' && (
-                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                   <SectionTitle icon={Home} title="Hero Header" subtitle="Main landing page entry point" />
-                   
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                      <div className="space-y-3">
-                         <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Title Line 1</label>
-                         <input 
-                            value={settings.hero.line1}
-                            onChange={(e) => setSettings({...settings, hero: {...settings.hero, line1: e.target.value}})}
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold text-slate-900 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                         />
-                      </div>
-                      <div className="space-y-3">
-                         <label className="text-[10px] font-black uppercase text-orange-500 tracking-widest ml-1">Orange Accent</label>
-                         <input 
-                            value={settings.hero.accentLine}
-                            onChange={(e) => setSettings({...settings, hero: {...settings.hero, accentLine: e.target.value}})}
-                            className="w-full bg-orange-50/50 border border-orange-100 rounded-2xl p-5 font-bold text-orange-600 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                         />
-                      </div>
-                      <div className="space-y-3">
-                         <label className="text-[10px] font-black uppercase text-red-500 tracking-widest ml-1">Red Emphasis</label>
-                         <input 
-                            value={settings.hero.redLine}
-                            onChange={(e) => setSettings({...settings, hero: {...settings.hero, redLine: e.target.value}})}
-                            className="w-full bg-red-50/50 border border-red-100 rounded-2xl p-5 font-bold text-red-600 focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-                         />
-                      </div>
+                <div className="space-y-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                   <SectionTitle icon={Home} title="Landing Entrance" subtitle="Above index fold hero content" />
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                      <Input label="Top Title Line" value={settings.hero.line1} onChange={(val:any) => setSettings({...settings, hero: {...settings.hero, line1: val}})} />
+                      <Input label="Orange Accent Word" value={settings.hero.accentLine} onChange={(val:any) => setSettings({...settings, hero: {...settings.hero, accentLine: val}})} accent={true} />
+                      <Input label="Red Emphasis Phrase" value={settings.hero.redLine} onChange={(val:any) => setSettings({...settings, hero: {...settings.hero, redLine: val}})} />
                    </div>
-
                    <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Main Narrative</label>
-                      <textarea 
-                         rows={4}
-                         value={settings.hero.description}
-                         onChange={(e) => setSettings({...settings, hero: {...settings.hero, description: e.target.value}})}
-                         className="w-full bg-slate-50 border border-slate-100 rounded-[2rem] p-6 font-bold text-slate-600 focus:ring-2 focus:ring-orange-500 outline-none transition-all leading-relaxed"
-                      />
+                      <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Main Narrative Text</label>
+                      <textarea rows={4} value={settings.hero.description} onChange={(e) => setSettings({...settings, hero: {...settings.hero, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-100 rounded-[2.5rem] p-8 font-bold text-slate-600 focus:ring-2 focus:ring-orange-500 outline-none transition-all leading-relaxed" />
                    </div>
-
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-                      <div className="space-y-8">
-                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Background Image URL</label>
-                            <div className="relative">
-                               <input 
-                                  value={settings.hero.mainImage}
-                                  onChange={(e) => setSettings({...settings, hero: {...settings.hero, mainImage: e.target.value}})}
-                                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 pl-12 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-orange-500 transition-all"
-                               />
-                               <ImageIcon size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                            </div>
-                         </div>
-                         <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-3">
-                               <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Badge: Rating</label>
-                               <input 
-                                  value={settings.hero.ratingText}
-                                  onChange={(e) => setSettings({...settings, hero: {...settings.hero, ratingText: e.target.value}})}
-                                  className="w-full bg-slate-50 border-0 rounded-xl p-4 font-black text-slate-900 outline-none text-[10px] uppercase tracking-wider"
-                               />
-                            </div>
-                            <div className="space-y-3">
-                               <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Badge: Active Users</label>
-                               <input 
-                                  value={settings.hero.activeUsersText}
-                                  onChange={(e) => setSettings({...settings, hero: {...settings.hero, activeUsersText: e.target.value}})}
-                                  className="w-full bg-slate-50 border-0 rounded-xl p-4 font-black text-slate-900 outline-none text-[10px] uppercase tracking-wider"
-                               />
-                            </div>
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+                      <div className="grid grid-cols-2 gap-8">
+                         <Input label="Floating Rating Badge" value={settings.hero.ratingText} onChange={(val:any) => setSettings({...settings, hero: {...settings.hero, ratingText: val}})} />
+                         <Input label="Floating Users Badge" value={settings.hero.activeUsersText} onChange={(val:any) => setSettings({...settings, hero: {...settings.hero, activeUsersText: val}})} />
+                         <div className="col-span-2">
+                           <Input label="Hero Image URL" value={settings.hero.mainImage} onChange={(val:any) => setSettings({...settings, hero: {...settings.hero, mainImage: val}})} icon={ImageIcon} />
                          </div>
                       </div>
-                      <div className="relative rounded-[2.5rem] overflow-hidden border-8 border-slate-50 shadow-2xl bg-slate-100 aspect-video">
+                      <div className="relative rounded-[3rem] overflow-hidden border-[12px] border-slate-50 shadow-3xl aspect-[16/10]">
                           <img src={settings.hero.mainImage} alt="Hero Preview" className="w-full h-full object-cover" />
                       </div>
                    </div>
                 </div>
               )}
 
-              {/* ABOUT TAB */}
               {activeTab === 'about' && (
-                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                   <SectionTitle icon={Info} title="Our Story" subtitle="About us section details" />
-                   
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-3">
-                         <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Sub-heading</label>
-                         <input 
-                            value={settings.about.heading}
-                            onChange={(e) => setSettings({...settings, about: {...settings.about, heading: e.target.value}})}
-                            placeholder="Eg: OUR HUMBLE BEGINNINGS"
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold text-slate-900 outline-none"
-                         />
-                      </div>
-                      <div className="space-y-3">
-                         <label className="text-[10px] font-black uppercase text-orange-500 tracking-widest ml-1">Accent Word (Tradition)</label>
-                         <input 
-                            value={settings.about.titleAccent}
-                            onChange={(e) => setSettings({...settings, about: {...settings.about, titleAccent: e.target.value}})}
-                            className="w-full bg-orange-50 border border-orange-100 rounded-2xl p-5 font-bold text-orange-600 outline-none"
-                         />
-                      </div>
+                <div className="space-y-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                   <SectionTitle icon={Info} title="Brand Story" subtitle="Historical background and features" />
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                      <Input label="Section Heading" value={settings.about.heading} onChange={(val:any) => setSettings({...settings, about: {...settings.about, heading: val}})} />
+                      <Input label="Experience Number" value={settings.about.experienceText} onChange={(val:any) => setSettings({...settings, about: {...settings.about, experienceText: val}})} accent={true} />
                    </div>
-
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-3">
-                         <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Title Line 1</label>
-                         <input 
-                            value={settings.about.titleLine1}
-                            onChange={(e) => setSettings({...settings, about: {...settings.about, titleLine1: e.target.value}})}
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold"
-                         />
-                      </div>
-                      <div className="space-y-3">
-                         <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Title Line 2 (Serving with...)</label>
-                         <input 
-                            value={settings.about.titleLine2}
-                            onChange={(e) => setSettings({...settings, about: {...settings.about, titleLine2: e.target.value}})}
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold"
-                         />
-                      </div>
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                      <Input label="Title Line 1" value={settings.about.titleLine1} onChange={(val:any) => setSettings({...settings, about: {...settings.about, titleLine1: val}})} />
+                      <Input label="Accent Word" value={settings.about.titleAccent} onChange={(val:any) => setSettings({...settings, about: {...settings.about, titleAccent: val}})} accent={true} />
+                      <Input label="Title Line 2" value={settings.about.titleLine2} onChange={(val:any) => setSettings({...settings, about: {...settings.about, titleLine2: val}})} />
                    </div>
-
-                   <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">About Narrative</label>
-                      <textarea 
-                         rows={4}
-                         value={settings.about.description}
-                         onChange={(e) => setSettings({...settings, about: {...settings.about, description: e.target.value}})}
-                         className="w-full bg-slate-50 border border-slate-100 rounded-[2rem] p-6 font-bold text-slate-600 outline-none leading-relaxed"
-                      />
-                   </div>
-
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-                      <div className="space-y-8">
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                      <div className="space-y-12">
+                         <div className="grid grid-cols-2 gap-8">
+                            <div className="space-y-6">
+                               <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest pl-1">Service Feature 1</p>
+                               <Input label="Title" value={settings.about.feature1Title} onChange={(val:any) => setSettings({...settings, about: {...settings.about, feature1Title: val}})} />
+                               <Input label="Description" value={settings.about.feature1Sub} onChange={(val:any) => setSettings({...settings, about: {...settings.about, feature1Sub: val}})} />
+                            </div>
+                            <div className="space-y-6">
+                               <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest pl-1">Service Feature 2</p>
+                               <Input label="Title" value={settings.about.feature2Title} onChange={(val:any) => setSettings({...settings, about: {...settings.about, feature2Title: val}})} />
+                               <Input label="Description" value={settings.about.feature2Sub} onChange={(val:any) => setSettings({...settings, about: {...settings.about, feature2Sub: val}})} />
+                            </div>
+                         </div>
                          <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">About Image URL</label>
-                            <input 
-                               value={settings.about.image}
-                               onChange={(e) => setSettings({...settings, about: {...settings.about, image: e.target.value}})}
-                               className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold outline-none"
-                            />
-                         </div>
-                         <div className="grid grid-cols-2 gap-6">
-                            <div className="space-y-3">
-                               <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Badge: Exp (10+)</label>
-                               <input 
-                                  value={settings.about.experienceText}
-                                  onChange={(e) => setSettings({...settings, about: {...settings.about, experienceText: e.target.value}})}
-                                  className="w-full bg-slate-50 border-0 rounded-xl p-4 font-black"
-                               />
-                            </div>
-                            <div className="space-y-3">
-                               <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Badge: Text (YEARS OF LOVE)</label>
-                               <input 
-                                  value={settings.about.experienceSub}
-                                  onChange={(e) => setSettings({...settings, about: {...settings.about, experienceSub: e.target.value}})}
-                                  className="w-full bg-slate-50 border-0 rounded-xl p-4 font-black"
-                               />
-                            </div>
+                           <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2"><Quote size={12} className="text-orange-500" /> Brand Promise (Quote)</label>
+                           <textarea rows={3} value={settings.about.quoteText} onChange={(e) => setSettings({...settings, about: {...settings.about, quoteText: e.target.value}})} className="w-full bg-slate-50 border border-slate-100 rounded-3xl p-6 font-bold text-slate-700 italic outline-none" />
                          </div>
                       </div>
-                      <div className="relative rounded-[2.5rem] overflow-hidden border-8 border-slate-100 shadow-2xl aspect-square">
-                          <img src={settings.about.image} alt="About Preview" className="w-full h-full object-cover" />
+                      <div className="space-y-10">
+                         <Input label="About Image URL" value={settings.about.image} onChange={(val:any) => setSettings({...settings, about: {...settings.about, image: val}})} icon={ImageIcon} />
+                         <div className="relative rounded-[3rem] overflow-hidden border-8 border-slate-50 shadow-3xl aspect-square bg-slate-50">
+                            <img src={settings.about.image} alt="About Preview" className="w-full h-full object-cover" />
+                         </div>
                       </div>
                    </div>
                 </div>
               )}
 
-              {/* MISSION TAB */}
               {activeTab === 'mission' && (
-                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                   <SectionTitle icon={Target} title="Our Mission" subtitle="Why we do it section" />
-                   
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-3">
-                         <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Sub-heading</label>
-                         <input 
-                            value={settings.mission.heading}
-                            onChange={(e) => setSettings({...settings, mission: {...settings.mission, heading: e.target.value}})}
-                            placeholder="Eg: WHY WE DO IT"
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold"
-                         />
-                      </div>
-                      <div className="space-y-3">
-                         <label className="text-[10px] font-black uppercase text-orange-500 tracking-widest ml-1 flex items-center gap-2">Accent Title <ChevronRight size={14} /></label>
-                         <input 
-                            value={settings.mission.titleAccent}
-                            onChange={(e) => setSettings({...settings, mission: {...settings.mission, titleAccent: e.target.value}})}
-                            className="w-full bg-orange-50 border border-orange-100 rounded-2xl p-5 font-bold text-orange-600 outline-none"
-                         />
-                      </div>
+                <div className="space-y-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                   <SectionTitle icon={Target} title="Purpose & Values" subtitle="The why behind the service" />
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                      <Input label="Sub-heading" value={settings.mission.heading} onChange={(val:any) => setSettings({...settings, mission: {...settings.mission, heading: val}})} />
+                      <Input label="Accent Title" value={settings.mission.titleAccent} onChange={(val:any) => setSettings({...settings, mission: {...settings.mission, titleAccent: val}})} accent={true} />
                    </div>
-
-                   <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mission Title Line 1</label>
-                      <input 
-                         value={settings.mission.titleLine1}
-                         onChange={(e) => setSettings({...settings, mission: {...settings.mission, titleLine1: e.target.value}})}
-                         className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold outline-none"
-                      />
-                   </div>
-
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-                      <div className="space-y-8">
+                   <Input label="Main Purpose Title Line" value={settings.mission.titleLine1} onChange={(val:any) => setSettings({...settings, mission: {...settings.mission, titleLine1: val}})} />
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                      <div className="space-y-10">
                          <div className="space-y-3">
                             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mission Narrative</label>
-                            <textarea 
-                               rows={4}
-                               value={settings.mission.description}
-                               onChange={(e) => setSettings({...settings, mission: {...settings.mission, description: e.target.value}})}
-                               className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-6 font-bold text-slate-600 outline-none"
-                            />
+                            <textarea rows={6} value={settings.mission.description} onChange={(e) => setSettings({...settings, mission: {...settings.mission, description: e.target.value}})} className="w-full bg-slate-50 border border-slate-100 rounded-[2.5rem] p-8 font-bold text-slate-600 outline-none" />
                          </div>
-                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Mission Image URL</label>
-                            <input 
-                               value={settings.mission.image}
-                               onChange={(e) => setSettings({...settings, mission: {...settings.mission, image: e.target.value}})}
-                               className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold outline-none"
-                            />
-                         </div>
+                         <Input label="Primary Image URL" value={settings.mission.image} onChange={(val:any) => setSettings({...settings, mission: {...settings.mission, image: val}})} icon={ImageIcon} />
                       </div>
-                      <div className="relative rounded-[2.5rem] overflow-hidden border-8 border-slate-100 shadow-2xl aspect-video">
+                      <div className="relative rounded-[3.5rem] overflow-hidden border-[14px] border-slate-50 shadow-3xl aspect-video">
                           <img src={settings.mission.image} alt="Mission Preview" className="w-full h-full object-cover" />
+                      </div>
+                   </div>
+                </div>
+              )}
+
+              {activeTab === 'services' && (
+                <div className="space-y-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                   <SectionTitle icon={Utensils} title="Service Highlights" subtitle="Core offerings showcase" />
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                      <Input label="Section Heading" value={settings.services.heading} onChange={(val:any) => setSettings({...settings, services: {...settings.services, heading: val}})} />
+                      <Input label="Main Title" value={settings.services.title} onChange={(val:any) => setSettings({...settings, services: {...settings.services, title: val}})} accent={true} />
+                   </div>
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                      {[1, 2, 3].map((num) => (
+                        <div key={num} className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-6">
+                           <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">Card {num}</p>
+                           <Input label="Card Title" value={settings.services[`item${num}Title`]} onChange={(val:any) => setSettings({...settings, services: {...settings.services, [`item${num}Title`]: val}})} />
+                           <div className="space-y-2">
+                             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Description</label>
+                             <textarea rows={3} value={settings.services[`item${num}Desc`]} onChange={(e) => setSettings({...settings, services: {...settings.services, [`item${num}Desc`]: e.target.value}})} className="w-full bg-white border border-slate-100 rounded-2xl p-4 font-bold text-slate-600 outline-none" />
+                           </div>
+                        </div>
+                      ))}
+                   </div>
+                </div>
+              )}
+
+              {activeTab === 'contact' && (
+                <div className="space-y-16 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                   <SectionTitle icon={Phone} title="Global Contact" subtitle="Website footer & support info" />
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                      <Input label="Support Phone Number" value={settings.contact.phone} onChange={(val:any) => setSettings({...settings, contact: {...settings.contact, phone: val}})} icon={Phone} />
+                      <Input label="Support Email Address" value={settings.contact.email} onChange={(val:any) => setSettings({...settings, contact: {...settings.contact, email: val}})} icon={Mail} />
+                      <Input label="Business Address" value={settings.contact.address} onChange={(val:any) => setSettings({...settings, contact: {...settings.contact, address: val}})} icon={MapPin} />
+                      <div className="bg-slate-900 p-10 rounded-[3rem] text-white space-y-8 flex flex-col justify-center">
+                         <p className="text-[10px] font-black uppercase text-orange-500 tracking-[0.3em]">Social Footprint</p>
+                         <Input label="Instagram URL" value={settings.contact.instagram} onChange={(val:any) => setSettings({...settings, contact: {...settings.contact, instagram: val}})} accent={true} />
+                         <Input label="Facebook URL" value={settings.contact.facebook} onChange={(val:any) => setSettings({...settings, contact: {...settings.contact, facebook: val}})} accent={true} />
                       </div>
                    </div>
                 </div>
@@ -407,22 +291,22 @@ export default function SiteContentManagement() {
 
            </div>
 
-           {/* Save Bar (Fixed Bottom on Mobile) */}
-           <div className="bg-orange-600 p-6 sm:p-10 rounded-[2.5rem] shadow-2xl shadow-orange-500/20 text-white flex items-center justify-between gap-6 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-8 opacity-10 transform scale-150 group-hover:rotate-12 transition-transform duration-1000">
-                 <Save size={100} />
+           {/* Deployment Bar */}
+           <div className="bg-orange-600 p-8 md:p-14 rounded-[4rem] shadow-3xl shadow-orange-500/30 text-white flex flex-col md:flex-row items-center justify-between gap-10 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-12 opacity-10 transform scale-150 group-hover:rotate-12 transition-transform duration-1000">
+                 <Save size={150} />
               </div>
-              <div className="relative z-10 flex-1">
-                 <p className="text-xl sm:text-2xl font-black tracking-tight uppercase">Ready to update your site?</p>
-                 <p className="text-orange-100 text-xs sm:text-sm font-bold opacity-80 mt-1 max-w-lg">All text and imagery changes will reflect globally. Ensure URLs are accessible and content is accurate.</p>
+              <div className="relative z-10 flex-1 text-center md:text-left">
+                 <h4 className="text-3xl md:text-4xl font-black tracking-tighter uppercase leading-none">Apply Content Patch?</h4>
+                 <p className="text-orange-100 text-sm md:text-lg font-bold opacity-80 mt-4 max-w-2xl leading-relaxed">Changes to text, structure, and imagery will be pushed to the global live engine. Your customers will see the new content instantly.</p>
               </div>
               <button 
                  onClick={handleSave}
                  disabled={saving}
-                 className="relative z-10 px-8 py-4 bg-white text-orange-600 rounded-2xl font-black uppercase text-xs tracking-widest hover:scale-105 transition-all shadow-xl active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                 className="relative z-10 px-12 py-6 bg-white text-orange-600 rounded-[2rem] font-black uppercase text-sm tracking-widest hover:scale-105 hover:bg-orange-50 transition-all shadow-3xl active:scale-95 disabled:opacity-50 flex items-center gap-3"
               >
-                 {saving ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
-                 {saving ? "Deploying..." : "Confirm Push"}
+                 {saving ? <Loader2 className="animate-spin" size={20} /> : <CheckCircle2 size={24} />}
+                 {saving ? "Deploying..." : "Publish Now"}
               </button>
            </div>
         </div>
