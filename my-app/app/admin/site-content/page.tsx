@@ -17,7 +17,8 @@ import {
   Quote,
   MessageSquare,
   Globe,
-  Monitor
+  Monitor,
+  Clock
 } from "lucide-react";
 import toast from "react-hot-toast";
 
