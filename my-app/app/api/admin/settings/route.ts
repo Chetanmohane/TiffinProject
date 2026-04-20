@@ -25,8 +25,11 @@ export async function POST(req: Request) {
     
     let settings = await SiteSettings.findOne({});
     if (settings) {
-      // Update existing
-      settings.hero = { ...settings.hero, ...body.hero };
+      // Update existing - selectively update sections provided
+      if (body.hero) settings.hero = { ...settings.hero, ...body.hero };
+      if (body.about) settings.about = { ...settings.about, ...body.about };
+      if (body.mission) settings.mission = { ...settings.mission, ...body.mission };
+      
       await settings.save();
     } else {
       // Create new

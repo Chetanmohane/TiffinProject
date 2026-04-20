@@ -3,8 +3,40 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Utensils, Heart, Award } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function AboutPage() {
+  const [cms, setCms] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchCms = async () => {
+      try {
+        const res = await fetch("/api/admin/settings");
+        const data = await res.json();
+        if (data.success && data.settings) {
+          setCms(data.settings);
+        }
+      } catch (err) {}
+    };
+    fetchCms();
+  }, []);
+
+  // About Section Fallbacks
+  const aboutHeading = cms?.about?.heading || "OUR HUMBLE BEGINNINGS";
+  const aboutTitle1 = cms?.about?.titleLine1 || "Cooking with";
+  const aboutAccent = cms?.about?.titleAccent || "Tradition";
+  const aboutTitle2 = cms?.about?.titleLine2 || "Serving with Soul";
+  const aboutDesc = cms?.about?.description || "Annapurna Delight started in a small kitchen with a big dream: to provide the warmth and comfort of 'Ghar Ka Khana' to everyone living away from home.";
+  const aboutImg = cms?.about?.image || "/food1.PNG";
+  const experienceText = cms?.about?.experienceText || "10+";
+  const experienceSub = cms?.about?.experienceSub || "YEARS OF LOVE";
+
+  // Mission Section Fallbacks
+  const missionHeading = cms?.mission?.heading || "WHY WE DO IT";
+  const missionTitle1 = cms?.mission?.titleLine1 || "More Than Just a";
+  const missionAccent = cms?.mission?.titleAccent || "Tiffin Service";
+  const missionDesc = cms?.mission?.description || "We understand that food is more than just fuel—it's an emotion. Our mission is to serve happiness in every bite.";
+  const missionImg = cms?.mission?.image || "/food3.jpg";
   return (
     <section id="about" className="w-full bg-white py-16 sm:py-24 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16 sm:space-y-24">
@@ -20,7 +52,7 @@ export default function AboutPage() {
           >
             <div className="relative rounded-[2rem] sm:rounded-[3rem] overflow-hidden shadow-xl">
               <Image
-                src="/img1.webp"
+                src={aboutImg}
                 alt="Home style cooking"
                 width={800}
                 height={600}
@@ -29,8 +61,8 @@ export default function AboutPage() {
             </div>
             {/* Experience Badge */}
             <div className="absolute -bottom-4 right-4 sm:-bottom-8 sm:-right-4 bg-orange-600 text-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-xl">
-              <p className="text-2xl sm:text-3xl font-black">10+</p>
-              <p className="text-[10px] sm:text-xs uppercase font-bold tracking-widest opacity-80">Years of Love</p>
+              <p className="text-2xl sm:text-3xl font-black">{experienceText}</p>
+              <p className="text-[10px] sm:text-xs uppercase font-bold tracking-widest opacity-80">{experienceSub}</p>
             </div>
           </motion.div>
 
@@ -44,15 +76,15 @@ export default function AboutPage() {
           >
             <div className="flex items-center gap-2 text-orange-600 mb-4">
               <div className="h-0.5 w-6 bg-orange-600"></div>
-              <span className="font-bold uppercase tracking-widest text-xs sm:text-sm">Our Humble Beginnings</span>
+              <span className="font-bold uppercase tracking-widest text-xs sm:text-sm">{aboutHeading}</span>
             </div>
             
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 mb-5 sm:mb-8 leading-tight">
-              Cooking with <span className="text-orange-600 italic">Tradition</span>, Serving with Soul
+              {aboutTitle1} <span className="text-orange-600 italic">{aboutAccent}</span>, {aboutTitle2}
             </h2>
 
             <p className="text-gray-500 text-base sm:text-lg leading-relaxed mb-6 sm:mb-8">
-              Annapurna Delight started in a small kitchen with a big dream: to provide the warmth and comfort of <span className="text-gray-950 font-bold italic">&quot;Ghar Ka Khana&quot;</span> to everyone living away from home.
+              {aboutDesc}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-8">
@@ -89,7 +121,7 @@ export default function AboutPage() {
           >
             <div className="relative rounded-[2rem] sm:rounded-[3rem] overflow-hidden shadow-xl">
               <Image
-                src="/img2.webp"
+                src={missionImg}
                 alt="Delicious Tiffin Meal"
                 width={800}
                 height={600}
@@ -108,15 +140,15 @@ export default function AboutPage() {
           >
             <div className="flex items-center gap-2 text-orange-600 mb-4">
               <div className="h-0.5 w-6 bg-orange-600"></div>
-              <span className="font-bold uppercase tracking-widest text-xs sm:text-sm">Why We Do It</span>
+              <span className="font-bold uppercase tracking-widest text-xs sm:text-sm">{missionHeading}</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 mb-5 sm:mb-8 leading-tight">
-              More Than Just a <span className="text-orange-600 italic">Tiffin</span> Service
+              {missionTitle1} <span className="text-orange-600 italic">{missionAccent}</span>
             </h2>
 
             <p className="text-gray-500 text-base sm:text-lg leading-relaxed mb-6 sm:mb-8">
-              We understand that food is more than just fuel—it&apos;s an emotion. Our mission is to ensure that no student or professional has to compromise on their health or taste while chasing their dreams.
+              {missionDesc}
             </p>
 
             <div className="p-5 sm:p-8 bg-gray-50 rounded-[1.5rem] sm:rounded-[2rem] border-l-4 border-orange-500">
