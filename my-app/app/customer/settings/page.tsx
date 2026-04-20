@@ -13,6 +13,7 @@ export default function SettingsPage() {
   const [originalEmail, setOriginalEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
   useEffect(() => {
@@ -211,29 +212,42 @@ export default function SettingsPage() {
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-gray-50">
-                    <p className="text-xs font-bold text-gray-400 mb-4">Or use the secure email reset link:</p>
-                    <button 
-                      onClick={async () => {
-                         try {
-                           const res = await fetch("/api/auth/forgot-password", {
-                             method: "POST",
-                             body: JSON.stringify({ email: form.email })
-                           });
-                           const data = await res.json();
-                           if (data.success) {
-                             setMessage({ type: "success", text: "Reset link sent to your email!" });
-                           } else {
-                             setMessage({ type: "error", text: data.error || "Failed to send link" });
+                   <div className="pt-6 border-t border-dashed border-gray-100">
+                    <div className="bg-orange-50/50 p-6 rounded-3xl border border-orange-100/50 flex flex-col md:flex-row items-center justify-between gap-6">
+                      <div className="space-y-1 text-center md:text-left">
+                        <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight">One-Click Security Reset</p>
+                        <p className="text-xs font-bold text-gray-400 max-w-xs">We&apos;ll send a secure, time-limited link to <span className="text-orange-500">{form.email}</span> to reset your password safely.</p>
+                      </div>
+                      <button 
+                        disabled={emailSending}
+                        onClick={async () => {
+                          setEmailSending(true);
+                           try {
+                             const res = await fetch("/api/auth/forgot-password", {
+                               method: "POST",
+                               body: JSON.stringify({ email: form.email })
+                             });
+                             const data = await res.json();
+                             if (data.success) {
+                               setMessage({ type: "success", text: "Magic link sent to your inbox! Check now. 🎉" });
+                             } else {
+                               setMessage({ type: "error", text: data.error || "Failed to send link" });
+                             }
+                           } catch (e) {
+                              setMessage({ type: "error", text: "Error sending email" });
+                           } finally {
+                              setEmailSending(false);
                            }
-                         } catch (e) {
-                            setMessage({ type: "error", text: "Error sending email" });
-                         }
-                      }}
-                      className="px-6 py-3 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-colors"
-                    >
-                      Send Password Reset Email
-                    </button>
+                        }}
+                        className={`
+                          px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] transition-all whitespace-nowrap flex items-center gap-3
+                          ${emailSending ? "bg-gray-100 text-gray-400" : "bg-gray-900 text-white hover:bg-orange-600 shadow-xl shadow-gray-200 hover:shadow-orange-200 active:scale-95"}
+                        `}
+                      >
+                        {emailSending ? <Loader2 className="animate-spin" size={14} /> : <Shield size={14} />}
+                        {emailSending ? "Sending Link..." : "Send Reset Link"}
+                      </button>
+                    </div>
                   </div>
                </div>
             </div>
