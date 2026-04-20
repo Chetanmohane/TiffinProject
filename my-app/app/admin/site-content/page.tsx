@@ -75,6 +75,7 @@ export default function SiteContentManagement() {
   }, []);
 
   const handleSave = async () => {
+    console.log("Attempting to save Site Settings:", settings);
     setSaving(true);
     try {
       const res = await fetch("/api/admin/settings", {
@@ -85,9 +86,13 @@ export default function SiteContentManagement() {
       const data = await res.json();
       if (data.success) {
         toast.success("Site content updated successfully! 🎉");
+        console.log("Successfully saved settings:", data.settings);
+      } else {
+        toast.error(data.error || "Failed to save");
       }
     } catch (err) {
-      toast.error("Failed to save settings");
+      console.error("Frontend Save Error:", err);
+      toast.error("Network error: Failed to save settings");
     } finally {
       setSaving(false);
     }

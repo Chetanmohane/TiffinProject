@@ -22,22 +22,18 @@ export async function POST(req: Request) {
   try {
     await connectDB();
     const body = await req.json();
+    console.log("Saving Site Content Update:", body);
     
-    let settings = await SiteSettings.findOne({});
-    if (settings) {
-      // Update existing - selectively update sections provided
-      if (body.hero) settings.hero = { ...settings.hero, ...body.hero };
-      if (body.about) settings.about = { ...settings.about, ...body.about };
-      if (body.mission) settings.mission = { ...settings.mission, ...body.mission };
-      
-      await settings.save();
-    } else {
-      // Create new
-      settings = await SiteSettings.create(body);
-    }
+    // Efficiently update or create the settings document
+    const updatedSettings = await SiteSettings.findOneAndUpdate(
+      {}, 
+      { $set: body },
+      { new: true, upsert: true }
+    );
     
-    return NextResponse.json({ success: true, settings });
+    return NextResponse.json({ success: true, settings: updatedSettings });
   } catch (e: any) {
+    console.error("Site Content Save Error:", e);
     return NextResponse.json({ success: false, error: e.message }, { status: 500 });
   }
 }
