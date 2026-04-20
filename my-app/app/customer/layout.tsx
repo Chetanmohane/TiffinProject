@@ -17,7 +17,7 @@ export default function CustomerLayout({
       <Sidebar />
 
       {/* Page Wrapper */}
-      <main className="flex-1 min-w-0 flex flex-col pt-16 lg:pt-0">
+      <main className="flex-1 min-w-0 flex flex-col pt-16 lg:pt-0 overflow-x-hidden">
         {children}
       </main>
     </div>

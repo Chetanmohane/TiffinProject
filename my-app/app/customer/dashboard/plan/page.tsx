@@ -297,7 +297,7 @@ export default function PlanPage() {
   const mealsPercentage = planData ? (planData.mealsRemaining / planData.totalMeals) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-[#FAFCFF] pb-32 pt-4 sm:pt-6 relative">
+    <div className="min-h-screen bg-[#FAFCFF] pb-32 pt-4 sm:pt-6 relative overflow-x-hidden">
       <div className="absolute top-0 right-0 w-[300px] sm:w-[600px] h-[300px] sm:h-[600px] bg-orange-100/30 rounded-full blur-[80px] sm:blur-[120px] -mr-32 -mt-16"></div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
