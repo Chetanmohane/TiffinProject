@@ -15,17 +15,24 @@ export async function GET(req: Request) {
       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?error=invalid_callback`);
     }
 
+    const appId = process.env.CASHFREE_APP_ID;
+    const secretKey = process.env.CASHFREE_SECRET_KEY;
+
+    if (!appId || !secretKey) {
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?error=credentials_missing`);
+    }
+
     const options = {
       method: "GET",
       headers: {
         accept: "application/json",
         "x-api-version": "2023-08-01",
-        "x-client-id": process.env.CASHFREE_APP_ID || "TEST10065449fb02c0cda9bc36de326794456001",
-        "x-client-secret": process.env.CASHFREE_SECRET_KEY || "cfsk_ma_test_a0cc7fba1bcbab9e1dfabb7ddf686c12_f7ea9189",
+        "x-client-id": appId,
+        "x-client-secret": secretKey,
       },
     };
 
-    const isProd = (process.env.CASHFREE_SECRET_KEY || "").includes("prod") || process.env.NODE_ENV === "production";
+    const isProd = secretKey.startsWith("cfsk_ma_prod_") || process.env.NODE_ENV === "production";
     
     const url = isProd 
       ? `https://api.cashfree.com/pg/orders/${order_id}` 

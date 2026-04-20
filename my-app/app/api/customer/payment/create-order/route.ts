@@ -18,20 +18,29 @@ export async function POST(req: Request) {
 
     const orderId = `order_${Date.now()}_${customer._id}`;
 
+    const appId = process.env.CASHFREE_APP_ID;
+    const secretKey = process.env.CASHFREE_SECRET_KEY;
+
+    if (!appId || !secretKey) {
+      throw new Error("Cashfree credentials are not configured in environment variables");
+    }
+
+    const isProd = secretKey.startsWith("cfsk_ma_prod_") || process.env.NODE_ENV === "production";
+
     const options = {
       method: "POST",
       headers: {
         accept: "application/json",
         "x-api-version": "2023-08-01",
         "content-type": "application/json",
-        "x-client-id": process.env.CASHFREE_APP_ID || "TEST10065449fb02c0cda9bc36de326794456001",
-        "x-client-secret": process.env.CASHFREE_SECRET_KEY || "cfsk_ma_test_a0cc7fba1bcbab9e1dfabb7ddf686c12_f7ea9189",
+        "x-client-id": appId,
+        "x-client-secret": secretKey,
       },
       body: JSON.stringify({
         customer_details: {
           customer_id: customer._id.toString(),
           customer_email: customer.email,
-          customer_phone: "9999999999", // Harcoded to bypass Strict Cashfree Regex formatting errors on bad DB entries
+          customer_phone: "9999999999", // Hardcoded to bypass Strict Cashfree Regex formatting errors on bad DB entries
           customer_name: customer.name || "Customer",
         },
         order_amount: plan.price,
@@ -39,8 +48,6 @@ export async function POST(req: Request) {
         order_id: orderId,
       }),
     };
-
-    const isProd = (process.env.CASHFREE_SECRET_KEY || "").includes("prod") || process.env.NODE_ENV === "production";
 
     const response = await fetch(
       isProd ? "https://api.cashfree.com/pg/orders" : "https://sandbox.cashfree.com/pg/orders",
