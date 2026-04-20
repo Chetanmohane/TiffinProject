@@ -85,7 +85,7 @@ export default function SiteContentManagement() {
     about: { heading: "OUR HUMBLE BEGINNINGS", titleLine1: "Cooking with", titleAccent: "Tradition", titleLine2: "Serving with Soul", description: "Annapurna Delight started in a small kitchen with a big dream.", image: "/food1.PNG", experienceText: "10+", experienceSub: "YEARS OF LOVE", feature1Title: "Pure Veg", feature1Sub: "Strictly vegetarian", feature2Title: "Best Quality", feature2Sub: "Premium masalas", quoteText: "Every meal we prepare is treated as if it's for our own family." },
     mission: { heading: "WHY WE DO IT", titleLine1: "More Than Just a", titleAccent: "Tiffin Service", description: "We understand that food is more than just fuel—it's an emotion.", image: "/food2.PNG", image2: "/food2.PNG" },
     services: { heading: "OUR SERVICES", title: "We Provide Best Quality Items", subDesc: "We don't just deliver food; we deliver health, convenience, and a taste of home.", item1Title: "Fresh Ingredients", item1Desc: "Freshest produce.", item2Title: "On-Time Delivery", item2Desc: "Hot meals delivered right when you need them.", item3Title: "Customizable Plans", item3Desc: "Variety of options." },
-    contact: { phone: "+91 91316 48092", email: "support@annapurnadelight.com", address: "Indore, India", instagram: "#", facebook: "#", footerMsg: "Subscribe for daily menu updates & offers.", footerTitle: "Annapurna Delight Tiffin Centre" }
+    contact: { phone: "+91 91316 48092", email: "support@annapurnadelight.com", address: "Indore, India", instagram: "#", facebook: "#", footerMsg: "Subscribe for daily menu updates & offers.", footerTitle: "Annapurna Delight Tiffin Centre", workingHours: "9:00 AM - 10:00 PM" }
   });
 
   const fetchSettings = async () => {
@@ -328,11 +328,12 @@ export default function SiteContentManagement() {
                 <div className="space-y-16">
                    <SectionHeader icon={Phone} title="Global Configuration" subtitle="Contact info and footer branding" section="contact" onSave={handleSave} saving={savingSection === 'contact'} />
                    <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 md:p-16 border-2 border-slate-50 shadow-2xl">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                         <InputField label="Business Support Phone" value={settings.contact.phone} onChange={(val:any) => setSettings({...settings, contact: {...settings.contact, phone: val}})} icon={Phone} />
-                         <InputField label="Official Email" value={settings.contact.email} onChange={(val:any) => setSettings({...settings, contact: {...settings.contact, email: val}})} icon={Mail} />
-                         <InputField label="Business Address" value={settings.contact.address} onChange={(val:any) => setSettings({...settings, contact: {...settings.contact, address: val}})} icon={MapPin} />
-                      </div>
+                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-10">
+                          <InputField label="Support Phone" value={settings.contact.phone} onChange={(val:any) => setSettings({...settings, contact: {...settings.contact, phone: val}})} icon={Phone} />
+                          <InputField label="Official Email" value={settings.contact.email} onChange={(val:any) => setSettings({...settings, contact: {...settings.contact, email: val}})} icon={Mail} />
+                          <InputField label="Business Address" value={settings.contact.address} onChange={(val:any) => setSettings({...settings, contact: {...settings.contact, address: val}})} icon={MapPin} />
+                          <InputField label="Working Hours" value={settings.contact.workingHours} onChange={(val:any) => setSettings({...settings, contact: {...settings.contact, workingHours: val}})} icon={Clock} />
+                       </div>
                       
                       <div className="mt-20 grid grid-cols-1 lg:grid-cols-2 gap-16 border-t border-slate-100 pt-16">
                          <div className="space-y-12">
