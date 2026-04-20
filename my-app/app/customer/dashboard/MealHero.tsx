@@ -148,7 +148,7 @@ export default function MealHero({ meal }: MealHeroProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative rounded-[2rem] sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl overflow-hidden h-full flex flex-col justify-center"
+        className="relative rounded-[3xl] p-6 lg:px-10 lg:py-8 shadow-xl overflow-hidden min-h-[300px] flex flex-col justify-center"
         style={{
           backgroundColor: "#050505",
           backgroundImage:

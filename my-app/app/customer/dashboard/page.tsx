@@ -122,7 +122,7 @@ export default function Order() {
 
       {/* Hero & Quick Actions Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
-        <div className="lg:col-span-2 rounded-[3rem] h-full shadow-2xl shadow-gray-200/40 overflow-hidden">
+        <div className="lg:col-span-2 rounded-[3rem] shadow-2xl shadow-gray-200/40 overflow-hidden h-fit">
           <MealHero meal={dashboardData?.todayMeal} />
         </div>
         
