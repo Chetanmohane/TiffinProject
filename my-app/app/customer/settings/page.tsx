@@ -184,65 +184,64 @@ export default function SettingsPage() {
                </div>
             </div>
 
-            {/* Password & Security - Screenshot Style */}
-            <div className="bg-[#0A0A0A] rounded-[2.5rem] p-8 sm:p-12 shadow-2xl border border-white/5 relative overflow-hidden group mb-10">
-               {/* Subtle background glow */}
-               <div className="absolute top-0 right-0 w-64 h-64 bg-orange-600/10 rounded-full blur-[100px] -mr-32 -mt-32"></div>
+            {/* Password & Security - Light Compact Version */}
+            <div className="bg-white rounded-[2.5rem] p-6 sm:p-10 shadow-xl shadow-gray-200/50 border border-gray-100 relative overflow-hidden group mb-10">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full blur-3xl -mr-16 -mt-16 opacity-50"></div>
                
-               <div className="flex items-center gap-4 mb-12 relative z-10">
-                  <div className="bg-orange-500/10 p-3 rounded-2xl text-orange-500 border border-orange-500/20">
-                     <Shield size={24} />
+               <div className="flex items-center gap-3 mb-8 relative z-10">
+                  <div className="bg-orange-100 p-2 rounded-xl text-orange-600">
+                     <Shield size={18} />
                   </div>
-                  <h3 className="font-black text-white uppercase text-xl tracking-[0.2em]">Password & Security</h3>
+                  <h3 className="font-black text-gray-900 uppercase text-sm tracking-widest">Password & Security</h3>
                </div>
 
-               <div className="space-y-10 relative z-10">
-                  {/* Current Password - Full Width */}
-                  <div className="space-y-4">
-                     <div className="flex items-center gap-2">
-                        <Shield size={14} className="text-gray-500" />
-                        <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Current Password</label>
-                     </div>
-                     <input 
-                       type="password" 
-                       placeholder="••••••••"
-                       className="w-full px-6 py-5 bg-white/5 border border-white/10 rounded-2xl text-white font-bold outline-none focus:ring-2 focus:ring-orange-500/40 transition-all placeholder:text-gray-700" 
-                     />
-                  </div>
-
-                  {/* New & Confirm - Side by Side */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                     <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                           <Shield size={14} className="text-gray-500" />
-                           <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest">New Password</label>
-                        </div>
+               <div className="space-y-6 relative z-10">
+                  {/* Current Password - Full Width (Small Version) */}
+                  <div className="space-y-2">
+                     <label className="text-[9px] font-black uppercase text-gray-400 tracking-[0.2em] ml-1">Current Password</label>
+                     <div className="relative">
+                        <Shield size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
                         <input 
                           type="password" 
                           placeholder="••••••••"
-                          value={form.password}
-                          onChange={(e) => setForm({...form, password: e.target.value})}
-                          className="w-full px-6 py-5 bg-white/5 border border-white/10 rounded-2xl text-white font-bold outline-none focus:ring-2 focus:ring-orange-500/40 transition-all placeholder:text-gray-700" 
-                        />
-                     </div>
-                     <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                           <Shield size={14} className="text-gray-500" />
-                           <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Confirm New Password</label>
-                        </div>
-                        <input 
-                          type="password" 
-                          placeholder="••••••••"
-                          className="w-full px-6 py-5 bg-white/5 border border-white/10 rounded-2xl text-white font-bold outline-none focus:ring-2 focus:ring-orange-500/40 transition-all placeholder:text-gray-700" 
+                          className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold outline-none ring-2 ring-transparent focus:ring-orange-500/20 transition-all text-gray-800" 
                         />
                      </div>
                   </div>
 
-                  {/* Forgot Password Link - At the Bottom */}
-                  <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6">
-                     <div className="space-y-1 text-center sm:text-left">
-                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-tight">Need to reset your credentials?</p>
-                        <p className="text-[10px] font-bold text-gray-600 italic">We&apos;ll send a secure magic link to {form.email}.</p>
+                  {/* New & Confirm - Side by Side (Small Version) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                        <label className="text-[9px] font-black uppercase text-gray-400 tracking-[0.2em] ml-1">New Password</label>
+                        <div className="relative">
+                           <Shield size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                           <input 
+                             type="password" 
+                             placeholder="••••••••"
+                             value={form.password}
+                             onChange={(e) => setForm({...form, password: e.target.value})}
+                             className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold outline-none ring-2 ring-transparent focus:ring-orange-500/20 transition-all text-gray-800" 
+                           />
+                        </div>
+                     </div>
+                     <div className="space-y-2">
+                        <label className="text-[9px] font-black uppercase text-gray-400 tracking-[0.2em] ml-1">Confirm New Password</label>
+                        <div className="relative">
+                           <Shield size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                           <input 
+                             type="password" 
+                             placeholder="••••••••"
+                             className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold outline-none ring-2 ring-transparent focus:ring-orange-500/20 transition-all text-gray-800" 
+                           />
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Forgot Password Link - Compact Bottom */}
+                  <div className="pt-6 border-t border-dashed border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                     <div className="space-y-0.5 text-center sm:text-left">
+                        <p className="text-[10px] font-black text-gray-900 uppercase">Lost your access?</p>
+                        <p className="text-[9px] font-bold text-gray-400 italic">Secure reset link will be sent to your primary email.</p>
                      </div>
                      <button 
                         disabled={emailSending}
@@ -255,7 +254,7 @@ export default function SettingsPage() {
                              });
                              const data = await res.json();
                              if (data.success) {
-                               setMessage({ type: "success", text: "Magic link sent successfully! 🎉" });
+                               setMessage({ type: "success", text: "Magic link sent! Check inbox. 🎉" });
                              } else {
                                setMessage({ type: "error", text: data.error || "Failed to send link" });
                              }
@@ -266,30 +265,30 @@ export default function SettingsPage() {
                            }
                         }}
                         className={`
-                          px-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3
-                          ${emailSending ? "bg-white/5 text-gray-500" : "bg-orange-600 text-white hover:bg-orange-700 shadow-xl shadow-orange-600/20 active:scale-95"}
+                          px-6 py-3 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2
+                          ${emailSending ? "bg-gray-50 text-gray-300" : "bg-orange-50 text-orange-600 hover:bg-orange-600 hover:text-white active:scale-95"}
                         `}
                       >
-                        {emailSending ? <Loader2 className="animate-spin" size={14} /> : <Mail size={14} />}
-                        {emailSending ? "Sending..." : "Recover Password"}
+                        {emailSending ? <Loader2 className="animate-spin" size={10} /> : <Mail size={10} />}
+                        {emailSending ? "Sending..." : "Recover Account"}
                       </button>
                   </div>
                </div>
             </div>
 
-            <div className="flex items-center justify-end gap-6 pt-4">
+            <div className="flex items-center justify-end gap-4 pt-4">
                <button 
                  onClick={() => window.location.reload()}
-                 className="px-10 py-5 bg-transparent text-gray-500 text-[10px] font-black uppercase tracking-widest hover:text-gray-900 transition-colors"
+                 className="px-6 py-3 bg-white text-gray-400 border border-gray-100 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-50 transition-colors"
                >
                  Discard changes
                </button>
                <button 
                  onClick={handleSave} 
                  disabled={saving}
-                 className="px-12 py-5 bg-gray-900 text-white rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-orange-600 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-4"
+                 className="px-8 py-3 bg-gray-900 text-white rounded-xl text-[9px] font-black uppercase tracking-[0.3em] shadow-xl hover:bg-orange-600 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
                >
-                 {saving ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
+                 {saving ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle2 size={14} />}
                  {saving ? "Processing..." : "Update Security"}
                </button>
             </div>
