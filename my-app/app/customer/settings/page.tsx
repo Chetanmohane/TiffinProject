@@ -184,41 +184,49 @@ export default function SettingsPage() {
                </div>
             </div>
 
-            {/* Security Card */}
-            <div className="bg-white rounded-[2.5rem] p-8 sm:p-10 shadow-xl shadow-gray-200/50 border border-gray-100">
-               <div className="flex items-center gap-3 mb-8">
+            {/* Security & Access Card */}
+            <div className="bg-white rounded-[2.5rem] p-8 sm:p-10 shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden relative">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full blur-3xl -mr-16 -mt-16"></div>
+               
+               <div className="flex items-center gap-3 mb-10 relative z-10">
                   <div className="bg-orange-100 p-2.5 rounded-2xl text-orange-600">
                      <Shield size={20} />
                   </div>
                   <div>
-                    <h3 className="font-black text-gray-900 uppercase text-sm tracking-tight">Security & Password</h3>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Secure your authentication</p>
+                    <h3 className="font-black text-gray-900 uppercase text-sm tracking-tight">Security & Access Control</h3>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Manage how you access your account</p>
                   </div>
                </div>
 
-               <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Manual Password Update</label>
-                    <div className="relative md:w-2/3">
-                       <Shield size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                       <input 
-                         type="password" 
-                         autoComplete="new-password"
-                         placeholder="Type new password here..." 
-                         value={form.password}
-                         onChange={(e) => setForm({...form, password: e.target.value})}
-                         className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none ring-2 ring-transparent focus:ring-orange-500/20 transition-all" 
-                       />
-                    </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                  {/* Option 1: Manual Update */}
+                  <div className="space-y-4 p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
+                     <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle2 size={16} className="text-green-500" />
+                        <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight">Update Password</p>
+                     </div>
+                     <p className="text-[10px] font-bold text-gray-400 mb-4 leading-relaxed">If you know your current password, type the new one below to update it instantly.</p>
+                     <div className="relative">
+                        <Shield size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                        <input 
+                          type="password" 
+                          placeholder="New Password" 
+                          value={form.password}
+                          onChange={(e) => setForm({...form, password: e.target.value})}
+                          className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-orange-500/20 transition-all shadow-sm" 
+                        />
+                     </div>
                   </div>
 
-                   <div className="pt-6 border-t border-dashed border-gray-100">
-                    <div className="bg-orange-50/50 p-6 rounded-3xl border border-orange-100/50 flex flex-col md:flex-row items-center justify-between gap-6">
-                      <div className="space-y-1 text-center md:text-left">
-                        <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight">One-Click Security Reset</p>
-                        <p className="text-xs font-bold text-gray-400 max-w-xs">We&apos;ll send a secure, time-limited link to <span className="text-orange-500">{form.email}</span> to reset your password safely.</p>
-                      </div>
-                      <button 
+                  {/* Option 2: Forgot Password Recovery */}
+                  <div className="space-y-4 p-6 bg-orange-50/30 rounded-[2rem] border border-orange-100/50 flex flex-col">
+                     <div className="flex items-center gap-2 mb-2">
+                        <AlertCircle size={16} className="text-orange-500" />
+                        <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight">Forgot Password?</p>
+                     </div>
+                     <p className="text-[10px] font-bold text-gray-400 mb-auto leading-relaxed">Can&apos;t remember your password? No worries. We&apos;ll send a secure link to your email <span className="font-black text-orange-600">{form.email}</span>.</p>
+                     
+                     <button 
                         disabled={emailSending}
                         onClick={async () => {
                           setEmailSending(true);
@@ -229,7 +237,7 @@ export default function SettingsPage() {
                              });
                              const data = await res.json();
                              if (data.success) {
-                               setMessage({ type: "success", text: "Magic link sent to your inbox! Check now. 🎉" });
+                               setMessage({ type: "success", text: "Recovery link sent to your inbox! 🎉" });
                              } else {
                                setMessage({ type: "error", text: data.error || "Failed to send link" });
                              }
@@ -240,31 +248,31 @@ export default function SettingsPage() {
                            }
                         }}
                         className={`
-                          px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] transition-all whitespace-nowrap flex items-center gap-3
-                          ${emailSending ? "bg-gray-100 text-gray-400" : "bg-gray-900 text-white hover:bg-orange-600 shadow-xl shadow-gray-200 hover:shadow-orange-200 active:scale-95"}
+                          mt-4 w-full py-3.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2
+                          ${emailSending ? "bg-gray-100 text-gray-400" : "bg-gray-900 text-white hover:bg-orange-600 active:scale-95 shadow-lg shadow-gray-200"}
                         `}
                       >
-                        {emailSending ? <Loader2 className="animate-spin" size={14} /> : <Shield size={14} />}
-                        {emailSending ? "Sending Link..." : "Send Reset Link"}
+                        {emailSending ? <Loader2 className="animate-spin" size={12} /> : <Mail size={12} />}
+                        {emailSending ? "Sending..." : "Recover Password"}
                       </button>
-                    </div>
                   </div>
                </div>
             </div>
 
-            <div className="flex items-center justify-end gap-4">
+            <div className="flex items-center justify-end gap-4 pt-4">
                <button 
                  onClick={() => window.location.reload()}
-                 className="px-8 py-3 bg-white text-gray-900 border-2 border-gray-100 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-gray-50 transition-colors"
+                 className="px-8 py-4 bg-white text-gray-400 border border-gray-100 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-colors"
                >
-                 Cancel
+                 Discard
                </button>
                <button 
                  onClick={handleSave} 
                  disabled={saving}
-                 className="px-10 py-4 bg-orange-600 text-white rounded-[1.5rem] text-xs font-black uppercase tracking-widest shadow-xl shadow-orange-200 hover:bg-orange-700 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                 className="px-10 py-4 bg-orange-600 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-orange-200 hover:bg-orange-700 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-3"
                >
-                 {saving ? <Loader2 className="animate-spin" size={16} /> : "Update Profile"}
+                 {saving ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
+                 {saving ? "Saving Changes..." : "Secure My Profile"}
                </button>
             </div>
           </div>
