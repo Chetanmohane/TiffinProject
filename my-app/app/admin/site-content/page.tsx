@@ -26,31 +26,31 @@ type Tab = 'hero' | 'about' | 'mission' | 'services' | 'contact';
 // --- SUB-COMPONENTS (Defined OUTSIDE to prevent focus loss) ---
 
 const SectionHeader = ({ icon: Icon, title, subtitle, section, onSave, saving }: any) => (
-  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
-    <div className="flex items-center gap-5">
-      <div className="bg-white p-4 rounded-2xl text-orange-600 shadow-sm border border-slate-200">
-        <Icon size={28} />
+  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 sm:mb-12 bg-slate-50 p-6 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] border border-slate-100">
+    <div className="flex items-center gap-4 sm:gap-5">
+      <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl text-orange-600 shadow-sm border border-slate-200">
+        <Icon size={24} className="sm:w-7 sm:h-7" />
       </div>
       <div>
-        <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-none uppercase">{title}</h2>
-        <p className="text-slate-400 text-xs font-bold mt-2 uppercase tracking-wide opacity-80">{subtitle}</p>
+        <h2 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none uppercase">{title}</h2>
+        <p className="text-slate-400 text-[10px] sm:text-xs font-bold mt-1.5 sm:mt-2 uppercase tracking-wide opacity-80">{subtitle}</p>
       </div>
     </div>
     <button 
        onClick={() => onSave(section)}
        disabled={saving}
-       className="group flex items-center justify-center gap-3 px-10 py-5 bg-slate-900 text-white rounded-2xl font-black hover:bg-orange-600 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 active:scale-95"
+       className="group flex items-center justify-center gap-3 px-8 sm:px-10 py-4 sm:py-5 bg-slate-900 text-white rounded-xl sm:rounded-2xl font-black hover:bg-orange-600 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 active:scale-95 text-xs sm:text-sm"
     >
-       {saving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} className="group-hover:scale-125 transition-transform" />}
+       {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} className="group-hover:scale-125 transition-transform" />}
        {saving ? "SAVING..." : `UPDATE ${section.toUpperCase()}`}
     </button>
   </div>
 );
 
 const InputField = ({ label, value, onChange, placeholder, accent = false, icon: Icon = null, isTextarea = false }: any) => (
-  <div className="space-y-3 flex-1">
+  <div className="space-y-2 sm:space-y-3 flex-1">
     <div className="flex items-center justify-between px-1">
-      <label className={`text-[11px] font-black uppercase tracking-widest ${accent ? "text-orange-500" : "text-slate-400"}`}>{label}</label>
+      <label className={`text-[9px] sm:text-[11px] font-black uppercase tracking-widest ${accent ? "text-orange-500" : "text-slate-400"}`}>{label}</label>
     </div>
     <div className="relative group">
       {isTextarea ? (
@@ -59,17 +59,17 @@ const InputField = ({ label, value, onChange, placeholder, accent = false, icon:
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           rows={4}
-          className={`w-full ${accent ? "bg-orange-50/30 border-orange-100 text-orange-700" : "bg-slate-50 border-slate-100 text-slate-900"} border-2 rounded-2xl p-6 font-bold outline-none focus:border-orange-500 focus:bg-white transition-all resize-none leading-relaxed`}
+          className={`w-full ${accent ? "bg-orange-50/30 border-orange-100 text-orange-700" : "bg-slate-50 border-slate-100 text-slate-900"} border-2 rounded-xl sm:rounded-2xl p-4 sm:p-6 font-bold text-sm sm:text-base outline-none focus:border-orange-500 focus:bg-white transition-all resize-none leading-relaxed`}
         />
       ) : (
         <input 
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className={`w-full ${accent ? "bg-orange-50/30 border-orange-100 text-orange-700" : "bg-slate-50 border-slate-100 text-slate-900"} border-2 rounded-2xl p-6 font-bold outline-none focus:border-orange-500 focus:bg-white transition-all ${Icon ? 'pl-14' : ''}`}
+          className={`w-full ${accent ? "bg-orange-50/30 border-orange-100 text-orange-700" : "bg-slate-50 border-slate-100 text-slate-900"} border-2 rounded-xl sm:rounded-2xl p-4 sm:p-6 font-bold text-sm sm:text-base outline-none focus:border-orange-500 focus:bg-white transition-all ${Icon ? 'pl-12 sm:pl-14' : ''}`}
         />
       )}
-      {Icon && <Icon size={20} className={`absolute left-5 ${isTextarea ? 'top-6' : 'top-1/2 -translate-y-1/2'} text-slate-300 group-focus-within:text-orange-500 transition-colors`} />}
+      {Icon && <Icon size={18} className={`absolute ${Icon ? 'left-4 sm:left-5' : ''} ${isTextarea ? 'top-5' : 'top-1/2 -translate-y-1/2'} text-slate-300 group-focus-within:text-orange-500 transition-colors sm:w-[20px] sm:h-[20px]`} />}
     </div>
   </div>
 );
@@ -139,49 +139,51 @@ export default function SiteContentManagement() {
   );
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden">
       <div className="max-w-[1500px] mx-auto p-4 md:p-12 pb-32">
         
         {/* Superior Header */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-20 px-4">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 sm:gap-8 mb-12 sm:mb-20 px-2 sm:px-4">
           <div className="space-y-2">
-            <div className="flex items-center gap-3 text-orange-600 font-black text-xs uppercase tracking-[0.4em]">
-              <Globe size={16} /> Admin Engine v2.0
+            <div className="flex items-center gap-3 text-orange-600 font-black text-[10px] sm:text-xs uppercase tracking-[0.3em] sm:tracking-[0.4em]">
+              <Globe size={14} className="sm:w-4 sm:h-4" /> Admin Engine v2.0
             </div>
-            <h1 className="text-6xl font-black text-slate-900 tracking-tighter flex items-baseline gap-2">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tighter flex flex-wrap items-baseline gap-2">
               Site <span className="bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent italic">Content</span>
             </h1>
-            <p className="text-slate-400 font-bold text-lg max-w-xl leading-snug">Empowering you to manage every visual and textual element of your digital storefront.</p>
+            <p className="text-slate-400 font-bold text-sm sm:text-lg max-w-xl leading-snug">Empowering you to manage every visual and textual element of your digital storefront.</p>
           </div>
           
-          <div className="flex items-center gap-4 bg-slate-100 p-2 rounded-3xl border border-slate-200">
-             <button onClick={() => window.open('/', '_blank')} className="flex items-center gap-2 px-6 py-4 bg-white text-slate-900 rounded-2xl font-black text-sm hover:shadow-lg transition-all border border-slate-200 uppercase">
-                <Monitor size={18} /> View Live Site
+          <div className="flex items-center gap-4 bg-slate-100 p-2 rounded-2xl sm:rounded-3xl border border-slate-200 w-fit">
+             <button onClick={() => window.open('/', '_blank')} className="flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4 bg-white text-slate-900 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-sm hover:shadow-lg transition-all border border-slate-200 uppercase">
+                <Monitor size={16} /> View Live Site
              </button>
           </div>
         </div>
 
-        {/* Modular Navigation */}
-        <div className="flex flex-wrap gap-3 mb-16 bg-slate-50 p-3 rounded-[2.5rem] border border-slate-200/50 w-fit">
-           {[
-             { id: 'hero', name: 'Header & Entrance', icon: Home },
-             { id: 'about', name: 'Story & Features', icon: Info },
-             { id: 'mission', name: 'Mission & Values', icon: Target },
-             { id: 'services', name: 'Service Highlights', icon: Utensils },
-             { id: 'contact', name: 'Support & Footer', icon: Phone }
-           ].map((tab) => (
-             <button
-               key={tab.id}
-               onClick={() => setActiveTab(tab.id as Tab)}
-               className={`
-                 flex items-center gap-3 px-10 py-5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-500
-                 ${activeTab === tab.id ? 'bg-white text-orange-600 shadow-xl border border-orange-100 scale-105' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}
-               `}
-             >
-               <tab.icon size={18} />
-               {tab.name}
-             </button>
-           ))}
+        {/* Modular Navigation - Scrollable on mobile */}
+        <div className="mb-12 sm:mb-16 overflow-x-auto no-scrollbar pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="flex gap-2 sm:gap-3 bg-slate-50 p-2 sm:p-3 rounded-2xl sm:rounded-[2.5rem] border border-slate-200/50 w-max sm:w-fit">
+             {[
+               { id: 'hero', name: 'Header', icon: Home },
+               { id: 'about', name: 'Story', icon: Info },
+               { id: 'mission', name: 'Mission', icon: Target },
+               { id: 'services', name: 'Services', icon: Utensils },
+               { id: 'contact', name: 'Contact', icon: Phone }
+             ].map((tab) => (
+               <button
+                 key={tab.id}
+                 onClick={() => setActiveTab(tab.id as Tab)}
+                 className={`
+                   flex items-center gap-2 sm:gap-3 px-6 sm:px-10 py-3 sm:py-5 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-500 whitespace-nowrap
+                   ${activeTab === tab.id ? 'bg-white text-orange-600 shadow-lg sm:shadow-xl border border-orange-100 sm:scale-105' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}
+                 `}
+               >
+                 <tab.icon size={16} className="sm:w-[18px] sm:h-[18px]" />
+                 {tab.name}
+               </button>
+             ))}
+          </div>
         </div>
 
         <div className="space-y-24 animate-in fade-in duration-700">
@@ -189,7 +191,7 @@ export default function SiteContentManagement() {
               {activeTab === 'hero' && (
                 <div className="space-y-16">
                    <SectionHeader icon={Home} title="Entrance & Hero" subtitle="Main headline and call-to-action" section="hero" onSave={handleSave} saving={savingSection === 'hero'} />
-                   <div className="bg-white rounded-[3rem] p-10 md:p-16 border-2 border-slate-50 shadow-2xl">
+                   <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 md:p-16 border-2 border-slate-50 shadow-2xl">
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                          <InputField label="Headline Line 1 (Taste the)" value={settings.hero.line1} onChange={(val:any) => setSettings({...settings, hero: {...settings.hero, line1: val}})} placeholder="Ex: Taste the" />
                          <InputField label="Accent Word (Comfort)" value={settings.hero.accentLine} onChange={(val:any) => setSettings({...settings, hero: {...settings.hero, accentLine: val}})} accent={true} placeholder="Ex: Comfort" />
@@ -220,7 +222,7 @@ export default function SiteContentManagement() {
               {activeTab === 'about' && (
                 <div className="space-y-16">
                    <SectionHeader icon={Info} title="Our Story" subtitle="About experience and core values" section="about" onSave={handleSave} saving={savingSection === 'about'} />
-                   <div className="bg-white rounded-[3rem] p-10 md:p-16 border-2 border-slate-50 shadow-2xl">
+                   <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 md:p-16 border-2 border-slate-50 shadow-2xl">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                          <InputField label="Section Accent Label" value={settings.about.heading} onChange={(val:any) => setSettings({...settings, about: {...settings.about, heading: val}})} />
                          <InputField label="Exp Counter Text" value={settings.about.experienceText} onChange={(val:any) => setSettings({...settings, about: {...settings.about, experienceText: val}})} accent={true} />
@@ -266,7 +268,7 @@ export default function SiteContentManagement() {
               {activeTab === 'mission' && (
                 <div className="space-y-16">
                    <SectionHeader icon={Target} title="Mission & Purpose" subtitle="Core values and mission statement" section="mission" onSave={handleSave} saving={savingSection === 'mission'} />
-                   <div className="bg-white rounded-[3rem] p-10 md:p-16 border-2 border-slate-50 shadow-2xl">
+                   <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 md:p-16 border-2 border-slate-50 shadow-2xl">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                          <InputField label="Value Label" value={settings.mission.heading} onChange={(val:any) => setSettings({...settings, mission: {...settings.mission, heading: val}})} />
                          <InputField label="Power Phrase" value={settings.mission.titleAccent} onChange={(val:any) => setSettings({...settings, mission: {...settings.mission, titleAccent: val}})} accent={true} />
@@ -298,7 +300,7 @@ export default function SiteContentManagement() {
               {activeTab === 'services' && (
                 <div className="space-y-16">
                    <SectionHeader icon={Utensils} title="Service Showcase" subtitle="Manage your service items and headings" section="services" onSave={handleSave} saving={savingSection === 'services'} />
-                   <div className="bg-white rounded-[3rem] p-10 md:p-16 border-2 border-slate-50 shadow-2xl">
+                   <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 md:p-16 border-2 border-slate-50 shadow-2xl">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                          <InputField label="Intro Small Label" value={settings.services.heading} onChange={(val:any) => setSettings({...settings, services: {...settings.services, heading: val}})} />
                          <InputField label="Main Grid Title" value={settings.services.title} onChange={(val:any) => setSettings({...settings, services: {...settings.services, title: val}})} accent={true} />
@@ -325,7 +327,7 @@ export default function SiteContentManagement() {
               {activeTab === 'contact' && (
                 <div className="space-y-16">
                    <SectionHeader icon={Phone} title="Global Configuration" subtitle="Contact info and footer branding" section="contact" onSave={handleSave} saving={savingSection === 'contact'} />
-                   <div className="bg-white rounded-[3rem] p-10 md:p-16 border-2 border-slate-50 shadow-2xl">
+                   <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 md:p-16 border-2 border-slate-50 shadow-2xl">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                          <InputField label="Business Support Phone" value={settings.contact.phone} onChange={(val:any) => setSettings({...settings, contact: {...settings.contact, phone: val}})} icon={Phone} />
                          <InputField label="Official Email" value={settings.contact.email} onChange={(val:any) => setSettings({...settings, contact: {...settings.contact, email: val}})} icon={Mail} />
