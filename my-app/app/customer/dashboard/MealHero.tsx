@@ -148,7 +148,7 @@ export default function MealHero({ meal }: MealHeroProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative rounded-[2rem] sm:rounded-3xl p-4 sm:p-8 lg:p-10 shadow-2xl overflow-hidden h-full flex flex-col justify-center"
+        className="relative rounded-[2rem] sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl overflow-hidden h-full flex flex-col justify-center"
         style={{
           backgroundColor: "#050505",
           backgroundImage:
@@ -172,20 +172,19 @@ export default function MealHero({ meal }: MealHeroProps) {
           className="absolute -top-40 -right-20 w-[600px] h-[600px] bg-orange-600 rounded-full blur-[120px] pointer-events-none"
         />
 
-        {/* Content */}
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 md:gap-4 h-full">
+        {/* Conte         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 h-full">
           {/* Left Block */}
-          <div className="space-y-4 sm:space-y-6 max-w-xl">
+          <div className="space-y-3 sm:space-y-4 max-w-xl">
             {/* Badges */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="px-3 py-1 rounded-full border border-orange-500/30 bg-orange-500/10 backdrop-blur-md flex items-center gap-2 shadow-[0_0_15px_rgba(255,100,0,0.2)]"
+                className="px-2.5 py-1 rounded-full border border-orange-500/30 bg-orange-500/10 backdrop-blur-md flex items-center gap-2"
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_#ff6a00] animate-pulse" />
-                <span className="text-orange-400 text-[9px] sm:text-xs font-black tracking-widest uppercase">
+                <span className="text-orange-400 text-[8px] sm:text-[10px] font-black tracking-widest uppercase">
                   {isCancelledToday ? "Meal Cancelled ❌" : data.status}
                 </span>
               </motion.div>
@@ -194,21 +193,20 @@ export default function MealHero({ meal }: MealHeroProps) {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 }}
-                className="flex items-center gap-1.5 text-gray-400 text-[10px] sm:text-sm font-semibold tracking-wider bg-white/5 px-3 py-1 rounded-full backdrop-blur-sm border border-white/5"
+                className="flex items-center gap-1.5 text-gray-400 text-[9px] sm:text-xs font-semibold tracking-wider bg-white/5 px-2.5 py-1 rounded-full border border-white/5"
               >
-                <Clock size={12} className="text-gray-300" />
+                <Clock size={10} className="text-gray-300" />
                 {data.deliveryTime}
               </motion.div>
 
-              {/* Cancel deadline badge — only if can still cancel */}
               {canCancel && !isCancelledToday && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.4 }}
-                  className="flex items-center gap-1.5 text-yellow-400 text-[9px] font-black tracking-wider bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20"
+                  className="flex items-center gap-1.5 text-yellow-400 text-[8px] font-black tracking-wider bg-yellow-500/10 px-2.5 py-1 rounded-full border border-yellow-500/20"
                 >
-                  ⏰ Cutoff: 10 AM · {cutoffLabel}
+                  ⏰ Cutoff: 10 AM
                 </motion.div>
               )}
             </div>
@@ -219,15 +217,15 @@ export default function MealHero({ meal }: MealHeroProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-gray-200 to-gray-500 leading-tight mb-2">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-gray-200 to-gray-500 leading-tight mb-1">
                 Today&apos;s {data.type}
               </h2>
-              <p className="text-gray-400 text-xs sm:text-base leading-relaxed font-medium">
+              <p className="text-gray-400 text-[10px] sm:text-sm leading-relaxed font-medium line-clamp-2">
                 {isCancelledToday
                   ? "You have cancelled today's meal. See you tomorrow! 🙏"
                   : data.items}
               </p>
-            </motion.div>
+            </motion.div>    </motion.div>
 
             {/* Action Buttons */}
             <motion.div
@@ -294,13 +292,13 @@ export default function MealHero({ meal }: MealHeroProps) {
             initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
             animate={{ opacity: 1, scale: 1, rotate: 0 }}
             transition={{ delay: 0.4, type: "spring" as const, stiffness: 80 }}
-            className="hidden md:flex relative items-center justify-center p-8 lg:p-12"
+            className="hidden md:flex relative items-center justify-center p-6 lg:p-8"
           >
             <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-white/10 rounded-full blur-xl border border-white/10" />
             <div className="absolute inset-4 border border-orange-500/20 rounded-full animate-[spin_10s_linear_infinite]" />
-            <div className="relative z-10 bg-black/40 p-6 rounded-[2rem] border border-gray-800 backdrop-blur-2xl shadow-2xl">
-              <ChefHat size={70} className="text-orange-500 drop-shadow-[0_0_15px_rgba(255,100,0,0.8)]" />
-              <Sparkles size={24} className="absolute -top-2 -right-2 text-yellow-400 animate-pulse" />
+            <div className="relative z-10 bg-black/40 p-5 rounded-[2rem] border border-gray-800 backdrop-blur-2xl shadow-2xl">
+              <ChefHat size={50} className="text-orange-500 drop-shadow-[0_0_15px_rgba(255,100,0,0.8)]" />
+              <Sparkles size={18} className="absolute -top-1 -right-1 text-yellow-400 animate-pulse" />
             </div>
           </motion.div>
         </div>
