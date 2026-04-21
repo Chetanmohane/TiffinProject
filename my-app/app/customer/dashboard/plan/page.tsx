@@ -64,6 +64,7 @@ export default function PlanPage() {
   const [availablePlans, setAvailablePlans] = useState<any[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [selectedMealType, setSelectedMealType] = useState<"Lunch" | "Dinner" | "Both">("Both");
   const [showSuccess, setShowSuccess] = useState(false);
 
   // AI Chat States
@@ -206,7 +207,8 @@ export default function PlanPage() {
         body: JSON.stringify({ 
           planId: selectedPlan._id || selectedPlan.id,
           email: user.email,
-          deliveryAddress: fullAddress
+          deliveryAddress: fullAddress,
+          mealType: selectedMealType
         }),
       });
       const data = await res.json();
@@ -243,7 +245,7 @@ export default function PlanPage() {
           }
           if (result.paymentDetails) {
               toast.success("Payment completed! Verifying receipt securely...");
-              const verifyUrl = `/api/customer/payment/verify?order_id=${data.order_id}&plan_id=${selectedPlan._id || selectedPlan.id}&email=${user.email}`;
+              const verifyUrl = `/api/customer/payment/verify?order_id=${data.order_id}&plan_id=${selectedPlan._id || selectedPlan.id}&email=${user.email}&meal_type=${selectedMealType}`;
               window.location.href = verifyUrl;
           }
       });
@@ -545,7 +547,7 @@ export default function PlanPage() {
                             </div>
 
                             <button 
-                              onClick={() => { setSelectedPlan(plan); setCheckoutStep(1); }}
+                              onClick={() => { setSelectedPlan(plan); setSelectedMealType("Both"); setCheckoutStep(1); }}
                               className={`
                                 w-full py-4 sm:py-5 rounded-xl sm:rounded-2xl font-black uppercase text-[10px] sm:text-xs tracking-widest transition-all duration-300 flex items-center justify-center gap-2 active:scale-95
                                 ${(plan.tag || idx === 1) 
@@ -553,7 +555,7 @@ export default function PlanPage() {
                                   : "bg-gray-900 text-white hover:bg-orange-600 shadow-lg shadow-gray-200"}
                               `}
                             >
-                               Select Now
+                               View Details & Buy
                                <ArrowRight size={14} />
                             </button>
                          </div>
@@ -600,6 +602,32 @@ export default function PlanPage() {
                       >
                          ✕
                       </button>
+                    </div>
+
+                    {/* Meal Selection (Custom Added Section) */}
+                    <div className="mb-8 p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">Which meal do you want?</p>
+                       <div className="grid grid-cols-3 gap-2">
+                          {[
+                             { id: 'Lunch', label: 'Lunch Only', price: selectedPlan.lunchPrice || (selectedPlan.price / 2) },
+                             { id: 'Dinner', label: 'Dinner Only', price: selectedPlan.dinnerPrice || (selectedPlan.price / 2) },
+                             { id: 'Both', label: 'Both (L+D)', price: selectedPlan.bothPrice || selectedPlan.price }
+                          ].map((option) => (
+                             <button
+                                key={option.id}
+                                onClick={() => setSelectedMealType(option.id as any)}
+                                className={`
+                                   p-3 rounded-xl border flex flex-col items-center gap-1 transition-all
+                                   ${selectedMealType === option.id 
+                                      ? 'bg-orange-500 border-orange-500 text-white shadow-lg' 
+                                      : 'bg-white border-slate-100 text-slate-500 hover:border-orange-200'}
+                                `}
+                             >
+                                <span className="text-[10px] font-black uppercase tracking-tighter">{option.label}</span>
+                                <span className={`text-xs font-black ${selectedMealType === option.id ? 'text-white' : 'text-slate-900'}`}>₹{option.price}</span>
+                             </button>
+                          ))}
+                       </div>
                     </div>
 
                     {checkoutStep === 1 ? (
@@ -673,8 +701,12 @@ export default function PlanPage() {
                               <span className="text-gray-500 text-[9px] font-bold italic line-clamp-1">{deliveryInfo.houseNo}, {deliveryInfo.area} - {deliveryInfo.pincode}</span>
                            </div>
                            <div className="flex justify-between items-center pt-2">
-                              <span className="text-orange-600 font-black uppercase text-[11px] sm:text-sm tracking-widest">Amount</span>
-                              <span className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tighter">₹{selectedPlan.price}</span>
+                              <span className="text-orange-600 font-black uppercase text-[11px] sm:text-sm tracking-widest">Amount ({selectedMealType})</span>
+                              <span className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tighter">
+                                 ₹{selectedMealType === 'Lunch' ? (selectedPlan.lunchPrice || selectedPlan.price / 2) 
+                                   : selectedMealType === 'Dinner' ? (selectedPlan.dinnerPrice || selectedPlan.price / 2) 
+                                   : (selectedPlan.bothPrice || selectedPlan.price)}
+                              </span>
                            </div>
                         </div>
 

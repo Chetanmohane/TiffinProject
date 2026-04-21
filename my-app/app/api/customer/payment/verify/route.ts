@@ -10,6 +10,7 @@ export async function GET(req: Request) {
     const order_id = searchParams.get("order_id");
     const plan_id = searchParams.get("plan_id");
     const email = searchParams.get("email");
+    const meal_type = searchParams.get("meal_type") || "Both";
 
     if (!order_id || !plan_id || !email) {
       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?error=invalid_callback`);
@@ -61,16 +62,32 @@ export async function GET(req: Request) {
 
     const startDate = new Date().toISOString().split("T")[0];
     const nextRenewal = new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-    const totalMeals = plan.duration * plan.mealsPerDay;
+    
+    let mealsPerDay = plan.mealsPerDay || 1;
+    let actualPaidAmount = plan.price;
+    
+    if (meal_type === "Lunch") {
+       mealsPerDay = 1;
+       actualPaidAmount = plan.lunchPrice || plan.price;
+    } else if (meal_type === "Dinner") {
+       mealsPerDay = 1;
+       actualPaidAmount = plan.dinnerPrice || plan.price;
+    } else if (meal_type === "Both") {
+       mealsPerDay = 2;
+       actualPaidAmount = plan.bothPrice || plan.price;
+    }
+
+    const totalMeals = plan.duration * mealsPerDay;
 
     customer.subscription = {
-      planName: plan.name,
+      planName: `${plan.name} (${meal_type})`,
       status: "Active",
       startDate,
       nextRenewal,
       purchaseDate: new Date(),
       mealsLeft: totalMeals,
       totalMeals,
+      mealType: meal_type
     };
     await customer.save();
 
@@ -80,9 +97,9 @@ export async function GET(req: Request) {
       phone: customer.phone,
       date: startDate,
       endDate: nextRenewal,
-      description: plan.name,
+      description: `${plan.name} - ${meal_type}`,
       type: "Credit",
-      amount: plan.price,
+      amount: actualPaidAmount,
       status: "Success",
       transactionId: order_id,
       planName: plan.name

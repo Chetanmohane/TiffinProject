@@ -25,6 +25,9 @@ interface Plan {
   description: string;
   tag: string;
   price: number;
+  lunchPrice: number;
+  dinnerPrice: number;
+  bothPrice: number;
   duration: number;
   mealsPerDay: number;
   visible: boolean;
@@ -36,6 +39,9 @@ const emptyPlan: Plan = {
   description: "",
   tag: "",
   price: 0,
+  lunchPrice: 0,
+  dinnerPrice: 0,
+  bothPrice: 0,
   duration: 30,
   mealsPerDay: 2,
   visible: true,
@@ -354,24 +360,75 @@ export default function PlanManagement() {
                      </div>
                   </div>
 
-                  {/* Pricing & Scheduling */}
-                  <div className="grid md:grid-cols-3 gap-6 pt-4">
-                     <div className="space-y-2">
-                        <label className="text-xs font-black uppercase text-slate-400 tracking-widest pl-1">Price (₹)</label>
-                        <div className="relative">
-                           <input 
-                              type="number"
-                              name="price"
-                              value={form.price}
-                              onChange={handleChange}
-                              className="w-full bg-slate-50 border-0 rounded-2xl p-4 pl-10 font-black text-slate-900"
-                              required
-                           />
-                           <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                  {/* Pricing Details */}
+                  <div className="bg-slate-50 p-6 rounded-[2rem] border border-dashed border-slate-200">
+                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 text-center">Dynamic Pricing Models (Meal Wise)</p>
+                     
+                     <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                           <label className="text-xs font-black uppercase text-orange-600 tracking-widest pl-1">Lunch Only Price (₹)</label>
+                           <div className="relative">
+                              <input 
+                                 type="number"
+                                 name="lunchPrice"
+                                 value={form.lunchPrice}
+                                 onChange={handleChange}
+                                 className="w-full bg-white border border-slate-100 rounded-2xl p-4 pl-10 font-black text-slate-900 focus:ring-2 focus:ring-orange-500 outline-none"
+                                 required
+                              />
+                              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-400" size={16} />
+                           </div>
+                        </div>
+                        <div className="space-y-2">
+                           <label className="text-xs font-black uppercase text-indigo-600 tracking-widest pl-1">Dinner Only Price (₹)</label>
+                           <div className="relative">
+                              <input 
+                                 type="number"
+                                 name="dinnerPrice"
+                                 value={form.dinnerPrice}
+                                 onChange={handleChange}
+                                 className="w-full bg-white border border-slate-100 rounded-2xl p-4 pl-10 font-black text-slate-900 focus:ring-2 focus:ring-orange-500 outline-none"
+                                 required
+                              />
+                              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400" size={16} />
+                           </div>
+                        </div>
+                        <div className="space-y-2">
+                           <label className="text-xs font-black uppercase text-emerald-600 tracking-widest pl-1">Both (L+D) Price (₹)</label>
+                           <div className="relative">
+                              <input 
+                                 type="number"
+                                 name="bothPrice"
+                                 value={form.bothPrice}
+                                 onChange={handleChange}
+                                 className="w-full bg-white border border-slate-100 rounded-2xl p-4 pl-10 font-black text-slate-900 focus:ring-2 focus:ring-orange-500 outline-none"
+                                 required
+                              />
+                              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400" size={16} />
+                           </div>
+                        </div>
+
+                        <div className="space-y-2">
+                           <label className="text-xs font-black uppercase text-slate-400 tracking-widest pl-1">Base Price (Display) ₹</label>
+                           <div className="relative">
+                              <input 
+                                 type="number"
+                                 name="price"
+                                 value={form.price}
+                                 onChange={handleChange}
+                                 className="w-full bg-white border border-slate-100 rounded-2xl p-4 pl-10 font-black text-slate-900 focus:ring-2 focus:ring-orange-500 outline-none"
+                                 required
+                              />
+                              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                           </div>
                         </div>
                      </div>
+                  </div>
+
+                  {/* Scheduling Section */}
+                  <div className="grid md:grid-cols-2 gap-6 pt-4">
                      <div className="space-y-2">
-                        <label className="text-xs font-black uppercase text-slate-400 tracking-widest pl-1">Days</label>
+                        <label className="text-xs font-black uppercase text-slate-400 tracking-widest pl-1">Duration (Days)</label>
                         <div className="relative">
                            <input 
                               type="number"
@@ -392,7 +449,7 @@ export default function PlanManagement() {
                               name="mealsPerDay"
                               value={form.mealsPerDay}
                               onChange={handleChange}
-                              className="w-full bg-slate-50 border-0 rounded-2xl p-4 pl-10 font-black text-slate-900"
+                              className="w-full bg-slate-50 border-0 rounded-2xl p-4 pl-10 font-black text-slate-900 shadow-inner"
                               required
                            />
                            <Package className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={16} />

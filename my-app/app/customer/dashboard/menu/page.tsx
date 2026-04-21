@@ -141,10 +141,9 @@ export default function MenuPage() {
 
                 {/* Action button mock hover */}
                 {isToday && (
-                  <button className="w-full mt-6 bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold text-sm py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
-                    <Utensils size={16} />
-                    Track Today's Meal
-                  </button>
+                  <div className="mt-auto pt-6 text-center">
+                    <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest bg-orange-50 py-2 rounded-xl">Today's Selection</p>
+                  </div>
                 )}
 
               </motion.div>

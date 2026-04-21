@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     const today = new Date().toISOString().split("T")[0];
     const PausedMeal = (await import("@/models/PausedMeal")).default;
     const isPausedToday = customer ? await PausedMeal.findOne({
-      customerName: customer.name,
+      customerId: customer._id,
       pauseFrom: { $lte: today },
       pauseTo: { $gte: today },
     }) : null;

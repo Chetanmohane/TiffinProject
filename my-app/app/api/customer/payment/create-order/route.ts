@@ -6,12 +6,22 @@ import Plan from "@/models/Plan";
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const { planId, email } = await req.json();
+    const { planId, email, mealType } = await req.json();
 
     if (!email) throw new Error("Email is required");
 
     const plan = await Plan.findById(planId).lean() as any;
     if (!plan) throw new Error("Plan not found");
+
+    // Determine price based on mealType
+    let orderAmount = plan.price;
+    if (mealType === "Lunch") orderAmount = plan.lunchPrice;
+    else if (mealType === "Dinner") orderAmount = plan.dinnerPrice;
+    else if (mealType === "Both") orderAmount = plan.bothPrice;
+    
+    if (!orderAmount || orderAmount <= 0) {
+      orderAmount = plan.price; // fallback
+    }
 
     const customer = await User.findOne({ email: email.toLowerCase() });
     if (!customer) throw new Error("Customer not found");
@@ -43,9 +53,10 @@ export async function POST(req: Request) {
           customer_phone: "9999999999", // Hardcoded to bypass Strict Cashfree Regex formatting errors on bad DB entries
           customer_name: customer.name || "Customer",
         },
-        order_amount: plan.price,
+        order_amount: orderAmount,
         order_currency: "INR",
         order_id: orderId,
+        order_note: mealType || "Subscription"
       }),
     };
 

@@ -16,8 +16,10 @@ export async function GET(req: Request) {
     if (!customer) throw new Error("Customer not found");
 
     const customerPauses = await PausedMeal.find({ customerName: customer.name }).lean();
+    const hasActivePlan = customer.subscription?.status === "Active";
 
     return NextResponse.json({ 
+      hasActivePlan,
       pausedList: customerPauses.map((p: any) => ({
         id: p._id,
         from: p.pauseFrom,
@@ -42,6 +44,11 @@ export async function POST(req: Request) {
     if (!customer) throw new Error("Customer not found");
 
     if (action === "add") {
+      const hasActivePlan = customer.subscription?.status === "Active";
+      if (!hasActivePlan) {
+        throw new Error("You don't have any active plan. Please buy a plan to pause your meals.");
+      }
+      
       const existingPauses = await PausedMeal.find({ customerId: customer._id }).lean();
       
       const newStart = new Date(item.from).getTime();

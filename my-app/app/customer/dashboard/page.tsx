@@ -124,7 +124,7 @@ export default function Order() {
       {/* Hero & Subscription Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
         <div className="lg:col-span-2 rounded-[3rem] shadow-2xl shadow-gray-200/40 overflow-hidden h-fit">
-          <MealHero meal={dashboardData?.todayMeal} />
+          <MealHero meal={dashboardData?.todayMeal} dinner={dashboardData?.todayDinner} />
         </div>
         
         <div className="lg:col-span-1">
@@ -248,7 +248,7 @@ export default function Order() {
       <div className="pt-8 sm:pt-12">
         <div className="mb-8 px-1">
            <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase leading-none mb-1">Recent Activity</h2>
-           <p className="text-sm font-bold text-gray-400">Track your daily consumption and delivery status</p>
+           <p className="text-sm font-bold text-gray-400">View your recent meal activity and history</p>
         </div>
         <HistoryTable history={historyData} />
       </div>

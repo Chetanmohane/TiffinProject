@@ -73,20 +73,61 @@ export default function MenuManagementPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="text-sm font-bold text-orange-600 mb-1 block">Lunch</label>
+                <label className="text-sm font-bold text-orange-600 mb-1 block uppercase tracking-tight">Lunch Menu</label>
                 <textarea 
                   value={menu.lunch}
                   onChange={(e) => handleChange(i, 'lunch', e.target.value)}
-                  className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-orange-400 outline-none h-20"
+                  className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-orange-400 outline-none h-20 mb-3"
                 />
+                <div className="grid grid-cols-2 gap-3">
+                   <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Lunch Time</label>
+                      <input 
+                         type="text" 
+                         value={menu.lunchTime || "01:00 PM"} 
+                         onChange={(e) => handleChange(i, 'lunchTime', e.target.value)}
+                         className="w-full border rounded-lg p-2 text-xs outline-none focus:border-orange-500" 
+                      />
+                   </div>
+                   <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Lunch Status</label>
+                      <input 
+                         type="text" 
+                         value={menu.lunchStatus || "Out for Delivery"} 
+                         onChange={(e) => handleChange(i, 'lunchStatus', e.target.value)}
+                         className="w-full border rounded-lg p-2 text-xs outline-none focus:border-orange-500" 
+                      />
+                   </div>
+                </div>
               </div>
+              
               <div>
-                <label className="text-sm font-bold text-indigo-500 mb-1 block">Dinner</label>
+                <label className="text-sm font-bold text-indigo-500 mb-1 block uppercase tracking-tight">Dinner Menu</label>
                 <textarea 
                   value={menu.dinner}
                   onChange={(e) => handleChange(i, 'dinner', e.target.value)}
-                  className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-indigo-400 outline-none h-20"
+                  className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-indigo-400 outline-none h-20 mb-3"
                 />
+                <div className="grid grid-cols-2 gap-3">
+                   <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Dinner Time</label>
+                      <input 
+                         type="text" 
+                         value={menu.dinnerTime || "08:00 PM"} 
+                         onChange={(e) => handleChange(i, 'dinnerTime', e.target.value)}
+                         className="w-full border rounded-lg p-2 text-xs outline-none focus:border-indigo-500" 
+                      />
+                   </div>
+                   <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase">Dinner Status</label>
+                      <input 
+                         type="text" 
+                         value={menu.dinnerStatus || "Scheduled"} 
+                         onChange={(e) => handleChange(i, 'dinnerStatus', e.target.value)}
+                         className="w-full border rounded-lg p-2 text-xs outline-none focus:border-indigo-500" 
+                      />
+                   </div>
+                </div>
               </div>
             </div>
           </div>
