@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
+import IdleTimer from "@/components/IdleTimer";
 
 export const metadata: Metadata = {
   title: "Annapurna Delight - Premium Home-Style Tiffin Service",
@@ -17,6 +18,7 @@ export default function RootLayout({
       <body
         className="antialiased m-0 p-0 overflow-x-hidden font-sans"
       >
+        <IdleTimer />
         {/* <Navbar /> */}
         {children}
         <Toaster 
