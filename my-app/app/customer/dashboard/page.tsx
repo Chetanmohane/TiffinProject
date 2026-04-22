@@ -8,6 +8,14 @@ import { Package, Shield, Home } from "lucide-react";
 import StatCard from "./StatCard";
 import MealHero from "./MealHero";
 import HistoryTable from "./HistoryTable";
+import { 
+  X, 
+  ArrowRight, 
+  ShieldCheck, 
+  Zap 
+} from "lucide-react";
+import toast from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Order() {
   const router = useRouter();
@@ -16,6 +24,18 @@ export default function Order() {
   const [availablePlans, setAvailablePlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState("customer");
+
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [selectedMealType, setSelectedMealType] = useState<"Lunch" | "Dinner" | "Both">("Both");
+  const [checkoutStep, setCheckoutStep] = useState(1);
+  const [loadingCheckout, setLoadingCheckout] = useState(false);
+  const [deliveryInfo, setDeliveryInfo] = useState({ 
+    name: "", 
+    houseNo: "", 
+    area: "", 
+    pincode: "",
+    phone: "" 
+  });
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -28,6 +48,15 @@ export default function Order() {
       try {
         const user = userStr ? JSON.parse(userStr) : null;
         const emailQuery = user?.email ? `?email=${encodeURIComponent(user.email)}` : "";
+
+        // Pre-fill delivery info
+        if (user) {
+          setDeliveryInfo(prev => ({
+            ...prev,
+            name: user.name || "",
+            phone: user.phone || ""
+          }));
+        }
 
         const [dashRes, histRes, plansRes] = await Promise.all([
           fetch(`/api/customer/dashboard${emailQuery}`),
@@ -51,6 +80,80 @@ export default function Order() {
     }
     loadData();
   }, [router]);
+
+  const confirmPurchase = async () => {
+    if (!selectedPlan) return;
+    
+    const fullAddress = `${deliveryInfo.houseNo}, ${deliveryInfo.area}${deliveryInfo.pincode ? ' - ' + deliveryInfo.pincode : ''}`;
+    
+    if (!deliveryInfo.houseNo.trim() || !deliveryInfo.area.trim()) {
+      toast.error("Please provide complete delivery details");
+      setCheckoutStep(1);
+      return;
+    }
+    
+    const userStr = localStorage.getItem("user");
+    const user = userStr ? JSON.parse(userStr) : null;
+
+    if (!user || !user.email) {
+       toast.error("Your session has expired. Please log in again.");
+       return;
+    }
+
+    setLoadingCheckout(true);
+    try {
+      // Create order securely
+      const res = await fetch("/api/customer/payment/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          planId: selectedPlan._id || selectedPlan.id,
+          email: user.email,
+          deliveryAddress: fullAddress,
+          mealType: selectedMealType
+        }),
+      });
+      const data = await res.json();
+      
+      if (!data.success) {
+        toast.error("⚠️ Error: " + (data.message || data.error));
+        setLoadingCheckout(false);
+        return;
+      }
+
+      // Initialize Cashfree
+      if (!(window as any).Cashfree) {
+         await new Promise((resolve, reject) => {
+             const script = document.createElement("script");
+             script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
+             script.onload = resolve;
+             script.onerror = () => reject(new Error("Failed to load script"));
+             document.body.appendChild(script);
+         });
+      }
+      
+      const cashfree = (window as any).Cashfree({
+          mode: data.environment || "sandbox"
+      });
+      
+      cashfree.checkout({
+          paymentSessionId: data.payment_session_id,
+          redirectTarget: "_modal"
+      }).then(async (result: any) => {
+          if (result.error) {
+              toast.error(`Payment failed: ${result.error.message}`);
+              setLoadingCheckout(false);
+          }
+          if (result.paymentDetails) {
+              toast.success("Payment completed! Redirecting...");
+              window.location.href = `/api/customer/payment/verify?order_id=${data.order_id}&plan_id=${selectedPlan._id || selectedPlan.id}&email=${user.email}&meal_type=${selectedMealType}`;
+          }
+      });
+    } catch (err: any) {
+      toast.error(`❌ Error: ${err.message}`);
+      setLoadingCheckout(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -151,12 +254,15 @@ export default function Order() {
                       <p className="text-[9px] text-gray-600 uppercase font-black tracking-widest mb-1">Remaining Meals</p>
                       <p className="text-3xl font-black text-white">{dashboardData?.quickStats?.find((s: any) => s.title === 'Meals Left')?.value || 0}</p>
                    </div>
-                   <Link 
-                      href="/customer/dashboard/plan" 
+                   <button 
+                      onClick={() => {
+                        const target = document.getElementById('tailored-plans');
+                        if (target) target.scrollIntoView({ behavior: 'smooth' });
+                      }}
                       className="px-7 py-3 bg-white/5 hover:bg-orange-600 rounded-2xl text-[10px] font-black transition-all uppercase tracking-widest border border-white/5 hover:border-orange-500 active:scale-95"
                    >
-                      Manage
-                   </Link>
+                      Upgrade
+                   </button>
                 </div>
              </div>
              <div className="absolute -bottom-10 -right-10 text-white/[0.03] transform -rotate-12 pointer-events-none group-hover:scale-110 group-hover:rotate-0 transition-all duration-700">
@@ -169,10 +275,10 @@ export default function Order() {
       {/* QUICK ACTIONS ROW */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
         <Action 
-          label="Active Plan" 
-          icon="📝" 
-          link="/customer/dashboard/plan" 
-          gradient="from-blue-600 to-indigo-700" 
+          label="Menu Card" 
+          icon="🍽️" 
+          link="/customer/dashboard/menu" 
+          gradient="from-orange-500 to-amber-600" 
         />
         <Action 
           label={(dashboardData?.user?.subscriptionStatus === 'Expired' || dashboardData?.user?.subscriptionStatus === 'Inactive') ? "No Active Plan" : "Pause Meal"}
@@ -186,10 +292,11 @@ export default function Order() {
           gradient={ (dashboardData?.user?.subscriptionStatus === 'Expired' || dashboardData?.user?.subscriptionStatus === 'Inactive') ? "from-gray-400 to-gray-500 opacity-50" : "from-rose-500 to-red-600"} 
         />
         <Action 
-          label="Daily Menu" 
-          icon="🍽️" 
-          link="/customer/dashboard/menu" 
-          gradient="from-orange-500 to-amber-600" 
+          label="Live Chat" 
+          icon="💬" 
+          link="#" 
+          onClick={() => toast.success("Chef Assistant is coming soon!")}
+          gradient="from-blue-600 to-indigo-700" 
         />
         <Action 
           label="Settings" 
@@ -207,21 +314,20 @@ export default function Order() {
             {...stat} 
             onClick={() => {
               if (stat.title === 'Active Plan') {
-                 window.location.href = '/customer/dashboard/plan';
+                 const target = document.getElementById('tailored-plans');
+                 if (target) target.scrollIntoView({ behavior: 'smooth' });
               }
             }}
           />
         ))}
       </div>
 
-      {/* TAILORED PLANS */}
-      <div className="pt-10">
+      <div className="pt-10" id="tailored-plans">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10 px-1">
           <div>
             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight uppercase leading-none mb-2">Tailored Plans <span className="text-orange-500">for You</span></h2>
             <p className="text-sm font-bold text-gray-400">Gourmet experiences curated just for your taste & health</p>
           </div>
-          <Link href="/customer/dashboard/plan" className="text-[10px] font-black text-orange-600 hover:text-orange-700 underline decoration-2 underline-offset-8 uppercase tracking-[0.2em] w-fit">Explore More</Link>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
@@ -237,12 +343,16 @@ export default function Order() {
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">/ {plan.duration} days intensive</span>
                </div>
                <div className="mt-auto">
-                 <Link 
-                   href="/customer/dashboard/plan"
-                   className="w-full py-4 bg-gray-900 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest text-center block hover:bg-orange-500 hover:shadow-xl hover:shadow-orange-200 transition-all active:scale-95"
-                  >
-                    Activate Now
-                  </Link>
+                  <button 
+                    onClick={() => {
+                       setSelectedPlan(plan);
+                       setSelectedMealType("Both");
+                       setCheckoutStep(1);
+                    }}
+                    className="w-full py-4 bg-gray-900 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest text-center block hover:bg-orange-500 hover:shadow-xl hover:shadow-orange-200 transition-all active:scale-95"
+                   >
+                     Activate Now
+                   </button>
                </div>
             </div>
           ))}
@@ -257,6 +367,148 @@ export default function Order() {
         </div>
         <HistoryTable history={historyData} />
       </div>
+
+      {/* CHECKOUT MODAL */}
+      <AnimatePresence>
+        {selectedPlan && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-gray-900/60 backdrop-blur-md"
+              onClick={() => setSelectedPlan(null)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white w-full max-w-xl rounded-[2.5rem] sm:rounded-[3rem] shadow-2xl overflow-hidden p-6 sm:p-12 border border-gray-100 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <span className="px-3 py-1 bg-orange-100 text-orange-600 text-[10px] font-black uppercase tracking-widest rounded-lg mb-2 inline-block">
+                    Step {checkoutStep} of 2
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+                    {checkoutStep === 1 ? "Delivery Details 🚚" : "Payment 💳"}
+                  </h2>
+                </div>
+                <button 
+                  onClick={() => setSelectedPlan(null)}
+                  className="w-10 h-10 bg-gray-50 text-gray-400 rounded-full flex items-center justify-center hover:bg-orange-50 hover:text-orange-500 transition-all font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Meal Selection */}
+              <div className="mb-8 p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">Select Meal Type</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                        { id: 'Lunch', label: 'Lunch', price: selectedPlan.lunchPrice || (selectedPlan.price / 2) },
+                        { id: 'Dinner', label: 'Dinner', price: selectedPlan.dinnerPrice || (selectedPlan.price / 2) },
+                        { id: 'Both', label: 'Both', price: selectedPlan.bothPrice || selectedPlan.price }
+                    ].map((option) => (
+                        <button
+                          key={option.id}
+                          onClick={() => setSelectedMealType(option.id as any)}
+                          className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all ${selectedMealType === option.id ? 'bg-orange-500 border-orange-500 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500 hover:border-orange-200'}`}
+                        >
+                          <span className="text-[10px] font-black uppercase tracking-tighter">{option.label}</span>
+                          <span className={`text-xs font-black ${selectedMealType === option.id ? 'text-white' : 'text-slate-900'}`}>₹{option.price}</span>
+                        </button>
+                    ))}
+                  </div>
+              </div>
+
+              {checkoutStep === 1 ? (
+                <div className="space-y-4 mb-8">
+                  <input 
+                    type="text"
+                    value={deliveryInfo.name}
+                    onChange={(e) => setDeliveryInfo({...deliveryInfo, name: e.target.value})}
+                    placeholder="Receiver Name"
+                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none ring-orange-500/20 focus:ring-2"
+                  />
+                  <input 
+                    type="text"
+                    value={deliveryInfo.phone}
+                    maxLength={10}
+                    onChange={(e) => setDeliveryInfo({...deliveryInfo, phone: e.target.value.replace(/\D/g, '')})}
+                    placeholder="10-Digit Contact"
+                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none ring-orange-500/20 focus:ring-2"
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <input 
+                      type="text"
+                      value={deliveryInfo.houseNo}
+                      onChange={(e) => setDeliveryInfo({...deliveryInfo, houseNo: e.target.value})}
+                      placeholder="Flat/House No."
+                      className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none ring-orange-500/20 focus:ring-2"
+                    />
+                    <input 
+                      type="text"
+                      value={deliveryInfo.pincode}
+                      maxLength={6}
+                      onChange={(e) => setDeliveryInfo({...deliveryInfo, pincode: e.target.value.replace(/\D/g, '')})}
+                      placeholder="Pincode"
+                      className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none ring-orange-500/20 focus:ring-2"
+                    />
+                  </div>
+                  <textarea 
+                    rows={2}
+                    value={deliveryInfo.area}
+                    onChange={(e) => setDeliveryInfo({...deliveryInfo, area: e.target.value})}
+                    placeholder="Area / Landmark"
+                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none ring-orange-500/20 focus:ring-2 resize-none"
+                  />
+                  <button 
+                    onClick={() => {
+                      if (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.houseNo || !deliveryInfo.area || !deliveryInfo.pincode) {
+                        toast.error("Please fill all details");
+                        return;
+                      }
+                      if (deliveryInfo.phone.length !== 10 || deliveryInfo.pincode.length !== 6) {
+                        toast.error("Validation failed");
+                        return;
+                      }
+                      setCheckoutStep(2);
+                    }}
+                    className="w-full py-5 rounded-2xl bg-gray-900 text-white font-black uppercase text-xs tracking-widest hover:bg-orange-500 transition-all flex items-center justify-center gap-2"
+                  >
+                    Next Step <ArrowRight size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="bg-gray-50 rounded-[2rem] p-8 border border-gray-100">
+                    <div className="flex justify-between items-center pb-4 border-b border-gray-200">
+                      <span className="text-gray-400 font-extrabold uppercase text-[10px]">Plan</span>
+                      <span className="font-black text-gray-900">{selectedPlan.name}</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-4">
+                      <span className="text-orange-600 font-black uppercase text-xs">Total Amount</span>
+                      <span className="text-3xl font-black text-gray-900">₹{selectedMealType === 'Lunch' ? (selectedPlan.lunchPrice || selectedPlan.price / 2) : selectedMealType === 'Dinner' ? (selectedPlan.dinnerPrice || selectedPlan.price / 2) : (selectedPlan.bothPrice || selectedPlan.price)}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <button onClick={() => setCheckoutStep(1)} className="flex-1 py-5 rounded-2xl bg-gray-50 text-gray-400 font-black uppercase text-xs tracking-widest">Back</button>
+                    <button 
+                      onClick={confirmPurchase}
+                      disabled={loadingCheckout}
+                      className="flex-[2] py-5 rounded-2xl bg-orange-600 text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-orange-200"
+                    >
+                      {loadingCheckout ? "Loading..." : "Pay Securely"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
