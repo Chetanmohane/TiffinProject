@@ -26,37 +26,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRef } from "react";
 import dynamic from "next/dynamic";
 
-// Simple celebration effect
-const SuccessCelebration = () => (
-  <div className="fixed inset-0 pointer-events-none z-[1000] overflow-hidden">
-    {[...Array(20)].map((_, i) => (
-      <motion.div
-        key={i}
-        initial={{ 
-          top: "-10%", 
-          left: `${Math.random() * 100}%`,
-          rotate: 0,
-          scale: 0
-        }}
-        animate={{ 
-          top: "110%", 
-          rotate: 360 * 5,
-          scale: [0, 1, 1, 0.5]
-        }}
-        transition={{ 
-          duration: Math.random() * 2 + 2, 
-          repeat: Infinity,
-          delay: Math.random() * 5
-        }}
-        className="absolute w-2 h-6 sm:w-3 sm:h-8"
-        style={{ 
-          backgroundColor: ["#f97316", "#ef4444", "#3b82f6", "#22c55e"][Math.floor(Math.random() * 4)],
-          borderRadius: '4px'
-        }}
-      />
-    ))}
-  </div>
-);
 
 export default function PlanPage() {
   const [planData, setPlanData] = useState<any>(null);
@@ -65,7 +34,6 @@ export default function PlanPage() {
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [selectedMealType, setSelectedMealType] = useState<"Lunch" | "Dinner" | "Both">("Both");
-  const [showSuccess, setShowSuccess] = useState(false);
 
   // AI Chat States
   const [chatOpen, setChatOpen] = useState(false);
@@ -270,10 +238,7 @@ export default function PlanPage() {
 
     // Check payment redirect statuses
     const params = new URLSearchParams(window.location.search);
-    if (params.get("success") === "true") {
-       toast.success("✅ Subscription successfully activated!");
-       window.history.replaceState(null, "", window.location.pathname);
-    } else if (params.get("error")) {
+    if (params.get("error")) {
        toast.error("⚠️ Payment failed or canceled: " + params.get("error"));
        window.history.replaceState(null, "", window.location.pathname);
     }

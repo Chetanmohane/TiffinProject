@@ -18,6 +18,8 @@ export default function PauseMealPage() {
   const [pausedList, setPausedList] = useState<PauseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasActivePlan, setHasActivePlan] = useState(true);
+  const [planStartDate, setPlanStartDate] = useState("");
+  const [planEndDate, setPlanEndDate] = useState("");
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -30,6 +32,8 @@ export default function PauseMealPage() {
       .then(data => {
         setPausedList(data.pausedList || []);
         setHasActivePlan(data.hasActivePlan);
+        setPlanStartDate(data.planStartDate || "");
+        setPlanEndDate(data.planEndDate || "");
         setLoading(false);
       });
   }, []);
@@ -89,6 +93,8 @@ export default function PauseMealPage() {
   };
 
   const today = new Date().toISOString().split("T")[0];
+  const minFromDate = planStartDate && planStartDate > today ? planStartDate : today;
+  const maxToDate = planEndDate || undefined;
 
   if (loading) {
     return (
@@ -110,7 +116,14 @@ export default function PauseMealPage() {
         </button>
 
         <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Pause Meal 🍽️</h1>
-        <p className="text-sm text-gray-500 mt-1 mb-6">Pause your tiffin delivery for selected dates</p>
+        <p className="text-sm text-gray-500 mt-1 mb-6">
+          Pause your tiffin delivery for selected dates.
+          {planStartDate && planEndDate && (
+             <span className="block mt-2 font-bold text-orange-600 bg-orange-50 p-2 rounded-lg border border-orange-100">
+               ⚠️ You can only pause between your active plan dates: {planStartDate} to {planEndDate}
+             </span>
+          )}
+        </p>
 
         {!hasActivePlan && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
@@ -130,11 +143,11 @@ export default function PauseMealPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700">From Date</label>
-              <input type="date" min={today} value={fromDate} onChange={(e) => setFromDate(e.target.value)} disabled={!hasActivePlan} className="mt-1 w-full rounded-lg border p-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none disabled:opacity-50" />
+              <input type="date" min={minFromDate} max={maxToDate} value={fromDate} onChange={(e) => setFromDate(e.target.value)} disabled={!hasActivePlan} className="mt-1 w-full rounded-lg border p-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none disabled:opacity-50" />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">To Date</label>
-              <input type="date" min={fromDate || today} value={toDate} onChange={(e) => setToDate(e.target.value)} disabled={!hasActivePlan} className="mt-1 w-full rounded-lg border p-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none disabled:opacity-50" />
+              <input type="date" min={fromDate || minFromDate} max={maxToDate} value={toDate} onChange={(e) => setToDate(e.target.value)} disabled={!hasActivePlan} className="mt-1 w-full rounded-lg border p-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none disabled:opacity-50" />
             </div>
           </div>
           <div>

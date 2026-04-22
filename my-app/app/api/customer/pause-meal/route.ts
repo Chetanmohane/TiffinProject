@@ -20,6 +20,8 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ 
       hasActivePlan,
+      planStartDate: customer.subscription?.startDate || null,
+      planEndDate: customer.subscription?.nextRenewal || null,
       pausedList: customerPauses.map((p: any) => ({
         id: p._id,
         from: p.pauseFrom,
@@ -47,6 +49,17 @@ export async function POST(req: Request) {
       const hasActivePlan = customer.subscription?.status === "Active";
       if (!hasActivePlan) {
         throw new Error("You don't have any active plan. Please buy a plan to pause your meals.");
+      }
+      
+      const planStart = customer.subscription.startDate;
+      const planEnd = customer.subscription.nextRenewal;
+      
+      if (planStart && item.from < planStart) {
+          throw new Error(`You can only pause meals after your plan starts (${planStart}).`);
+      }
+      
+      if (planEnd && item.to > planEnd) {
+          throw new Error(`You can only pause meals before your plan ends (${planEnd}).`);
       }
       
       const existingPauses = await PausedMeal.find({ customerId: customer._id }).lean();

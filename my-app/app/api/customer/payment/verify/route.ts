@@ -57,7 +57,7 @@ export async function GET(req: Request) {
     // Check if we already processed this order to prevent double credits
     const existingPayment = await Payment.findOne({ transactionId: order_id });
     if (existingPayment) {
-       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?success=true`);
+       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan`);
     }
 
     const startDate = new Date().toISOString().split("T")[0];
@@ -105,7 +105,7 @@ export async function GET(req: Request) {
       planName: plan.name
     });
 
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?success=true`);
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan`);
   } catch (error: any) {
     console.error("Verification Error:", error);
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?error=server_error`);
