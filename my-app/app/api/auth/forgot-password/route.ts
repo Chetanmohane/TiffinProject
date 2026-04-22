@@ -32,8 +32,11 @@ export async function POST(req: Request) {
 
     await user.save();
 
-    // Create reset URL
-    const resetUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+    // Create reset URL dynamically to support Vercel deployments seamlessly
+    const host = req.headers.get("host") || "localhost:3000";
+    const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+    const baseUrl = `${protocol}://${host}`;
+    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
     // Setup email transporter
     // NOTE: User needs to provide EMAIL_USER and EMAIL_PASS in .env.local
