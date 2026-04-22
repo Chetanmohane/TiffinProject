@@ -123,7 +123,7 @@ export async function GET(req: Request) {
       { upsert: true, new: true }
     );
 
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan`);
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?success=true`);
   } catch (error: any) {
     console.error("Verification Error:", error);
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?error=server_error`);

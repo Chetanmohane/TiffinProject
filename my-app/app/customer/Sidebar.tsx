@@ -43,6 +43,7 @@ export default function Sidebar() {
   const links = [
     { name: "Dashboard", href: "/customer/dashboard", icon: <LayoutDashboard size={20} /> },
     { name: "Menu", href: "/customer/dashboard/menu", icon: <Utensils size={20} /> },
+    { name: "Plan", href: "/customer/dashboard/plan", icon: <CalendarDays size={20} /> },
     { name: "Payments", href: "/customer/dashboard/payments", icon: <CreditCard size={20} /> },
     { name: "Settings", href: "/customer/settings", icon: <Settings size={20} /> },
   ];
