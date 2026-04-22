@@ -50,20 +50,20 @@ export async function GET(req: Request) {
         { transactionId: order_id },
         { status: "Failed" }
       );
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard?error=payment_failed_[Status:${orderData.order_status}]`);
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?error=payment_failed_[Status:${orderData.order_status}]`);
     }
 
     // Process the subscription activation
     const plan = await Plan.findById(plan_id).lean() as any;
-    if (!plan) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard?error=plan_not_found`);
+    if (!plan) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?error=plan_not_found`);
 
     const customer = await User.findOne({ email: email.toLowerCase() });
-    if (!customer) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard?error=customer_not_found`);
+    if (!customer) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?error=customer_not_found`);
 
     // Check if we already processed this order as Success
     const existingSuccess = await Payment.findOne({ transactionId: order_id, status: "Success" });
     if (existingSuccess) {
-       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard`);
+       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan`);
     }
 
     const startDate = new Date().toISOString().split("T")[0];
@@ -115,9 +115,9 @@ export async function GET(req: Request) {
       { upsert: true, new: true }
     );
 
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard`);
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan`);
   } catch (error: any) {
     console.error("Verification Error:", error);
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard?error=server_error`);
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?error=server_error`);
   }
 }
