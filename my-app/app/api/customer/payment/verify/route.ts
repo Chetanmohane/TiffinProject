@@ -66,8 +66,16 @@ export async function GET(req: Request) {
        return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan`);
     }
 
-    const startDate = new Date().toISOString().split("T")[0];
-    const nextRenewal = new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const now = new Date();
+    const isBefore11AM = now.getHours() < 11;
+    
+    let startDateObj = new Date();
+    if (!isBefore11AM) {
+      startDateObj.setDate(startDateObj.getDate() + 1);
+    }
+    
+    const startDate = startDateObj.toISOString().split("T")[0];
+    const nextRenewal = new Date(startDateObj.getTime() + plan.duration * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     
     let mealsPerDay = plan.mealsPerDay || 1;
     let actualPaidAmount = plan.price;

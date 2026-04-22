@@ -19,8 +19,16 @@ export async function POST(req: Request) {
     const customer = await User.findOne({ email: email.toLowerCase() });
     if (!customer) throw new Error("Customer not found");
 
-    const startDate = new Date().toISOString().split("T")[0];
-    const nextRenewal = new Date(Date.now() + plan.duration * 24 * 60 * 60 * 1000)
+    const now = new Date();
+    const isBefore11AM = now.getHours() < 11;
+    
+    let startDateObj = new Date();
+    if (!isBefore11AM) {
+      startDateObj.setDate(startDateObj.getDate() + 1);
+    }
+    
+    const startDate = startDateObj.toISOString().split("T")[0];
+    const nextRenewal = new Date(startDateObj.getTime() + plan.duration * 24 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0];
 

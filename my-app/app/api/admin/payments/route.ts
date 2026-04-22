@@ -61,8 +61,16 @@ export async function POST(req: Request) {
             const planRef = await Plan.findOne({ name: pmnt.planName || pmnt.description.split(" - ")[0] });
             
             if (customer && planRef) {
-              const startDate = new Date().toISOString().split("T")[0];
-              const nextRenewal = new Date(Date.now() + planRef.duration * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+              const now = new Date();
+              const isBefore11AM = now.getHours() < 11;
+              
+              let startDateObj = new Date();
+              if (!isBefore11AM) {
+                startDateObj.setDate(startDateObj.getDate() + 1);
+              }
+              
+              const startDate = startDateObj.toISOString().split("T")[0];
+              const nextRenewal = new Date(startDateObj.getTime() + planRef.duration * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
               const mealType = pmnt.description.includes("Lunch") ? "Lunch" : (pmnt.description.includes("Dinner") ? "Dinner" : "Both");
               const totalMeals = planRef.duration * (mealType === "Both" ? 2 : 1);
 
