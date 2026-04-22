@@ -34,9 +34,62 @@ export async function POST(req: Request) {
       const pmnt = await Payment.findById(id);
       if (!pmnt) throw new Error("Payment not found");
 
+      // SMART AUTO-SYNC: If it's a Cashfree order, check live status first
+      if (pmnt.transactionId && pmnt.transactionId.startsWith("order_")) {
+        try {
+          const appId = process.env.CASHFREE_APP_ID;
+          const secretKey = process.env.CASHFREE_SECRET_KEY;
+          const isProd = secretKey?.startsWith("cfsk_ma_prod_") || process.env.NODE_ENV === "production";
+          const url = isProd 
+            ? `https://api.cashfree.com/pg/orders/${pmnt.transactionId}` 
+            : `https://sandbox.cashfree.com/pg/orders/${pmnt.transactionId}`;
+
+          const res = await fetch(url, {
+            headers: {
+              "x-api-version": "2023-08-01",
+              "x-client-id": appId || "",
+              "x-client-secret": secretKey || "",
+            }
+          });
+          const orderData = await res.json();
+
+          if (orderData.order_status === "PAID") {
+            // Auto-Activate plan if not done
+            const customer = await User.findById(pmnt.customerId);
+            const Plan = (await import("@/models/Plan")).default;
+            // Try to find plan from description
+            const planRef = await Plan.findOne({ name: pmnt.planName || pmnt.description.split(" - ")[0] });
+            
+            if (customer && planRef) {
+              const startDate = new Date().toISOString().split("T")[0];
+              const nextRenewal = new Date(Date.now() + planRef.duration * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+              const mealType = pmnt.description.includes("Lunch") ? "Lunch" : (pmnt.description.includes("Dinner") ? "Dinner" : "Both");
+              const totalMeals = planRef.duration * (mealType === "Both" ? 2 : 1);
+
+              customer.subscription = {
+                planName: `${planRef.name} (${mealType})`,
+                status: "Active",
+                startDate,
+                nextRenewal,
+                purchaseDate: new Date(),
+                mealsLeft: totalMeals,
+                totalMeals,
+                mealType
+              };
+              await customer.save();
+            }
+            await Payment.findByIdAndUpdate(id, { status: "Success" });
+            return NextResponse.json({ success: true, message: "Transaction verified with Gateway and Plan activated!" });
+          }
+        } catch (e) {
+          console.error("Gateway Sync Failed:", e);
+        }
+      }
+
+      // Fallback: Manual wallet credit for direct payments
       if (pmnt.type === "Credit") {
-        const customer = await User.findOne({ name: pmnt.customerName });
-        if (!customer) throw new Error(`Customer "${pmnt.customerName}" not found.`);
+        const customer = await User.findById(pmnt.customerId);
+        if (!customer) throw new Error(`Customer not found.`);
         customer.walletBalance = (customer.walletBalance || 0) + pmnt.amount;
         await customer.save();
       }
