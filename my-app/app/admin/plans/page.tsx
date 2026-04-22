@@ -14,9 +14,11 @@ import {
   CheckCircle2,
   AlertCircle,
   LayoutGrid,
-  List as ListIcon
+  List as ListIcon,
+  ShieldCheck
 } from "lucide-react";
 import { useRBAC } from "@/hooks/useRBAC";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Plan {
   id?: string;
@@ -55,6 +57,8 @@ export default function PlanManagement() {
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  const [confirmConfig, setConfirmConfig] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void; type: 'danger' | 'warning' } | null>(null);
 
   const fetchPlans = async () => {
     setLoading(true);
@@ -106,20 +110,28 @@ export default function PlanManagement() {
     setIsSidebarOpen(true);
   };
 
-  const deletePlan = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this plan?")) return;
-    try {
-      const response = await fetch("/api/admin/plans", {
-        method: "DELETE",
-        body: JSON.stringify({ id }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        await fetchPlans();
+  const deletePlan = (id: string) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: "Delete Plan",
+      message: "Are you sure you want to delete this subscription plan? Existing subscribers will still remain on this plan until expiry, but it will be hidden from new customers.",
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const response = await fetch("/api/admin/plans", {
+            method: "DELETE",
+            body: JSON.stringify({ id }),
+          });
+          const data = await response.json();
+          if (data.success) {
+            await fetchPlans();
+          }
+        } catch (err) {
+          console.error("Failed to delete plan");
+        }
+        setConfirmConfig(null);
       }
-    } catch (err) {
-      console.error("Failed to delete plan");
-    }
+    });
   };
 
   return (
@@ -510,6 +522,52 @@ export default function PlanManagement() {
           </div>
         </>
       )}
+
+      {/* Confirm Modal */}
+      <AnimatePresence>
+        {confirmConfig?.isOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setConfirmConfig(null)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden p-8 text-slate-900"
+            >
+               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 ${
+                 confirmConfig.type === 'danger' ? 'bg-red-50 text-red-500' : 'bg-orange-50 text-orange-500'
+               }`}>
+                  <ShieldCheck size={32} />
+               </div>
+               <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{confirmConfig.title}</h3>
+               <p className="text-slate-500 font-medium leading-relaxed mb-8">{confirmConfig.message}</p>
+               
+               <div className="flex gap-4">
+                  <button 
+                    onClick={() => setConfirmConfig(null)}
+                    className="flex-1 px-6 py-4 rounded-2xl font-black text-slate-500 border border-slate-100 hover:bg-slate-50 transition-all uppercase tracking-widest text-[10px]"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={confirmConfig.onConfirm}
+                    className={`flex-1 px-6 py-4 rounded-2xl font-black text-white shadow-xl transition-all uppercase tracking-widest text-[10px] active:scale-95 ${
+                      confirmConfig.type === 'danger' ? 'bg-red-600 shadow-red-100 hover:bg-red-700' : 'bg-orange-600 shadow-orange-100 hover:bg-orange-700'
+                    }`}
+                  >
+                    Confirm Action
+                  </button>
+               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <style jsx>{`
          .line-clamp-1 {

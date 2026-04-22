@@ -29,6 +29,8 @@ export default function AdminCustomers() {
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+  const [confirmConfig, setConfirmConfig] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void; type: 'danger' | 'warning' } | null>(null);
+
   useEffect(() => {
     fetchCustomers();
   }, []);
@@ -48,45 +50,59 @@ export default function AdminCustomers() {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete ${name}? This action cannot be undone.`)) return;
-
-    try {
-      const res = await fetch(`/api/admin/customers?id=${id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (data.success) {
-        setCustomers(customers.filter(c => c.id !== id));
-        toast.success("Customer deleted successfully");
-      } else {
-        toast.error("Failed to delete: " + data.error);
+  const handleDelete = (id: string, name: string) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: "Delete Customer",
+      message: `Are you sure you want to delete ${name}? This action cannot be undone and all subscription data will be lost.`,
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/admin/customers?id=${id}`, { method: "DELETE" });
+          const data = await res.json();
+          if (data.success) {
+            setCustomers(customers.filter(c => c.id !== id));
+            toast.success("Customer deleted successfully");
+          } else {
+            toast.error("Failed to delete: " + data.error);
+          }
+        } catch (err) {
+          toast.error("Error deleting customer");
+        }
+        setConfirmConfig(null);
       }
-    } catch (err) {
-      toast.error("Error deleting customer");
-    }
+    });
   };
 
-  const handleMakeStaff = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to promote ${name} to Staff? They will be moved out of the Customers section.`)) return;
-
-    try {
-      const res = await fetch("/api/admin/customers", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id,
-          updates: { role: "staff" }
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setCustomers(customers.filter(c => c.id !== id));
-        toast.success(`${name} is now a Staff member!`);
-      } else {
-        toast.error("Failed to update role: " + data.error);
+  const handleMakeStaff = (id: string, name: string) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: "Promote to Staff",
+      message: `Are you sure you want to promote ${name} to Staff? They will be moved out of the Customers section and granted management access.`,
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          const res = await fetch("/api/admin/customers", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id,
+              updates: { role: "staff" }
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            setCustomers(customers.filter(c => c.id !== id));
+            toast.success(`${name} is now a Staff member!`);
+          } else {
+            toast.error("Failed to update role: " + data.error);
+          }
+        } catch (err) {
+          toast.error("Error promoting customer");
+        }
+        setConfirmConfig(null);
       }
-    } catch (err) {
-      toast.error("Error promoting customer");
-    }
+    });
   };
 
   const handleEditClick = (customer: any) => {
@@ -417,6 +433,52 @@ export default function AdminCustomers() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Confirm Modal */}
+      <AnimatePresence>
+        {confirmConfig?.isOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setConfirmConfig(null)}
+              className="absolute inset-0 bg-gray-900/40 backdrop-blur-[2px]"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden p-8 text-black"
+            >
+               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 ${
+                 confirmConfig.type === 'danger' ? 'bg-red-50 text-red-500' : 'bg-orange-50 text-orange-500'
+               }`}>
+                  <ShieldCheck size={32} />
+               </div>
+               <h3 className="text-2xl font-black text-gray-900 tracking-tight mb-2">{confirmConfig.title}</h3>
+               <p className="text-gray-500 font-medium leading-relaxed mb-8">{confirmConfig.message}</p>
+               
+               <div className="flex gap-4">
+                  <button 
+                    onClick={() => setConfirmConfig(null)}
+                    className="flex-1 px-6 py-4 rounded-2xl font-black text-gray-500 border border-gray-100 hover:bg-gray-50 transition-all uppercase tracking-widest text-[10px]"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={confirmConfig.onConfirm}
+                    className={`flex-1 px-6 py-4 rounded-2xl font-black text-white shadow-xl transition-all uppercase tracking-widest text-[10px] active:scale-95 ${
+                      confirmConfig.type === 'danger' ? 'bg-red-600 shadow-red-100 hover:bg-red-700' : 'bg-orange-600 shadow-orange-100 hover:bg-orange-700'
+                    }`}
+                  >
+                    Confirm Action
+                  </button>
+               </div>
             </motion.div>
           </div>
         )}

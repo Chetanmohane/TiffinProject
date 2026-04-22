@@ -2,7 +2,7 @@
 
 import toast from "react-hot-toast";
 import { useEffect, useMemo, useState } from "react";
-import { XCircle, Search, RefreshCw, CalendarDays, Phone, ClipboardList, Edit, Trash2, X } from "lucide-react";
+import { XCircle, Search, RefreshCw, CalendarDays, Phone, ClipboardList, Edit, Trash2, X, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRBAC } from "@/hooks/useRBAC";
 
@@ -112,19 +112,29 @@ export default function AdminCancellationsPage() {
     }
   }
 
+  const [confirmConfig, setConfirmConfig] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void; type: 'danger' | 'warning' } | null>(null);
+
   async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this record?")) return;
-    try {
-      const res = await fetch(`/api/admin/cancellations?id=${id}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
-      if (data.success) {
-        fetchData();
+    setConfirmConfig({
+      isOpen: true,
+      title: "Delete Record",
+      message: "Are you sure you want to delete this cancellation record? This will permanently remove the entry from the history.",
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/admin/cancellations?id=${id}`, {
+            method: "DELETE",
+          });
+          const data = await res.json();
+          if (data.success) {
+            fetchData();
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        setConfirmConfig(null);
       }
-    } catch (e) {
-      console.error(e);
-    }
+    });
   }
 
   return (
@@ -452,6 +462,47 @@ export default function AdminCancellationsPage() {
         )}
       </AnimatePresence>
 
+      {/* Confirm Modal */}
+      <AnimatePresence>
+        {confirmConfig?.isOpen && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setConfirmConfig(null)}
+              className="absolute inset-0 bg-gray-900/40 backdrop-blur-[2px]"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl overflow-hidden p-8 text-black"
+            >
+               <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 bg-red-50 text-red-500`}>
+                  <ShieldCheck size={32} />
+               </div>
+               <h3 className="text-2xl font-black text-gray-900 tracking-tight mb-2">{confirmConfig.title}</h3>
+               <p className="text-gray-500 font-medium leading-relaxed mb-8">{confirmConfig.message}</p>
+               
+               <div className="flex gap-4">
+                  <button 
+                    onClick={() => setConfirmConfig(null)}
+                    className="flex-1 px-6 py-4 rounded-2xl font-black text-gray-500 border border-gray-100 hover:bg-gray-50 transition-all uppercase tracking-widest text-[10px]"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={confirmConfig.onConfirm}
+                    className="flex-1 px-6 py-4 rounded-2xl font-black text-white bg-red-600 shadow-xl shadow-red-100 hover:bg-red-700 transition-all uppercase tracking-widest text-[10px] active:scale-95"
+                  >
+                    Delete Record
+                  </button>
+               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
