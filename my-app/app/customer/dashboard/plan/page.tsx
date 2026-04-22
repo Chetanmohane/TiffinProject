@@ -636,29 +636,46 @@ export default function PlanPage() {
                             className="w-full px-5 sm:px-6 py-3.5 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-gray-800"
                           />
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                           <div className="space-y-2">
-                              <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">H.No / Colony</label>
-                              <input 
-                              type="text"
-                              value={deliveryInfo.houseNo}
-                              onChange={(e) => setDeliveryInfo({...deliveryInfo, houseNo: e.target.value})}
-                              placeholder="e.g. 102, Green City"
-                              className="w-full px-5 sm:px-6 py-3.5 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-gray-800"
-                              />
-                           </div>
-                           <div className="space-y-2">
-                              <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Pincode</label>
-                              <input 
-                              type="text"
-                              maxLength={6}
-                              value={deliveryInfo.pincode}
-                              onChange={(e) => setDeliveryInfo({...deliveryInfo, pincode: e.target.value})}
-                              placeholder="6 Digit PIN"
-                              className="w-full px-5 sm:px-6 py-3.5 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-gray-800"
-                              />
-                           </div>
-                        </div>
+                        <div className="space-y-2">
+                           <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Contact Number</label>
+                           <input 
+                             type="text"
+                             maxLength={10}
+                             value={deliveryInfo.phone}
+                             onChange={(e) => {
+                               const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                               setDeliveryInfo({...deliveryInfo, phone: val})
+                             }}
+                             placeholder="10 Digit Number"
+                             className="w-full px-5 sm:px-6 py-3.5 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-gray-800"
+                           />
+                         </div>
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                               <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">H.No / Colony</label>
+                               <input 
+                               type="text"
+                               value={deliveryInfo.houseNo}
+                               onChange={(e) => setDeliveryInfo({...deliveryInfo, houseNo: e.target.value})}
+                               placeholder="e.g. 102, Green City"
+                               className="w-full px-5 sm:px-6 py-3.5 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-gray-800"
+                               />
+                            </div>
+                            <div className="space-y-2">
+                               <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Pincode</label>
+                               <input 
+                               type="text"
+                               maxLength={6}
+                               value={deliveryInfo.pincode}
+                               onChange={(e) => {
+                                  const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                  setDeliveryInfo({...deliveryInfo, pincode: val})
+                               }}
+                               placeholder="6 Digit PIN"
+                               className="w-full px-5 sm:px-6 py-3.5 sm:py-4 bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-500/20 transition-all text-gray-800"
+                               />
+                            </div>
+                         </div>
                         <div className="space-y-2">
                           <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Area / Landmark</label>
                           <textarea 
@@ -673,6 +690,14 @@ export default function PlanPage() {
                           onClick={() => {
                             if (!deliveryInfo.name.trim() || !deliveryInfo.houseNo.trim() || !deliveryInfo.area.trim()) {
                               toast.error("Please fill in all delivery details");
+                              return;
+                            }
+                            if (deliveryInfo.phone.length !== 10) {
+                              toast.error("Please enter a valid 10-digit contact number");
+                              return;
+                            }
+                            if (deliveryInfo.pincode.length !== 6) {
+                              toast.error("Please enter a valid 6-digit pincode");
                               return;
                             }
                             setCheckoutStep(2);
