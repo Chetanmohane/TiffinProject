@@ -111,11 +111,6 @@ export default function SettingsPage() {
                 </div>
              </div>
 
-             <div className="bg-gray-900 rounded-[2.5rem] p-8 text-white shadow-xl shadow-gray-300">
-                <h4 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">Need Help?</h4>
-                <p className="text-sm font-bold text-gray-300 mb-6 italic">"Our support team is here for you 24/7 if you have any issues with your profile."</p>
-                <button className="w-full py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-colors">Contact Support</button>
-             </div>
           </div>
 
           {/* Form Content */}

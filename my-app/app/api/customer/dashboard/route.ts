@@ -88,7 +88,7 @@ export async function GET(req: Request) {
       pauseTo: { $gte: today },
     }).lean();
 
-    const todayMenu = await Menu.findOne({ day: currentDayName }).lean() as any;
+    const todayMenu = await Menu.findOne({ day: currentDayName, isActive: { $ne: false } }).lean() as any;
     const isPaused = !!pauseEntry;
     const sub = (customer.subscription || {}) as any;
 
@@ -165,18 +165,18 @@ export async function GET(req: Request) {
       todayMeal: {
         items: isPaused
           ? "Your meal delivery is paused for today."
-          : (todayMenu?.lunch || "4 Roti, Paneer Masala, Dal, Rice, Salad"),
+          : (todayMenu ? todayMenu.lunch : "No service scheduled for today. (Kitchen Closed)"),
         type: "Lunch",
-        deliveryTime: isPaused ? "--:-- PM" : (todayMenu?.lunchTime || "01:00 PM"),
-        status: getDeliveryStatus("Lunch", todayMenu?.lunchTime || "01:00 PM"),
+        deliveryTime: (isPaused || !todayMenu) ? "--:-- PM" : (todayMenu.lunchTime || "01:00 PM"),
+        status: !todayMenu ? "Closed ❌" : getDeliveryStatus("Lunch", todayMenu.lunchTime || "01:00 PM"),
       },
       todayDinner: {
         items: isPaused
           ? "Your meal delivery is paused for today."
-          : (todayMenu?.dinner || "4 Roti, Veg Gravy, Dal, Rice, Salad"),
+          : (todayMenu ? todayMenu.dinner : "No service scheduled for today. (Kitchen Closed)"),
         type: "Dinner",
-        deliveryTime: isPaused ? "--:-- PM" : (todayMenu?.dinnerTime || "08:00 PM"),
-        status: getDeliveryStatus("Dinner", todayMenu?.dinnerTime || "08:00 PM"),
+        deliveryTime: (isPaused || !todayMenu) ? "--:-- PM" : (todayMenu.dinnerTime || "08:00 PM"),
+        status: !todayMenu ? "Closed ❌" : getDeliveryStatus("Dinner", todayMenu.dinnerTime || "08:00 PM"),
       },
       quickStats: [
         {

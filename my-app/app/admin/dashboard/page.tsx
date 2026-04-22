@@ -51,7 +51,7 @@ export default function AdminDashboard() {
         )}
 
         <StatCard
-          title="Today Orders"
+          title="Today Delivered"
           value={data.todaysDeliveries.toString()}
           Icon={ShoppingBag}
           gradient="from-amber-400 to-orange-500"
@@ -66,12 +66,71 @@ export default function AdminDashboard() {
 
         {isAdmin && (
           <StatCard
-            title="Total Revenue"
+            title="Today Revenue"
             value={data.revenue}
             Icon={IndianRupee}
             gradient="from-green-500 to-emerald-600"
           />
         )}
+      </div>
+
+      {/* LIVE DELIVERIES SECTION */}
+      <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
+        <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+          <div>
+            <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              Live Delivered Orders (Today)
+            </h2>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">Real-time delivery pulse</p>
+          </div>
+          <div className="px-5 py-2 bg-green-100 text-green-700 rounded-full text-[10px] font-black uppercase tracking-widest">
+            {data.todaysDeliveries} DELIVERED
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-gray-50/30">
+              <tr>
+                <th className="px-8 py-5 text-[10px] font-black uppercase text-gray-400">Customer Name</th>
+                <th className="px-8 py-5 text-[10px] font-black uppercase text-gray-400">Meal Type</th>
+                <th className="px-8 py-5 text-[10px] font-black uppercase text-gray-400">Delivery Time</th>
+                <th className="px-8 py-5 text-[10px] font-black uppercase text-gray-400 text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {data.recentDeliveries && data.recentDeliveries.length > 0 ? (
+                data.recentDeliveries.map((delivery: any) => (
+                  <tr key={delivery._id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-8 py-5 font-bold text-gray-900">{delivery.customerName}</td>
+                    <td className="px-8 py-5">
+                      <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${delivery.type === 'Lunch' ? 'bg-orange-100 text-orange-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                        {delivery.type}
+                      </span>
+                    </td>
+                    <td className="px-8 py-5 text-sm font-bold text-gray-500">
+                      {new Date(delivery.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="px-8 py-5 text-right">
+                      <div className="flex items-center justify-end gap-2 text-green-600 font-black text-[10px] uppercase tracking-widest italic">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        Delivered
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="px-8 py-16 text-center">
+                    <div className="text-4xl mb-4 grayscale opacity-20">🛵</div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">No deliveries marked yet for today</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );
@@ -84,22 +143,26 @@ const StatCard = React.memo(function StatCard({
   value,
   Icon,
   gradient,
+  onClick,
 }: {
   title: string;
   value: string;
   Icon: React.ElementType;
   gradient: string;
+  onClick?: () => void;
 }) {
   return (
     <div
-      className="
+      onClick={onClick}
+      className={`
         relative rounded-2xl bg-white p-6
         shadow-md
         min-h-[120px]
-        transition-transform duration-200
+        transition-all duration-200
         hover:-translate-y-1
         will-change-transform
-      "
+        ${onClick ? "cursor-pointer active:scale-95" : ""}
+      `}
     >
       {/* Glow (isolated, non-layout affecting) */}
       <div

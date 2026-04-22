@@ -26,6 +26,7 @@ export default function AdminCustomers() {
   const [serverStats, setServerStats] = useState({ total: 0, active: 0, paused: 0 });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -34,6 +35,16 @@ export default function AdminCustomers() {
   useEffect(() => {
     fetchCustomers();
   }, []);
+
+  // Lock body scroll when a modal is open
+  useEffect(() => {
+    if (isEditModalOpen || confirmConfig) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => { document.body.style.overflow = "unset"; };
+  }, [isEditModalOpen, confirmConfig]);
 
   const fetchCustomers = async () => {
     try {
@@ -121,7 +132,8 @@ export default function AdminCustomers() {
           updates: {
             name: editingCustomer.name,
             phone: editingCustomer.phone,
-            address: editingCustomer.address
+            address: editingCustomer.address,
+            subscription: editingCustomer.subscription
           }
         })
       });
@@ -138,11 +150,20 @@ export default function AdminCustomers() {
     }
   };
 
-  const filteredCustomers = customers.filter(c => 
-    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.phone?.includes(searchTerm)
-  );
+  const filteredCustomers = customers.filter(c => {
+    const searchMatch = c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        c.phone?.includes(searchTerm);
+    if (!searchMatch) return false;
+
+    if (statusFilter === "ACTIVE") {
+      return c.subscription?.status?.toLowerCase() === "active";
+    }
+    if (statusFilter === "INACTIVE") {
+      return !c.subscription || c.subscription?.status?.toLowerCase() !== "active";
+    }
+    return true;
+  });
 
   if (loading) {
     return (
@@ -164,15 +185,37 @@ export default function AdminCustomers() {
           <p className="text-sm font-bold text-gray-500 mt-1">Manage and monitor all registered tiffin subscribers.</p>
         </div>
         
-        <div className="relative group max-w-sm w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search customers..."
-              className="w-full bg-white border border-gray-200 rounded-2xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all shadow-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+        <div className="flex flex-col xl:flex-row items-end xl:items-center gap-4 w-full xl:w-auto">
+          <div className="relative group w-full xl:w-64">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors" size={18} />
+              <input 
+                type="text" 
+                placeholder="Search..."
+                className="w-full bg-white border border-gray-200 rounded-2xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all shadow-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+          </div>
+          <div className="flex bg-gray-100 p-1.5 rounded-2xl shrink-0 w-full xl:w-auto border border-gray-200/50">
+             <button 
+               onClick={() => setStatusFilter("ALL")} 
+               className={`flex-1 xl:flex-none px-6 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${statusFilter === "ALL" ? "bg-white shadow-sm text-gray-900" : "text-gray-400 hover:text-gray-900"}`}
+             >
+               All
+             </button>
+             <button 
+               onClick={() => setStatusFilter("ACTIVE")} 
+               className={`flex-1 xl:flex-none px-6 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${statusFilter === "ACTIVE" ? "bg-white shadow-sm text-green-600" : "text-gray-400 hover:text-green-600"}`}
+             >
+               Active
+             </button>
+             <button 
+               onClick={() => setStatusFilter("INACTIVE")} 
+               className={`flex-1 xl:flex-none px-6 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${statusFilter === "INACTIVE" ? "bg-white shadow-sm text-orange-600" : "text-gray-400 hover:text-orange-600"}`}
+             >
+               Inactive
+             </button>
+          </div>
         </div>
       </div>
 
@@ -211,7 +254,14 @@ export default function AdminCustomers() {
                         {customer.name?.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-black text-gray-900 text-lg tracking-tight">{customer.name}</p>
+                        <div className="flex items-center gap-2">
+                           <p className="font-black text-gray-900 text-lg tracking-tight">{customer.name}</p>
+                           {customer.role !== 'customer' && (
+                             <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-black uppercase rounded-lg border border-blue-100">
+                               {customer.role} Account
+                             </span>
+                           )}
+                        </div>
                         <div className="flex items-center gap-3 mt-1">
                            <span className="flex items-center gap-1 text-[11px] font-bold text-gray-400"><Mail size={12} /> {customer.email || 'N/A'}</span>
                            <span className="flex items-center gap-1 text-[11px] font-bold text-gray-400"><Phone size={12} /> {customer.phone}</span>
@@ -246,7 +296,7 @@ export default function AdminCustomers() {
                   </td>
                   <td className="px-8 py-6 text-right">
                     <div className="flex items-center justify-end gap-2">
-                       {can('edit') && (
+                       {can('edit') && customer.role === 'customer' && (
                          <button 
                           onClick={() => handleMakeStaff(customer.id, customer.name)}
                           title="Assign as Staff"
@@ -296,10 +346,17 @@ export default function AdminCustomers() {
                       <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center font-black text-gray-900">
                         {customer.name?.charAt(0)}
                       </div>
-                      <div>
-                         <p className="font-black text-gray-900 tracking-tight">{customer.name}</p>
-                         <p className="text-[10px] font-bold text-gray-400">{customer.phone}</p>
-                      </div>
+                       <div>
+                          <div className="flex items-center gap-1.5">
+                             <p className="font-black text-gray-900 tracking-tight">{customer.name}</p>
+                             {customer.role !== 'customer' && (
+                               <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[6px] font-black uppercase rounded-md border border-blue-100">
+                                 {customer.role}
+                               </span>
+                             )}
+                          </div>
+                          <p className="text-[10px] font-bold text-gray-400">{customer.phone}</p>
+                       </div>
                    </div>
                 </div>
 
@@ -331,7 +388,7 @@ export default function AdminCustomers() {
                         Edit
                      </button>
                    )}
-                   {can('edit') && (
+                   {can('edit') && customer.role === 'customer' && (
                      <button onClick={() => handleMakeStaff(customer.id, customer.name)} className="flex-1 bg-gray-50 text-blue-600 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest border border-gray-100">
                         Staff
                      </button>
@@ -371,9 +428,9 @@ export default function AdminCustomers() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden text-black"
+              className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-black"
             >
-              <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-orange-50/30">
+              <div className="p-8 border-b border-gray-100 flex items-center justify-between bg-orange-50/30 flex-shrink-0">
                 <div>
                   <h2 className="text-2xl font-black text-gray-900 tracking-tight">Edit Customer</h2>
                   <p className="text-gray-500 text-sm font-medium">Update profile information</p>
@@ -383,7 +440,7 @@ export default function AdminCustomers() {
                 </button>
               </div>
 
-              <form onSubmit={handleUpdate} className="p-8 space-y-6">
+              <form onSubmit={handleUpdate} className="p-8 space-y-6 overflow-y-auto">
                 <div className="grid grid-cols-2 gap-6">
                    <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Full Name</label>
@@ -415,6 +472,102 @@ export default function AdminCustomers() {
                      value={editingCustomer?.address || ""}
                      onChange={(e) => setEditingCustomer({...editingCustomer, address: e.target.value})}
                    />
+                </div>
+
+                <div className="pt-6 mt-6 border-t border-gray-100">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-gray-800 mb-4">Subscription Details</h3>
+                  {editingCustomer?.subscription ? (
+                     <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                           <div className="space-y-1">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Plan Name</label>
+                              <input 
+                                type="text" 
+                                className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-orange-500 outline-none"
+                                value={editingCustomer.subscription.planName || ""}
+                                onChange={(e) => setEditingCustomer({
+                                  ...editingCustomer, 
+                                  subscription: { ...editingCustomer.subscription, planName: e.target.value } 
+                                })}
+                              />
+                           </div>
+                           <div className="space-y-1">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Status</label>
+                              <select 
+                                className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-orange-500 outline-none"
+                                value={editingCustomer.subscription.status || "Inactive"}
+                                onChange={(e) => setEditingCustomer({
+                                  ...editingCustomer, 
+                                  subscription: { ...editingCustomer.subscription, status: e.target.value } 
+                                })}
+                              >
+                                 <option value="Active">Active</option>
+                                 <option value="Paused">Paused</option>
+                                 <option value="Expired">Expired</option>
+                                 <option value="Inactive">Inactive</option>
+                              </select>
+                           </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                           <div className="space-y-1">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Start Date</label>
+                              <input 
+                                type="date"
+                                className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-orange-500 outline-none"
+                                value={editingCustomer.subscription.startDate || ""}
+                                onChange={(e) => setEditingCustomer({
+                                  ...editingCustomer, 
+                                  subscription: { ...editingCustomer.subscription, startDate: e.target.value } 
+                                })}
+                              />
+                           </div>
+                           <div className="space-y-1">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">End Date</label>
+                              <input 
+                                type="date"
+                                className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-orange-500 outline-none"
+                                value={editingCustomer.subscription.nextRenewal || ""}
+                                onChange={(e) => setEditingCustomer({
+                                  ...editingCustomer, 
+                                  subscription: { ...editingCustomer.subscription, nextRenewal: e.target.value } 
+                                })}
+                              />
+                           </div>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            setConfirmConfig({
+                              isOpen: true,
+                              title: "Remove Subscription",
+                              message: `Are you sure you want to completely remove the subscription data for ${editingCustomer.name}?`,
+                              type: 'danger',
+                              onConfirm: () => {
+                                setEditingCustomer({ ...editingCustomer, subscription: null });
+                                setConfirmConfig(null);
+                              }
+                            });
+                          }}
+                          className="text-[10px] uppercase font-black tracking-widest text-red-500 hover:text-red-700 bg-red-50 px-3 py-2 rounded-lg inline-block transition-colors"
+                        >
+                          Delete Subscription
+                        </button>
+                     </div>
+                  ) : (
+                    <div className="bg-gray-50 p-4 rounded-xl text-center">
+                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">No Active Subscription</p>
+                       <button 
+                         type="button" 
+                         onClick={() => setEditingCustomer({
+                           ...editingCustomer, 
+                           subscription: { planName: "Custom Plan", status: "Active", startDate: new Date().toISOString().split('T')[0], nextRenewal: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0] } 
+                         })}
+                         className="text-xs font-bold text-orange-600 bg-orange-100 px-4 py-2 rounded-lg"
+                       >
+                         + Add Subscription Manually
+                       </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-4 pt-4">

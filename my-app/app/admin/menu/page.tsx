@@ -3,6 +3,16 @@
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
 
+const defaultMenus: { [key: string]: { lunch: string, dinner: string } } = {
+  "Monday": { lunch: "Dal Tadka, Mix Veg, Roti, Rice, Salad", dinner: "Paneer Masala, Jeera Rice, Roti, Sweet" },
+  "Tuesday": { lunch: "Rajma Masala, Aloo Gobi, Roti, Rice", dinner: "Sev Tamatar, Kadhi Khichdi, Roti, Papad" },
+  "Wednesday": { lunch: "Chole Bhature / Rice, Seasonal Veg, Roti", dinner: "Soya Chaap Curry, Veg Pulao, Roti" },
+  "Thursday": { lunch: "Kadi Pakoda, Aloo Jeera, Roti, Rice", dinner: "Matar Paneer, Plain Rice, Roti, Salad" },
+  "Friday": { lunch: "Dal Makhani, Bhindi Fry, Roti, Rice", dinner: "Veg Kofta, Ghee Rice, Roti, Dessert" },
+  "Saturday": { lunch: "Pithla Bhakri / Roti, Thecha, Rice", dinner: "Special Veg Biryani, Raita, Papad, Sweet" },
+  "Sunday": { lunch: "Special Thali (Dal, Paneer, Veg, Sweets)", dinner: "Light Veg Pulav & Kadhi" }
+};
+
 export default function MenuManagementPage() {
   const [menus, setMenus] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -11,12 +21,33 @@ export default function MenuManagementPage() {
     fetch("/api/admin/menu")
       .then(res => res.json())
       .then(data => {
-        setMenus(data.menu);
+        const dbMenus = data.menu || [];
+        const order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        const loaded = order.map(day => {
+           const existing = dbMenus.find((m: any) => m.day === day);
+           if (existing) {
+              return { 
+                ...existing, 
+                isActive: existing.isActive === true || (existing.isActive !== false && day !== "Sunday")
+              };
+           }
+           return {
+              day,
+              lunch: defaultMenus[day]?.lunch || "",
+              dinner: defaultMenus[day]?.dinner || "",
+              lunchTime: "01:00 PM",
+              dinnerTime: "08:00 PM",
+              lunchStatus: "Out for Delivery",
+              dinnerStatus: "Scheduled",
+              isActive: day !== "Sunday"
+           };
+        });
+        setMenus(loaded);
         setLoading(false);
       });
   }, []);
 
-  const handleChange = (index: number, field: string, value: string) => {
+  const handleChange = (index: number, field: string, value: any) => {
     const updated = [...menus];
     updated[index][field] = value;
     setMenus(updated);
@@ -68,8 +99,16 @@ export default function MenuManagementPage() {
         </div>
 
         {menus.map((menu, i) => (
-          <div key={menu.day} className="bg-white rounded-2xl shadow-sm border p-4 sm:p-6 mb-6">
-            <h3 className="text-lg font-extrabold text-gray-900 mb-4">{menu.day}</h3>
+          <div key={menu.day} className={`bg-white rounded-2xl shadow-sm border p-4 sm:p-6 mb-6 transition-all ${!menu.isActive ? 'opacity-60' : ''}`}>
+            <div className="flex items-center justify-between mb-4">
+               <h3 className="text-lg font-extrabold text-gray-900">{menu.day}</h3>
+               <button 
+                 onClick={() => handleChange(i, 'isActive', !menu.isActive)}
+                 className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest transition-colors ${menu.isActive ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+               >
+                 {menu.isActive ? 'Visible (Active)' : 'Hidden'}
+               </button>
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>

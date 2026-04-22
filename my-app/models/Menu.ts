@@ -9,11 +9,13 @@ export interface IMenu extends Document {
   lunchStatus: string;
   dinnerStatus: string;
   week?: number;
+  isActive?: boolean;
 }
 
 const MenuSchema = new Schema<IMenu>(
   {
     day: { type: String, required: true, trim: true },
+    isActive: { type: Boolean, default: true },
     lunch: { type: String, required: true },
     dinner: { type: String, required: true },
     lunchTime: { type: String, default: "01:00 PM" },
@@ -27,5 +29,10 @@ const MenuSchema = new Schema<IMenu>(
 
 const Menu: Model<IMenu> =
   mongoose.models.Menu || mongoose.model<IMenu>("Menu", MenuSchema);
+
+// Explicitly ensure isActive is in the schema if already existing
+if (mongoose.models.Menu && !mongoose.models.Menu.schema.path('isActive')) {
+  mongoose.models.Menu.schema.add({ isActive: { type: Boolean, default: true } });
+}
 
 export default Menu;

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
 import Plan from "@/models/Plan";
+import Payment from "@/models/Payment";
 
 export async function POST(req: Request) {
   try {
@@ -70,6 +71,18 @@ export async function POST(req: Request) {
     if (!response.ok) {
       throw new Error(data.message || "Failed to create Cashfree order");
     }
+
+    // Create a pending payment record in our DB
+    await Payment.create({
+      customerId: customer._id,
+      customerName: customer.name,
+      amount: orderAmount,
+      type: "Credit",
+      description: `${plan.name} (${mealType})`,
+      status: "Pending",
+      date: new Date().toISOString().split("T")[0],
+      transactionId: orderId,
+    });
 
     return NextResponse.json({ 
       success: true, 

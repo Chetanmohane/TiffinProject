@@ -12,7 +12,9 @@ export default function MenuPage() {
     fetch("/api/customer/menu")
       .then((res) => res.json())
       .then((data) => {
-        setWeeklyMenu(data.menu);
+        // Filter out inactive days just in case
+        const visibleMenu = (data.menu || []).filter((m: any) => m.isActive !== false);
+        setWeeklyMenu(visibleMenu);
         setLoading(false);
       });
   }, []);
@@ -55,7 +57,7 @@ export default function MenuPage() {
               Weekly Menu 🍽️
             </h1>
             <p className="text-white/90 text-sm sm:text-base font-medium max-w-lg leading-snug">
-              Explore 6 days of crafted, high-protein Tiffin meals mapped out for your week.
+              Explore our crafted, high-protein Tiffin meals mapped out for your week.
             </p>
           </div>
           

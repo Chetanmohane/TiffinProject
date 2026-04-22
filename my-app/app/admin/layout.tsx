@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -28,6 +28,42 @@ export default function AdminLayout({
   const { role } = useRBAC();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  // Security Pulse: Check if role has changed in real-time
+  useEffect(() => {
+    const checkRole = async () => {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) return;
+      
+      const user = JSON.parse(userStr);
+      try {
+        const res = await fetch(`/api/auth/verify-role?email=${encodeURIComponent(user.email)}`);
+        const data = await res.json();
+        
+        if (data.success) {
+          // If role changed to customer or user not found, force redirect
+          if (data.role === "customer") {
+            // Update local storage and redirect
+            localStorage.setItem("user", JSON.stringify({ ...user, role: "customer" }));
+            window.location.href = "/customer/dashboard";
+          } else if (data.role !== user.role) {
+             // Role changed but still has access, update local storage to sync UI
+             localStorage.setItem("user", JSON.stringify({ ...user, role: data.role }));
+             // No redirect needed, but UI will sync on next render
+          }
+        }
+      } catch (e) {
+        console.error("Pulse check failed", e);
+      }
+    };
+
+    // Initial check
+    checkRole();
+
+    // Check every 5 seconds for "instant" revocation
+    const interval = setInterval(checkRole, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const allLinks = [
     { name: "Dashboard", href: "/admin/dashboard", icon: <LayoutDashboard size={20} />, roles: ["admin", "editor", "viewer"] },

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import Menu from "@/models/Menu";
@@ -5,7 +6,7 @@ import Menu from "@/models/Menu";
 export async function GET() {
   try {
     await connectDB();
-    const menu = await Menu.find({}).lean();
+    const menu = await Menu.find({ isActive: { $ne: false } }).lean();
     
     // Custom sort: Monday to Saturday (and Sunday if exists)
     const daysOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];

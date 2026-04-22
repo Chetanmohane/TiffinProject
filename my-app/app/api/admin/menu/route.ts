@@ -18,7 +18,17 @@ export async function POST(req: Request) {
     const { menu } = await req.json();
     if (menu && Array.isArray(menu)) {
       await Menu.deleteMany({});
-      await Menu.insertMany(menu);
+      const menuToInsert = menu.map((m: any) => ({
+        day: m.day,
+        lunch: m.lunch,
+        dinner: m.dinner,
+        lunchTime: m.lunchTime,
+        dinnerTime: m.dinnerTime,
+        lunchStatus: m.lunchStatus,
+        dinnerStatus: m.dinnerStatus,
+        isActive: m.isActive === true || m.isActive === "true"
+      }));
+      await Menu.insertMany(menuToInsert);
     }
     return NextResponse.json({ success: true });
   } catch (e: any) {

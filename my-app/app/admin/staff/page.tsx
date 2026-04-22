@@ -138,7 +138,6 @@ export default function StaffManagement() {
                       <option value="staff">Staff (Delivery/Kitchen)</option>
                       <option value="editor">Editor</option>
                       <option value="admin">Admin</option>
-                      <option value="viewer">Viewer</option>
                     </select>
                   </td>
                 </tr>

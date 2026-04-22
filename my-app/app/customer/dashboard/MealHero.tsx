@@ -42,6 +42,8 @@ export default function MealHero({ meal, dinner }: MealHeroProps) {
     status: "Scheduled",
   };
 
+  const isKitchenClosed = lunchData.status?.includes("Closed") || dinnerData.status?.includes("Closed");
+
   // --- State ---
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason]       = useState("");
@@ -176,7 +178,11 @@ export default function MealHero({ meal, dinner }: MealHeroProps) {
 
             {/* Action Row */}
             <div className="flex flex-wrap items-center gap-3 pt-4">
-              {lunchData.status.includes("Paused") ? (
+              {isKitchenClosed ? (
+                <div className="flex items-center gap-2 bg-gray-500/10 border border-gray-500/20 px-6 py-3.5 rounded-2xl">
+                  <span className="text-gray-400 text-sm font-black uppercase tracking-widest">Kitchen Closed Today</span>
+                </div>
+              ) : lunchData.status.includes("Paused") ? (
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                    <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 px-6 py-3.5 rounded-2xl">
                       <span className="text-orange-400 text-sm font-black uppercase tracking-widest">Service Paused</span>

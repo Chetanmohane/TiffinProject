@@ -26,13 +26,6 @@ interface Payment {
 export default function PaymentManagementPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newPayment, setNewPayment] = useState({
-     customerName: "",
-     amt: "",
-     type: "Credit",
-     status: "Pending"
-  });
 
   const fetchPayments = async () => {
     setLoading(true);
@@ -51,31 +44,9 @@ export default function PaymentManagementPage() {
     fetchPayments();
   }, []);
 
-  const handleAddPayment = async (e: React.FormEvent) => {
-     e.preventDefault();
-     try {
-       const res = await fetch("/api/admin/payments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "add", payment: newPayment }),
-       });
-       if (res.ok) {
-         toast.success("Payment added successfully!");
-         setShowAddModal(false);
-         setNewPayment({ customerName: "", amt: "", type: "Credit", status: "Pending" });
-         fetchPayments();
-       } else {
-         const err = await res.json();
-         toast.error("Error: " + err.error);
-       }
-     } catch (err) {
-       console.error(err);
-       toast.error("Failed to add payment");
-     }
-  };
-
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<PaymentStatus | "ALL">("ALL");
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
 
   /* ---------------- ACTIONS ---------------- */
 
@@ -105,6 +76,7 @@ export default function PaymentManagementPage() {
 
   const filteredPayments = useMemo(() => {
     return payments.filter((p) => {
+      // 1. Search Filter
       const searchStr = search.toLowerCase();
       const matchesSearch =
         p.customerName.toLowerCase().includes(searchStr) ||
@@ -112,24 +84,47 @@ export default function PaymentManagementPage() {
         (p.transactionId || "").toLowerCase().includes(searchStr) ||
         (p.id || "").toLowerCase().includes(searchStr);
 
-      const matchesFilter = filter === "ALL" || p.status === filter;
+      // 2. Status Filter
+      const matchesStatus = filter === "ALL" || p.status === filter;
 
-      return matchesSearch && matchesFilter;
+      // 3. Date Range Filter
+      let matchesDate = true;
+      if (dateRange.from || dateRange.to) {
+        const pDate = p.createdAt ? new Date(p.createdAt) : new Date(p.date || p.paymentDate || "");
+        pDate.setHours(0, 0, 0, 0);
+
+        if (dateRange.from) {
+          const fromDate = new Date(dateRange.from);
+          fromDate.setHours(0, 0, 0, 0);
+          if (pDate < fromDate) matchesDate = false;
+        }
+        if (dateRange.to) {
+          const toDate = new Date(dateRange.to);
+          toDate.setHours(0, 0, 0, 0);
+          if (pDate > toDate) matchesDate = false;
+        }
+      }
+
+      return matchesSearch && matchesStatus && matchesDate;
     });
-  }, [payments, search, filter]);
+  }, [payments, search, filter, dateRange]);
 
-  const totalRevenue = useMemo(() => {
-    return payments
-      .filter((p) => p.status === "SUCCESS")
-      .reduce((sum, p) => {
-        const value = typeof p.amt === "string" 
-          ? parseFloat(p.amt.replace(/[^\d.-]/g, "")) || 0 
-          : Number(p.amount || 0);
-        // Only count positive amounts (credits) as revenue if we want, 
-        // but here we just sum them up.
-        return sum + Math.abs(value); 
-      }, 0);
-  }, [payments]);
+  const stats = useMemo(() => {
+    const successful = filteredPayments.filter((p) => p.status === "SUCCESS");
+    const revenue = successful.reduce((sum, p) => {
+      const value = typeof p.amt === "string" 
+        ? parseFloat(p.amt.replace(/[^\d.-]/g, "")) || 0 
+        : Number(p.amount || 0);
+      return sum + Math.abs(value);
+    }, 0);
+
+    return {
+      total: filteredPayments.length,
+      successCount: successful.length,
+      pendingCount: filteredPayments.filter((p) => p.status === "PENDING").length,
+      revenue: revenue
+    };
+  }, [filteredPayments]);
 
   if (loading) {
     return (
@@ -169,33 +164,60 @@ export default function PaymentManagementPage() {
 
         {/* STATS */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <StatCard title="Total Payments" value={payments.length} />
+          <StatCard title="Filtered Total" value={stats.total} />
           <StatCard
             title="Successful"
-            value={payments.filter((p) => p.status === "SUCCESS").length}
+            value={stats.successCount}
           />
           <StatCard
             title="Pending"
-            value={payments.filter((p) => p.status === "PENDING").length}
+            value={stats.pendingCount}
           />
-          <StatCard title="Revenue" value={`₹${totalRevenue}`} highlight />
+          <StatCard title="Revenue" value={`₹${stats.revenue.toLocaleString()}`} highlight />
         </div>
 
         {/* CONTROLS */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-          <div className="flex-1 flex gap-3">
+        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 mb-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+          <div className="flex-1 flex flex-col md:flex-row gap-4 items-center">
              <input
-                placeholder="Search by name, phone or transaction ID..."
+                placeholder="Search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="flex-1 px-4 py-2 rounded-lg border focus:ring-2 focus:ring-orange-400 outline-none"
+                className="w-full md:max-w-xs px-4 py-2 rounded-xl border-gray-200 border focus:ring-2 focus:ring-orange-400 outline-none"
              />
-             <button 
-                onClick={() => setShowAddModal(true)}
-                className="px-6 py-2 bg-gray-900 text-white rounded-lg font-bold hover:bg-black transition whitespace-nowrap"
-             >
-                + Receive Payment
-             </button>
+             
+             {/* DATE RANGE INPUTS */}
+             <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-200/50 w-full md:w-auto">
+               <div className="flex items-center gap-1">
+                 <span className="text-[9px] font-black uppercase text-gray-400">From:</span>
+                 <input 
+                   type="date"
+                   max={new Date().toISOString().split("T")[0]}
+                   value={dateRange.from}
+                   onChange={(e) => setDateRange({...dateRange, from: e.target.value})}
+                   className="bg-transparent text-[10px] font-bold outline-none border-b border-gray-200 pb-1"
+                 />
+               </div>
+               <div className="flex items-center gap-1">
+                 <span className="text-[9px] font-black uppercase text-gray-400">To:</span>
+                 <input 
+                   type="date"
+                   max={new Date().toISOString().split("T")[0]}
+                   value={dateRange.to}
+                   onChange={(e) => setDateRange({...dateRange, to: e.target.value})}
+                   className="bg-transparent text-[10px] font-bold outline-none border-b border-gray-200 pb-1"
+                 />
+               </div>
+               {(dateRange.from || dateRange.to) && (
+                 <button 
+                  onClick={() => setDateRange({ from: "", to: "" })}
+                  className="p-1 hover:bg-white rounded-full transition-colors"
+                  title="Clear Dates"
+                 >
+                   <span className="text-red-500 text-xs">✕</span>
+                 </button>
+               )}
+             </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -203,11 +225,11 @@ export default function PaymentManagementPage() {
               <button
                 key={s}
                 onClick={() => setFilter(s as any)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition
+                className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
                   ${
                     filter === s
-                      ? "bg-orange-500 text-white"
-                      : "bg-white border hover:bg-orange-50"
+                      ? "bg-orange-500 text-white shadow-lg shadow-orange-100"
+                      : "bg-white border border-gray-200 text-gray-500 hover:bg-orange-50"
                   }`}
               >
                 {s}
@@ -216,53 +238,6 @@ export default function PaymentManagementPage() {
           </div>
         </div>
 
-        {/* ADD PAYMENT MODAL */}
-        {showAddModal && (
-           <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
-                 <h2 className="text-xl font-black mb-6">Receive New Payment</h2>
-                 <form onSubmit={handleAddPayment} className="space-y-4">
-                    <div>
-                       <label className="text-xs font-black uppercase text-gray-400">Customer Name</label>
-                       <input 
-                          type="text" 
-                          required 
-                          className="w-full border p-3 rounded-xl mt-1 outline-orange-500" 
-                          placeholder="e.g. Chetan Mohane"
-                          value={newPayment.customerName}
-                          onChange={(e) => setNewPayment({...newPayment, customerName: e.target.value})}
-                       />
-                    </div>
-                    <div>
-                       <label className="text-xs font-black uppercase text-gray-400">Amount (₹)</label>
-                       <input 
-                          type="text" 
-                          required 
-                          className="w-full border p-3 rounded-xl mt-1 outline-orange-500" 
-                          placeholder="e.g. 500"
-                          value={newPayment.amt}
-                          onChange={(e) => setNewPayment({...newPayment, amt: e.target.value})}
-                       />
-                    </div>
-                    <div className="flex gap-4 mt-8">
-                       <button 
-                          type="button" 
-                          onClick={() => setShowAddModal(false)}
-                          className="flex-1 py-3 bg-gray-100 text-gray-800 rounded-xl font-bold uppercase text-xs tracking-widest"
-                       >
-                          Cancel
-                       </button>
-                       <button 
-                          type="submit" 
-                          className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold uppercase text-xs tracking-widest shadow-lg shadow-orange-200"
-                       >
-                          Post Payment
-                       </button>
-                    </div>
-                 </form>
-              </div>
-           </div>
-        )}
 
         {/* ================= DESKTOP TABLE ================= */}
         <div className="hidden md:block bg-white rounded-2xl shadow-lg overflow-x-auto">

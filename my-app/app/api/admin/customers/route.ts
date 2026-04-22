@@ -7,8 +7,13 @@ export async function GET() {
   try {
     await connectDB();
 
-    const customers = await User.find({ role: "customer" })
-      .select("name email phone address walletBalance subscription createdAt")
+    const customers = await User.find({
+      $or: [
+        { role: "customer" },
+        { "subscription.planName": { $exists: true, $ne: null } }
+      ]
+    })
+      .select("name email phone address walletBalance subscription createdAt role")
       .sort({ createdAt: -1 })
       .lean();
 

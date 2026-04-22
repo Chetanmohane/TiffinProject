@@ -42,21 +42,27 @@ export async function GET(req: Request) {
     const response = await fetch(url, options);
     const orderData = await response.json();
 
+    await connectDB();
+
     if (orderData.order_status !== "PAID") {
+      // Update our record to Failed
+      await Payment.findOneAndUpdate(
+        { transactionId: order_id },
+        { status: "Failed" }
+      );
       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?error=payment_failed_[Status:${orderData.order_status}]`);
     }
 
     // Process the subscription activation
-    await connectDB();
     const plan = await Plan.findById(plan_id).lean() as any;
     if (!plan) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?error=plan_not_found`);
 
     const customer = await User.findOne({ email: email.toLowerCase() });
     if (!customer) return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?error=customer_not_found`);
 
-    // Check if we already processed this order to prevent double credits
-    const existingPayment = await Payment.findOne({ transactionId: order_id });
-    if (existingPayment) {
+    // Check if we already processed this order as Success
+    const existingSuccess = await Payment.findOne({ transactionId: order_id, status: "Success" });
+    if (existingSuccess) {
        return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan`);
     }
 
@@ -91,19 +97,23 @@ export async function GET(req: Request) {
     };
     await customer.save();
 
-    await Payment.create({
-      customerId: customer._id,
-      customerName: customer.name,
-      phone: customer.phone,
-      date: startDate,
-      endDate: nextRenewal,
-      description: `${plan.name} - ${meal_type}`,
-      type: "Credit",
-      amount: actualPaidAmount,
-      status: "Success",
-      transactionId: order_id,
-      planName: plan.name
-    });
+    await Payment.findOneAndUpdate(
+      { transactionId: order_id },
+      {
+        customerId: customer._id,
+        customerName: customer.name,
+        phone: customer.phone,
+        date: startDate,
+        endDate: nextRenewal,
+        description: `${plan.name} - ${meal_type}`,
+        type: "Credit",
+        amount: actualPaidAmount,
+        status: "Success",
+        transactionId: order_id,
+        planName: plan.name
+      },
+      { upsert: true, new: true }
+    );
 
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan`);
   } catch (error: any) {
