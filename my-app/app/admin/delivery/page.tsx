@@ -1,47 +1,87 @@
 "use client";
-
+import { Phone, CheckCircle, Clock } from "lucide-react";
+import toast from "react-hot-toast";
 import { useEffect, useMemo, useState } from "react";
 
 /* ---------------- TYPES ---------------- */
 
-type MealType = "Veg" | "Non-Veg" | "Combo";
-
 interface DeliveryCustomer {
   id: string; 
+  deliveryId: string | null;
   customerId: string;
   customerName: string;
   phone: string;
   address: string;
-  targetTime: string;
+  type: "Lunch" | "Dinner";
+  planType: "Lunch" | "Dinner" | "Both";
   status: string;
-  type: string; // Lunch / Dinner
-  paused?: boolean;
+  paused: boolean;
 }
 
 /* ---------------- COMPONENT ---------------- */
 
 export default function DailyDeliveryPage() {
-  const today = new Date().toISOString().split("T")[0];
-  const [filter, setFilter] = useState<MealType | "ALL">("ALL");
   const [deliveries, setDeliveries] = useState<DeliveryCustomer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"ALL" | "Lunch" | "Dinner" | "Both">("ALL");
+  const [search, setSearch] = useState("");
 
-  useEffect(() => {
+  const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+  const todayStr = new Date(new Date().getTime() + IST_OFFSET).toISOString().split("T")[0];
+
+  const fetchDeliveries = () => {
+    setLoading(true);
     fetch("/api/admin/delivery")
       .then(res => res.json())
       .then(data => {
-        setDeliveries(data.deliveries);
+        setDeliveries(data.deliveries || []);
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchDeliveries();
   }, []);
 
-  const [search, setSearch] = useState("");
+  const updateStatus = async (item: DeliveryCustomer, newStatus: string) => {
+    try {
+      const res = await fetch("/api/admin/delivery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          id: item.deliveryId || item.id,
+          status: newStatus,
+          customerId: item.customerId,
+          type: item.type
+        })
+      });
+      if (res.ok) {
+        toast.success(`Marked as ${newStatus}`);
+        fetchDeliveries();
+      } else {
+        toast.error("Failed to update status");
+      }
+    } catch (e) {
+      toast.error("Error updating status");
+    }
+  };
+
+  const resumeService = async (customerId: string) => {
+     window.location.href = "/admin/pause";
+  };
 
   /* ---------------- DERIVED DATA ---------------- */
 
   const filteredDeliveries = useMemo(() => {
     return deliveries.filter((d) => {
-      const matchesFilter = filter === "ALL" || d.type === filter;
+      let matchesFilter = true;
+      if (filter === "Both") {
+         matchesFilter = d.planType === "Both";
+      } else if (filter !== "ALL") {
+         matchesFilter = d.type === filter;
+      }
+
       const matchesSearch = 
         d.customerName?.toLowerCase().includes(search.toLowerCase()) ||
         d.address?.toLowerCase().includes(search.toLowerCase()) ||
@@ -51,7 +91,7 @@ export default function DailyDeliveryPage() {
   }, [filter, search, deliveries]);
 
   const total = filteredDeliveries.length;
-  const deliverCount = filteredDeliveries.filter((d) => !d.paused).length;
+  const deliveredCount = filteredDeliveries.filter((d) => d.status === "Delivered").length;
   const pausedCount = filteredDeliveries.filter((d) => d.paused).length;
 
   if (loading) {
@@ -62,192 +102,177 @@ export default function DailyDeliveryPage() {
     );
   }
 
-  /* ---------------- UI ---------------- */
-
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* HEADER */}
-        <div className="mb-8 sm:ml-6 ml-2 pt-20 sm:pt-0">
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 flex items-center gap-2">
-            🚚 Daily Delivery List
-          </h1>
+        <div className="mb-8">
+          <h1 className="text-2xl sm:text-3xl font-black text-gray-900">🚚 Daily Delivery List</h1>
           <p className="text-sm font-bold text-gray-500 mt-1">
-            Delivery schedule for <b className="text-gray-900">{today}</b>
+            Live schedule for <b className="text-gray-900">{todayStr}</b>
           </p>
         </div>
 
         {/* STATS */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <StatCard title="Total" value={total} />
-          <StatCard title="Deliver Today" value={deliverCount} success />
-          <StatCard title="Paused" value={pausedCount} danger />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          <StatCard title="Total Orders" value={total} color="bg-white text-gray-900" />
+          <StatCard title="Delivered" value={deliveredCount} color="bg-green-600 text-white" />
+          <StatCard title="Paused Today" value={pausedCount} color="bg-red-600 text-white" />
         </div>
 
         {/* CONTROLS */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
           <input
             placeholder="Search by name, address or phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full md:w-1/2 px-4 py-2 rounded-lg border focus:ring-2 focus:ring-orange-400 outline-none"
+            className="flex-1 px-5 py-3 rounded-2xl border border-gray-200 outline-none focus:ring-2 focus:ring-orange-500"
           />
-
-          <div className="flex flex-wrap gap-2">
-            {["ALL", "Lunch", "Dinner"].map((type) => (
+          <div className="flex gap-2 flex-wrap">
+            {["ALL", "Lunch", "Dinner", "Both"].map((t) => (
               <button
-                key={type}
-                onClick={() => setFilter(type as any)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition
-                  ${
-                    filter === type
-                      ? "bg-orange-500 text-white"
-                      : "bg-white border hover:bg-orange-50"
-                  }`}
+                key={t}
+                onClick={() => setFilter(t as any)}
+                className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${
+                  filter === t ? "bg-orange-500 text-white" : "bg-white text-gray-500 border border-gray-100 hover:bg-gray-50"
+                }`}
               >
-                {type}
+                {t}
               </button>
             ))}
           </div>
         </div>
 
-        {/* ================= DESKTOP TABLE ================= */}
-        <div className="hidden md:block bg-white rounded-2xl shadow-lg overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-orange-200 text-gray-900">
-              <tr>
-                <th className="px-5 py-4 text-left">Customer</th>
-                <th className="px-5 py-4">Address</th>
-                <th className="px-5 py-4">Meal</th>
-                <th className="px-5 py-4">Status</th>
-              </tr>
-            </thead>
+        {/* LIST */}
+        <div className="bg-white rounded-[2rem] shadow-xl shadow-gray-200/50 overflow-hidden border border-gray-100">
+           <div className="hidden md:block">
+              <table className="w-full text-left">
+                 <thead className="bg-gray-50 border-b border-gray-100">
+                    <tr>
+                       <th className="px-8 py-5 text-[10px] font-black uppercase text-gray-400">Customer</th>
+                       <th className="px-8 py-5 text-[10px] font-black uppercase text-gray-400">Meal Plan</th>
+                       <th className="px-8 py-5 text-[10px] font-black uppercase text-gray-400">Address</th>
+                       <th className="px-8 py-5 text-[10px] font-black uppercase text-gray-400 text-right">Status / Action</th>
+                    </tr>
+                 </thead>
+                 <tbody className="divide-y divide-gray-50">
+                    {filteredDeliveries.map((item) => (
+                       <tr key={item.id} className={`${item.paused ? 'bg-red-50/30' : 'hover:bg-gray-50/50'} transition-all`}>
+                          <td className="px-8 py-5">
+                             <div className="flex items-center gap-3">
+                                <div>
+                                   <div className="font-bold text-gray-900">{item.customerName}</div>
+                                   <div className="text-xs text-gray-500">{item.phone}</div>
+                                </div>
+                                <a 
+                                  href={`tel:${item.phone}`}
+                                  className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                  title="Call Customer"
+                                >
+                                   <Phone size={14} />
+                                </a>
+                             </div>
+                          </td>
+                          <td className="px-8 py-5">
+                             <div className="flex items-center gap-2">
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${item.type === 'Lunch' ? 'bg-blue-100 text-blue-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                                   {item.type}
+                                </span>
+                                {item.planType === "Both" && (
+                                   <span className="text-[10px] font-black text-orange-500 bg-orange-50 px-2 py-1 rounded-lg uppercase tracking-tighter">Both Plan</span>
+                                )}
+                             </div>
+                          </td>
+                          <td className="px-8 py-5 text-sm text-gray-600 max-w-xs truncate font-bold uppercase">{item.address}</td>
+                          <td className="px-8 py-5 text-right">
+                             {item.paused ? (
+                                <div className="flex items-center justify-end gap-3 text-red-600 font-bold text-xs uppercase tracking-widest">
+                                   ⏸️ Paused
+                                </div>
+                             ) : item.status === "Delivered" ? (
+                                <div className="flex items-center justify-end gap-2 text-green-600 font-black text-[10px] uppercase tracking-[0.2em] italic">
+                                   <CheckCircle size={14} className="animate-bounce" />
+                                   Delivered
+                                </div>
+                             ) : (
+                                <button 
+                                  onClick={() => updateStatus(item, "Delivered")}
+                                  className="px-5 py-2.5 bg-gray-900 text-white text-[10px] font-black uppercase rounded-xl hover:bg-orange-600 transition-all shadow-lg shadow-gray-200 flex items-center gap-2 ml-auto"
+                                >
+                                   <Clock size={12} />
+                                   Mark Delivered
+                                </button>
+                             )}
+                          </td>
+                       </tr>
+                    ))}
+                 </tbody>
+              </table>
+           </div>
 
-            <tbody>
+           {/* MOBILE VIEW */}
+           <div className="md:hidden divide-y divide-gray-100">
               {filteredDeliveries.map((item) => (
-                <tr
-                  key={item.id}
-                  className={`border-t transition ${
-                    item.paused ? "bg-red-50" : "hover:bg-orange-50"
-                  }`}
-                >
-                  <td className="px-5 py-4">
-                    <p className="font-semibold text-gray-900">{item.customerName}</p>
-                    <p className="text-xs text-gray-500">📞 {item.phone}</p>
-                  </td>
-
-                  <td className="px-5 py-4 text-gray-700">{item.address}</td>
-
-                  <td className="px-5 py-4">
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                      {item.type}
-                    </span>
-                  </td>
-
-                  <td className="px-5 py-4">
+                 <div key={item.id} className={`p-6 ${item.paused ? 'bg-red-50/30' : ''}`}>
+                    <div className="flex justify-between items-start mb-4">
+                       <div>
+                          <div className="font-bold text-gray-900">{item.customerName}</div>
+                          <div className="text-xs text-gray-500">{item.phone}</div>
+                       </div>
+                       <div className="flex gap-2">
+                          <a 
+                            href={`tel:${item.phone}`}
+                            className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center active:scale-95 shadow-sm"
+                          >
+                             <Phone size={18} />
+                          </a>
+                          <div className="flex flex-col items-end gap-1">
+                             <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase ${item.type === 'Lunch' ? 'bg-blue-100 text-blue-600' : 'bg-indigo-100 text-indigo-600'}`}>{item.type}</span>
+                             {item.planType === "Both" && <span className="text-[7px] font-black text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-full uppercase">Both</span>}
+                          </div>
+                       </div>
+                    </div>
+                    <div className="text-xs text-gray-600 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100 font-medium font-bold uppercase">📍 {item.address}</div>
+                    
                     {item.paused ? (
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
-                        ⛔ Paused
-                      </span>
+                        <div className="bg-red-100 text-red-600 p-4 rounded-2xl text-center text-[10px] font-black uppercase tracking-widest">
+                           Service Paused Today
+                        </div>
+                    ) : item.status === "Delivered" ? (
+                        <div className="bg-green-100 text-green-600 p-4 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] italic">
+                           <CheckCircle size={14} />
+                           Delivered Successfully
+                        </div>
                     ) : (
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
-                        ✔ Deliver
-                      </span>
+                       <button 
+                        onClick={() => updateStatus(item, "Delivered")}
+                        className="w-full py-4 bg-gray-900 text-white text-[10px] font-black uppercase rounded-2xl shadow-xl shadow-gray-200 flex items-center justify-center gap-2"
+                       >
+                          <Clock size={14} />
+                          Mark as Delivered
+                       </button>
                     )}
-                  </td>
-                </tr>
+                 </div>
               ))}
+           </div>
 
-              {filteredDeliveries.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="text-center py-10 text-gray-500">
-                    No deliveries found for selected filter
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* ================= MOBILE CARDS ================= */}
-        <div className="md:hidden space-y-4">
-          {filteredDeliveries.map((item) => (
-            <div
-              key={item.id}
-              className={`rounded-xl shadow p-5 bg-white ${
-                item.paused ? "border-l-4 border-red-500" : ""
-              }`}
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-bold text-lg text-gray-900">
-                    {item.customerName}
-                  </h3>
-                  <p className="text-sm text-gray-500">📞 {item.phone}</p>
-                </div>
-
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100">
-                  {item.type}
-                </span>
+           {filteredDeliveries.length === 0 && (
+              <div className="py-24 text-center">
+                 <div className="text-5xl mb-6 grayscale opacity-50 text-gray-300">📦</div>
+                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">No orders in this list</p>
               </div>
-
-              <p className="text-sm text-gray-700 mt-2">📍 {item.address}</p>
-
-              <div className="mt-3">
-                {item.paused ? (
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
-                    ⛔ Paused
-                  </span>
-                ) : (
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
-                    ✔ Deliver Today
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {filteredDeliveries.length === 0 && (
-            <div className="bg-white rounded-xl shadow p-6 text-center text-gray-500">
-              No deliveries found for selected filter
-            </div>
-          )}
-        </div>
-
-        {/* WARNING */}
-        <div className="mt-6 bg-red-100 border-l-4 border-red-500 p-4 rounded-lg text-red-700 text-sm">
-          ⚠️ <b>Paused customers</b> must NOT receive delivery today.
+           )}
         </div>
       </div>
     </div>
   );
 }
 
-/* ---------------- STATS CARD ---------------- */
-
-function StatCard({
-  title,
-  value,
-  success,
-  danger,
-}: {
-  title: string;
-  value: number;
-  success?: boolean;
-  danger?: boolean;
-}) {
+function StatCard({ title, value, color }: { title: string; value: number; color: string }) {
   return (
-    <div
-      className={`rounded-xl p-4 shadow-sm ${
-        success
-          ? "bg-green-500 text-white"
-          : danger
-            ? "bg-red-500 text-white"
-            : "bg-white"
-      }`}
-    >
-      <p className="text-xs opacity-80">{title}</p>
-      <h3 className="text-2xl font-extrabold mt-1">{value}</h3>
+    <div className={`${color} p-6 sm:p-8 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-200/20`}>
+       <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-2">{title}</p>
+       <h3 className="text-4xl font-black tracking-tight">{value}</h3>
     </div>
   );
 }

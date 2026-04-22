@@ -1,26 +1,25 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Phone, Mail, MapPin, Send, Clock } from "lucide-react";
+import { Phone, Mail, MapPin, Send, Clock } from "lucide-center";
+import { Phone as PhoneIcon, Mail as MailIcon, MapPin as MapPinIcon, Send as SendIcon, Clock as ClockIcon } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { useState, useEffect } from "react";
 
-export default function Contact() {
-  const [siteSettings, setSiteSettings] = useState<any>(null);
+export default function Contact({ initialData }: { initialData?: any }) {
+  const [siteSettings, setSiteSettings] = useState<any>(initialData || null);
 
   useEffect(() => {
     fetch("/api/admin/settings")
       .then(res => res.json())
-      .then(data => setSiteSettings(data))
+      .then(data => setSiteSettings(data.settings?.contact))
       .catch(err => console.error("Failed to load settings", err));
   }, []);
 
   return (
     <section id="contact" className="w-full bg-gray-50 py-24 sm:py-32 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* HEADER */}
         <div className="text-center mb-20">
           <motion.h2 
             initial={{ opacity: 0, y: 20 }}
@@ -42,8 +41,6 @@ export default function Contact() {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-12">
-          
-          {/* CONTACT INFO */}
           <motion.div 
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -52,7 +49,7 @@ export default function Contact() {
           >
             <div className="bg-white p-8 rounded-[2rem] shadow-xl shadow-gray-100 border border-gray-100 group hover:border-orange-200 transition-all">
               <div className="w-12 h-12 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Phone size={24} />
+                <PhoneIcon size={24} />
               </div>
               <h4 className="text-xl font-bold text-gray-900 mb-2">Call Us</h4>
               <p className="text-gray-500">{siteSettings?.phone || "+91 98765 43210"}</p>
@@ -60,7 +57,7 @@ export default function Contact() {
 
             <div className="bg-white p-8 rounded-[2rem] shadow-xl shadow-gray-100 border border-gray-100 group hover:border-orange-200 transition-all">
               <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Mail size={24} />
+                <MailIcon size={24} />
               </div>
               <h4 className="text-xl font-bold text-gray-900 mb-2">Email Us</h4>
               <p className="text-gray-500">{siteSettings?.email || "hello@annapurna.com"}</p>
@@ -68,7 +65,7 @@ export default function Contact() {
 
             <div className="bg-white p-8 rounded-[2rem] shadow-xl shadow-gray-100 border border-gray-100 group hover:border-orange-200 transition-all">
               <div className="w-12 h-12 rounded-2xl bg-green-100 text-green-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <MapPin size={24} />
+                <MapPinIcon size={24} />
               </div>
               <h4 className="text-xl font-bold text-gray-900 mb-2">Visit Us</h4>
               <p className="text-gray-500">{siteSettings?.address || "123 Food Street, Indore, MP"}</p>
@@ -76,7 +73,7 @@ export default function Contact() {
 
             <div className="bg-white p-8 rounded-[2rem] shadow-xl shadow-gray-100 border border-gray-100 group hover:border-orange-200 transition-all">
               <div className="w-12 h-12 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <Clock size={24} />
+                <ClockIcon size={24} />
               </div>
               <h4 className="text-xl font-bold text-gray-900 mb-2">Working Hours</h4>
               <p className="text-gray-500">{siteSettings?.workingHours || "9:00 AM - 10:00 PM"}</p>
@@ -164,11 +161,10 @@ export default function Contact() {
                 className="w-full sm:w-auto px-12 py-5 bg-orange-600 text-white font-black text-lg rounded-[2rem] shadow-xl shadow-orange-200 hover:bg-orange-700 hover:shadow-orange-300 transition-all flex items-center justify-center gap-3 group active:scale-95"
               >
                 Send Message
-                <Send size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                <SendIcon size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               </button>
             </form>
           </motion.div>
-
         </div>
       </div>
     </section>

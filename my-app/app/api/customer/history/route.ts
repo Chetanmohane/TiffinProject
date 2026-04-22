@@ -16,17 +16,30 @@ export async function GET(req: Request) {
     
     if (!customer) throw new Error("Customer not found");
 
-    const payments = await Payment.find({ customerId: customer._id })
-      .sort({ createdAt: -1 })
-      .lean();
+    const [payments, deliveries] = await Promise.all([
+       Payment.find({ customerId: customer._id }).sort({ createdAt: -1 }).lean(),
+       (await import("@/models/Delivery")).default.find({ customerId: customer._id }).sort({ date: -1 }).lean() as any
+    ]);
 
-    const historyData = payments.map((p: any) => ({
+    const paymentRecords = payments.map((p: any) => ({
       date: p.date || new Date(p.createdAt).toLocaleDateString(),
       endDate: p.endDate || "",
       plan: p.description || "Meal Charge",
       status: p.status || "Success",
       amount: p.amount ? `₹${p.amount}` : "₹0"
     }));
+
+    const deliveryRecords = deliveries.map((d: any) => ({
+      date: d.date,
+      endDate: "",
+      plan: `${d.type} Delivery`,
+      status: d.status || "Completed",
+      amount: "- 1 Meal"
+    }));
+
+    const historyData = [...paymentRecords, ...deliveryRecords].sort((a, b) => 
+       new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
 
     return NextResponse.json({ history: historyData });
   } catch (error) {

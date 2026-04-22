@@ -11,15 +11,19 @@ const SETTINGS_ID = "65c3e9a7e6b8a7d6c5b4a321"; // Manually defined static Objec
 export async function GET() {
   try {
     await connectDB();
-    // Attempt to find the specific record, or the first one if not found by ID
     let settings = await SiteSettings.findOne();
     
     if (!settings) {
-      // If nothing exists, create a default one
       settings = await SiteSettings.create({});
     }
     
-    return NextResponse.json({ success: true, settings });
+    return NextResponse.json({ success: true, settings }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
@@ -30,16 +34,19 @@ export async function POST(req: Request) {
     const data = await req.json();
     await connectDB();
     
-    // Atomically find the settings document and update it. 
-    // If none exists, create it.
-    // This ensures we never have duplicate settings records.
     const settings = await SiteSettings.findOneAndUpdate(
-      {}, // Filter: empty object matches the first/only document
-      { $set: data }, // Atomic update of all sent fields
+      {},
+      { $set: data },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    return NextResponse.json({ success: true, settings });
+    return NextResponse.json({ success: true, settings }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
   } catch (err: any) {
     console.error("CMS POST Error:", err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

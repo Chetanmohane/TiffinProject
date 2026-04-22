@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { 
   Soup, 
@@ -50,17 +50,14 @@ const services = [
   },
 ];
 
-import { useEffect, useState } from "react";
-
-const Services = () => {
-  const [cms, setCms] = useState<any>(null);
+const Services = ({ initialData }: { initialData?: any }) => {
+  const [cms, setCms] = useState<any>(initialData || null);
 
   useEffect(() => {
     const fetchCms = async () => {
       try {
         const res = await fetch("/api/admin/settings?t=" + new Date().getTime(), { 
-          cache: 'no-store',
-          next: { revalidate: 0 }
+          cache: 'no-store'
         });
         const data = await res.json();
         if (data.success && data.settings) setCms(data.settings.services);
@@ -73,7 +70,6 @@ const Services = () => {
   const title = cms?.title || "Why Thousands Trust Us";
   const subDesc = cms?.subDesc || "We don't just deliver food; we deliver health, convenience, and a taste of home. Here is why we are unique.";
 
-  // Overwrite some services if provided by CMS
   const currentServices = [...services];
   if (cms?.item1Title) {
     currentServices[0] = { ...services[0], title: cms.item1Title, desc: cms.item1Desc || services[0].desc };
@@ -87,12 +83,9 @@ const Services = () => {
 
   return (
     <section id="services" className="w-full bg-gray-50 py-24 sm:py-32 relative overflow-hidden">
-      {/* Decorative Elements */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-orange-500/20 to-transparent"></div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* HEADER */}
         <div className="text-center mb-20">
           <motion.h4 
             initial={{ opacity: 0, y: 10 }}
@@ -122,7 +115,6 @@ const Services = () => {
           </motion.p>
         </div>
 
-        {/* SERVICES GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {currentServices.map((item, index) => (
             <motion.div
@@ -137,11 +129,9 @@ const Services = () => {
               <div className={`w-16 h-16 rounded-2xl ${item.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
                 {React.isValidElement(item.icon) && React.cloneElement(item.icon as React.ReactElement<{ size?: number }>, { size: 30 })}
               </div>
-
               <h3 className="text-2xl font-bold text-gray-900 mb-4 group-hover:text-orange-600 transition-colors">
                 {item.title}
               </h3>
-
               <p className="text-gray-500 leading-relaxed">
                 {item.desc}
               </p>

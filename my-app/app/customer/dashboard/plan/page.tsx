@@ -328,7 +328,7 @@ export default function PlanPage() {
              </div>
              <div>
                 <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5 sm:mb-1">Renewal Date</p>
-                <p className="text-lg sm:text-2xl font-black text-gray-900">{planData?.endDate || "Not Active"}</p>
+                <p className={`text-lg sm:text-2xl font-black ${planData?.status === 'Expired' ? 'text-red-600 animate-pulse' : 'text-gray-900'}`}>{planData?.endDate || "Not Active"}</p>
              </div>
           </motion.div>
         </div>
@@ -344,8 +344,31 @@ export default function PlanPage() {
                  <div className="bg-gray-900 p-6 sm:p-12 text-white relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-48 sm:w-80 h-48 sm:h-80 bg-orange-500/20 rounded-full blur-[50px] sm:blur-[80px] -mr-16 -mt-16 sm:-mr-32 sm:-mt-32"></div>
                     
-                    <div className="relative z-10">
-                       <div className="flex justify-between items-start mb-8 sm:mb-16">
+                     <div className="relative z-10">
+                        {planData?.status === "Paused" && (
+                           <motion.div 
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="mb-6 p-4 bg-orange-500/20 border border-orange-500/50 rounded-2xl flex items-center justify-between backdrop-blur-sm"
+                           >
+                              <div className="flex items-center gap-3">
+                                 <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center animate-pulse">
+                                    <Clock size={16} className="text-white" />
+                                 </div>
+                                 <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-orange-500 leading-none mb-1">Service Paused</p>
+                                    <p className="text-xs font-bold text-white opacity-80">Your meal delivery is currently on hold as per your request.</p>
+                                 </div>
+                              </div>
+                              <button 
+                                 onClick={() => window.location.href = '/customer/pause-meal'}
+                                 className="px-4 py-2 bg-white text-orange-600 text-[10px] font-black uppercase rounded-xl hover:bg-orange-50 transition-all"
+                              >
+                                 Manage Pause
+                              </button>
+                           </motion.div>
+                        )}
+                        <div className="flex justify-between items-start mb-8 sm:mb-16">
                           <div>
                              <div className="flex items-center gap-2 mb-2 sm:mb-3">
                                 <TrendingIcon size={14} className="text-orange-500" />
@@ -363,20 +386,16 @@ export default function PlanPage() {
                           </div>
                        </div>
 
-                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-10">
-                          <div className="bg-white/5 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-white/10">
-                             <p className="text-gray-500 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mb-1 sm:mb-2">Member Since</p>
-                             <p className="text-xs sm:text-xl font-black tracking-tight">{planData?.startDate || "--"}</p>
-                          </div>
-                          <div className="bg-white/5 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-white/10">
-                             <p className="text-gray-500 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mb-1 sm:mb-2">Cycle</p>
-                             <p className="text-xs sm:text-xl font-black tracking-tight capitalize">{planData?.frequency || "Monthly"}</p>
-                          </div>
-                          <div className="bg-orange-500 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-orange-400 shadow-lg shadow-orange-500/20">
-                             <p className="text-orange-100 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mb-1 sm:mb-2">Subscription</p>
-                             <p className="text-xs sm:text-xl font-black tracking-tight">{planData?.status || "Inactive"}</p>
-                          </div>
-                       </div>
+                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-10">
+                           <div className="bg-white/5 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-white/10">
+                              <p className="text-gray-500 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mb-1 sm:mb-2">Plan Started</p>
+                              <p className="text-xs sm:text-xl font-black tracking-tight capitalize">{planData?.startDate || "Not Active"}</p>
+                           </div>
+                           <div className="bg-orange-500 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-orange-400 shadow-lg shadow-orange-500/20">
+                              <p className="text-orange-100 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mb-1 sm:mb-2">Subscription</p>
+                              <p className="text-xs sm:text-xl font-black tracking-tight">{planData?.status || "Inactive"}</p>
+                           </div>
+                        </div>
                     </div>
                  </div>
 
@@ -452,10 +471,20 @@ export default function PlanPage() {
                     <h3 className="text-xl sm:text-2xl font-black text-gray-900 mb-2 tracking-tighter">Temporarily Pause</h3>
                     <p className="text-gray-500 mb-6 sm:mb-10 font-bold text-sm sm:text-base leading-relaxed opacity-80">Going away? Pause your service and save your meals balance instantly.</p>
                     <button 
-                      onClick={() => window.location.href = '/customer/pause-meal'}
-                      className="w-full py-4 sm:py-5 rounded-2xl bg-gray-900 text-white font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] hover:bg-orange-500 transition-all hover:shadow-xl hover:shadow-orange-200 flex items-center justify-center gap-2 group/btn active:scale-95"
+                      onClick={() => {
+                        if (planData?.status === "Expired" || planData?.status === "Inactive") {
+                           toast.error("You need an active plan to pause the service.");
+                           return;
+                        }
+                        window.location.href = '/customer/pause-meal';
+                      }}
+                      className={`w-full py-4 sm:py-5 rounded-2xl font-black uppercase text-[10px] sm:text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-2 group/btn active:scale-95 ${
+                        (planData?.status === "Expired" || planData?.status === "Inactive") 
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed" 
+                        : "bg-gray-900 text-white hover:bg-orange-500 hover:shadow-xl hover:shadow-orange-200"
+                      }`}
                     >
-                      Pause Service
+                      {(planData?.status === "Expired" || planData?.status === "Inactive") ? "Activate Plan to Pause" : "Pause Service"}
                       <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 group-hover/btn:translate-x-1 transition-transform" />
                     </button>
                  </div>

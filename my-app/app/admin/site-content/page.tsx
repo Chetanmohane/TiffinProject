@@ -75,6 +75,54 @@ const InputField = ({ label, value, onChange, placeholder, accent = false, icon:
   </div>
 );
 
+const ImageUploadField = ({ label, value, onChange, accent = false }: any) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Image too large! Use images under 2MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onChange(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <div className="space-y-4 flex-1">
+      <div className="flex items-center justify-between px-1">
+        <label className={`text-[11px] font-black uppercase tracking-widest ${accent ? "text-orange-500" : "text-slate-400"}`}>{label}</label>
+      </div>
+      <div className="flex flex-col gap-4">
+        <div className="relative group">
+          <input 
+            type="file" 
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden" 
+            id={`file-upload-${label.replace(/\s+/g, '-')}`}
+          />
+          <label 
+            htmlFor={`file-upload-${label.replace(/\s+/g, '-')}`}
+            className="flex items-center justify-center gap-3 px-6 py-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:border-orange-500 hover:bg-orange-50/30 transition-all group"
+          >
+            <ImageIcon size={20} className="text-slate-400 group-hover:text-orange-500" />
+            <span className="text-xs font-black text-slate-600 uppercase tracking-widest group-hover:text-orange-600">Select Image</span>
+          </label>
+        </div>
+        {value && (
+          <div className="text-[10px] text-slate-400 font-bold truncate px-2 italic">
+            {value.startsWith('data:') ? '✅ Custom Uploaded Image' : `🔗 ${value}`}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // --- MAIN COMPONENT ---
 
 export default function SiteContentManagement() {
@@ -207,7 +255,7 @@ export default function SiteContentManagement() {
                                <InputField label="Rating Badge" value={settings.hero.ratingText} onChange={(val:any) => setSettings({...settings, hero: {...settings.hero, ratingText: val}})} />
                                <InputField label="Customer Badge" value={settings.hero.activeUsersText} onChange={(val:any) => setSettings({...settings, hero: {...settings.hero, activeUsersText: val}})} />
                             </div>
-                            <InputField label="Main Visual URL" value={settings.hero.mainImage} onChange={(val:any) => setSettings({...settings, hero: {...settings.hero, mainImage: val}})} icon={ImageIcon} />
+                            <ImageUploadField label="Main Visual Image" value={settings.hero.mainImage} onChange={(val:any) => setSettings({...settings, hero: {...settings.hero, mainImage: val}})} />
                          </div>
                          <div className="rounded-[4rem] overflow-hidden border-[20px] border-slate-50 shadow-inner group relative">
                              <div className="absolute inset-0 bg-orange-600/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm z-10">
@@ -256,7 +304,7 @@ export default function SiteContentManagement() {
                             </div>
                          </div>
                          <div className="space-y-10">
-                            <InputField label="Story Visual URL" value={settings.about.image} onChange={(val:any) => setSettings({...settings, about: {...settings.about, image: val}})} icon={ImageIcon} />
+                            <ImageUploadField label="Story Visual Image" value={settings.about.image} onChange={(val:any) => setSettings({...settings, about: {...settings.about, image: val}})} />
                             <div className="rounded-[4rem] overflow-hidden border-[16px] border-slate-50 shadow-2xl relative group">
                                <img src={settings.about.image} alt="About" className="w-full aspect-square object-cover" />
                             </div>
@@ -281,8 +329,8 @@ export default function SiteContentManagement() {
                          <div className="space-y-10">
                             <InputField isTextarea label="Full Mission Text" value={settings.mission.description} onChange={(val:any) => setSettings({...settings, mission: {...settings.mission, description: val}})} />
                             <div className="space-y-6">
-                               <InputField label="Primary Visual" value={settings.mission.image} onChange={(val:any) => setSettings({...settings, mission: {...settings.mission, image: val}})} icon={ImageIcon} />
-                               <InputField label="Secondary Visual" value={settings.mission.image2} onChange={(val:any) => setSettings({...settings, mission: {...settings.mission, image2: val}})} icon={ImageIcon} />
+                               <ImageUploadField label="Primary Visual" value={settings.mission.image} onChange={(val:any) => setSettings({...settings, mission: {...settings.mission, image: val}})} />
+                               <ImageUploadField label="Secondary Visual" value={settings.mission.image2} onChange={(val:any) => setSettings({...settings, mission: {...settings.mission, image2: val}})} />
                             </div>
                          </div>
                          <div className="grid grid-cols-1 gap-8 rounded-[4rem] bg-slate-50 p-8 border-2 border-slate-100">

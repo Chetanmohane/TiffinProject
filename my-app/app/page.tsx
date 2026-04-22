@@ -6,34 +6,35 @@ import Contact from "@/components/landing/Contact";
 import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
 import Marquee from "@/components/landing/Marquee";
+import connectDB from "@/lib/mongodb";
+import SiteSettings from "@/models/SiteSettings";
 
+async function getSettings() {
+  await connectDB();
+  const settings = await SiteSettings.findOne().lean();
+  // Stringify the objects to avoid serialization issues with MongoDB _id
+  return JSON.parse(JSON.stringify(settings || {}));
+}
 
-const Page = () => {
+export default async function Page() {
+  const settings = await getSettings();
+
   return (
-
     <>
-    <Navbar/>
-
-
+      <Navbar />
       <main>
-
-        {/* 🔥 FULL WIDTH HERO */}
-        <section
-          id="home"
-          className="w-full min-h-screen"
-        >
-          <Hero />
+        <section id="home" className="w-full min-h-screen">
+          <Hero initialData={settings.hero} />
         </section>
 
         <Marquee />
 
-        {/* BOXED CONTENT BELOW */}
         <section id="about" className="pt-20">
-          <AboutPage />
+          <AboutPage initialData={settings} />
         </section>
 
         <section id="services" className="pt-20">
-          <Services />
+          <Services initialData={settings.services} />
         </section>
 
         <section id="plans" className="pt-20">
@@ -41,15 +42,10 @@ const Page = () => {
         </section>
 
         <section id="contact" className="pt-20">
-          <Contact />
+          <Contact initialData={settings.contact} />
         </section>
-
       </main>
-
-      <Footer/>
+      <Footer initialData={settings.contact} />
     </>
-    
   );
-};
-
-export default Page;
+}

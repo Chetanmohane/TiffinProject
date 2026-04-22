@@ -35,7 +35,7 @@ export default function PauseManagementPage() {
       });
   }, []);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date(new Date().getTime() + (5.5 * 60 * 60 * 1000)).toISOString().split("T")[0];
 
   const isPausedToday = (from: string, to: string) =>
     today >= from && today <= to;

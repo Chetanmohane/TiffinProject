@@ -6,24 +6,75 @@ import User from "@/models/User";
 export async function GET() {
   try {
     await connectDB();
-    const deliveries = await Delivery.find({}).lean();
+    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+    const today = new Date(new Date().getTime() + IST_OFFSET).toISOString().split("T")[0];
 
-    const enriched = await Promise.all(
-      deliveries.map(async (d: any) => {
-        const customer = await User.findById(d.customerId)
-          .select("name phone address")
-          .lean() as any;
-        return {
-          ...d,
-          id: d._id,
-          customerName: customer?.name || d.customerName,
-          phone: customer?.phone || "N/A",
-          address: customer?.address || "Address not found",
-        };
-      })
-    );
+    // 1. Fetch all customers with an active subscription
+    const customers = await User.find({ 
+      role: "customer", 
+      "subscription.status": "Active" 
+    }).lean() as any[];
 
-    return NextResponse.json({ deliveries: enriched });
+    const PausedMeal = (await import("@/models/PausedMeal")).default;
+    const deliveries = await Delivery.find({ date: today }).lean() as any[];
+
+    const list: any[] = [];
+
+    for (const customer of customers) {
+      const sub = customer.subscription;
+      if (!sub) continue;
+
+      // Skip if totally expired by date or meals
+      const renewalDate = new Date(sub.nextRenewal);
+      if (renewalDate < new Date() || sub.mealsLeft <= 0) continue;
+
+      // Check pause status for today
+      const isPausedToday = await PausedMeal.findOne({
+        customerId: customer._id,
+        pauseFrom: { $lte: today },
+        pauseTo: { $gte: today },
+      });
+
+      // Determine which meal items to show (Lunch, Dinner, or Both)
+      const mealTypesToShow: ("Lunch" | "Dinner")[] = [];
+      if (sub.mealType === "Both") {
+        mealTypesToShow.push("Lunch", "Dinner");
+      } else if (sub.mealType === "Lunch" || sub.mealType === "Dinner") {
+        mealTypesToShow.push(sub.mealType);
+      } else {
+        // Default to Both if not specified but active
+        mealTypesToShow.push("Lunch", "Dinner");
+      }
+
+      for (const mType of mealTypesToShow) {
+        // Find if a delivery record already exists for this slot
+        const existingDelivery = deliveries.find(
+          (d) => d.customerId.toString() === customer._id.toString() && d.type === mType
+        );
+
+        let finalStatus = "Scheduled";
+        if (isPausedToday) {
+          finalStatus = "Paused";
+        } else if (existingDelivery) {
+          finalStatus = existingDelivery.status;
+        }
+
+        list.push({
+          id: existingDelivery?._id || `temp-${customer._id}-${mType}`,
+          deliveryId: existingDelivery?._id || null,
+          customerId: customer._id,
+          customerName: customer.name,
+          phone: customer.phone,
+          address: customer.address,
+          type: mType, // The specific slot (Lunch or Dinner)
+          planType: sub.mealType || "Both", // The overall plan (Lunch, Dinner, or Both)
+          status: finalStatus,
+          paused: !!isPausedToday,
+        });
+      }
+    }
+
+    return NextResponse.json({ deliveries: list, date: today });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -32,8 +83,55 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const { id, status } = await req.json();
-    await Delivery.findByIdAndUpdate(id, { status });
+    const { id, status, customerId, type } = await req.json();
+    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+    const today = new Date(new Date().getTime() + IST_OFFSET).toISOString().split("T")[0];
+
+    let delivery;
+    let oldStatus = "Scheduled";
+
+    if (id && !id.toString().startsWith("temp-")) {
+      delivery = await Delivery.findById(id);
+      if (delivery) {
+        oldStatus = delivery.status;
+      }
+    }
+
+    // If status changed to Delivered, deduct 1 meal
+    if (status === "Delivered" && oldStatus !== "Delivered") {
+       const targetCustomerId = delivery ? delivery.customerId : customerId;
+       if (!targetCustomerId) throw new Error("Customer ID required for new delivery");
+
+       await User.findByIdAndUpdate(targetCustomerId, {
+          $inc: { "subscription.mealsLeft": -1 }
+       });
+
+       if (!delivery) {
+          // Create new record for today
+          const customer = await User.findById(targetCustomerId).select("name").lean() as any;
+          delivery = await Delivery.create({
+            customerId: targetCustomerId,
+            customerName: customer?.name || "Customer",
+            type: type || "Lunch",
+            date: today,
+            status: "Delivered",
+            targetTime: type === "Dinner" ? "08:00 PM" : "01:00 PM"
+          });
+          return NextResponse.json({ success: true, id: delivery._id });
+       }
+    } 
+    // If status was Delivered and changed back to something else, add 1 meal back
+    else if (status !== "Delivered" && oldStatus === "Delivered" && delivery) {
+       await User.findByIdAndUpdate(delivery.customerId, {
+          $inc: { "subscription.mealsLeft": 1 }
+       });
+    }
+
+    if (delivery) {
+      delivery.status = status;
+      await delivery.save();
+    }
+    
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

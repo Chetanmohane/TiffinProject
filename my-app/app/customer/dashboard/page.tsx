@@ -175,10 +175,15 @@ export default function Order() {
           gradient="from-blue-600 to-indigo-700" 
         />
         <Action 
-          label="Pause Meal" 
+          label={(dashboardData?.user?.subscriptionStatus === 'Expired' || dashboardData?.user?.subscriptionStatus === 'Inactive') ? "No Active Plan" : "Pause Meal"}
           icon="⏸️" 
-          link="/customer/pause-meal" 
-          gradient="from-rose-500 to-red-600" 
+          link={ (dashboardData?.user?.subscriptionStatus === 'Expired' || dashboardData?.user?.subscriptionStatus === 'Inactive') ? "#" : "/customer/pause-meal"} 
+          onClick={() => {
+            if (dashboardData?.user?.subscriptionStatus === 'Expired' || dashboardData?.user?.subscriptionStatus === 'Inactive') {
+               import("react-hot-toast").then(t => t.default.error("Please buy a plan first to pause the service."));
+            }
+          }}
+          gradient={ (dashboardData?.user?.subscriptionStatus === 'Expired' || dashboardData?.user?.subscriptionStatus === 'Inactive') ? "from-gray-400 to-gray-500 opacity-50" : "from-rose-500 to-red-600"} 
         />
         <Action 
           label="Daily Menu" 
@@ -257,9 +262,15 @@ export default function Order() {
 }
 
 /* ================= Action Component ================= */
-const Action = ({ label, icon, link, gradient }: any) => (
+const Action = ({ label, icon, link, gradient, onClick }: any) => (
   <Link
     href={link}
+    onClick={(e) => {
+      if (onClick) {
+        onClick();
+        if (link === "#") e.preventDefault();
+      }
+    }}
     className={`bg-gradient-to-br ${gradient} shadow-2xl shadow-gray-400/10
                p-5 sm:p-6 rounded-[2.5rem] flex flex-col items-center justify-center gap-4
                hover:shadow-xl hover:-translate-y-1.5 transition-all duration-500 group h-full min-h-[140px] relative overflow-hidden active:scale-95`}

@@ -6,9 +6,9 @@ import { motion } from "framer-motion";
 import { ArrowRight, Star, Clock, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const Hero = () => {
+const Hero = ({ initialData }: { initialData?: any }) => {
   const [user, setUser] = useState<any>(null);
-  const [cms, setCms] = useState<any>(null);
+  const [cms, setCms] = useState<any>(initialData || null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -16,11 +16,11 @@ const Hero = () => {
       try { setUser(JSON.parse(storedUser)); } catch (e) {}
     }
 
+    // Still fetch fresh data just in case, but initial state is already set from server props
     const fetchCms = async () => {
       try {
         const res = await fetch("/api/admin/settings?t=" + new Date().getTime(), { 
-          cache: 'no-store',
-          next: { revalidate: 0 } 
+          cache: 'no-store'
         });
         const data = await res.json();
         if (data.success && data.settings) {
