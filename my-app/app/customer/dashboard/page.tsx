@@ -290,39 +290,50 @@ export default function Order() {
                       </div>
                     )}
 
-                    <div className="mb-6">
-                       <div className="flex items-center justify-between mb-2 px-1">
-                          <p className="text-[9px] text-gray-500 uppercase font-black tracking-[0.2em]">Meal Inventory</p>
-                          <div className="flex items-center gap-2">
-                             <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
-                             <p className="text-[10px] font-black text-white tracking-widest">
-                                {Math.round((dashboardData?.user?.totalMeals > 0 ? (dashboardData?.user?.mealsLeft / dashboardData?.user?.totalMeals) * 100 : 0))}% AVAILABLE
-                             </p>
-                          </div>
-                       </div>
-                       <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5 p-[1px]">
-                          <motion.div 
-                             initial={{ width: 0 }}
-                             animate={{ width: `${(dashboardData?.user?.totalMeals > 0 ? (dashboardData?.user?.mealsLeft / dashboardData?.user?.totalMeals) * 100 : 0)}%` }}
-                             className="h-full bg-gradient-to-r from-orange-500 via-orange-400 to-red-600 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.3)]"
-                          />
-                       </div>
-                    </div>
+                    {dashboardData?.user?.hasActivePlan && (
+                      <div className="mb-6">
+                         <div className="flex items-center justify-between mb-2 px-1">
+                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-[0.2em]">Meal Inventory</p>
+                            <div className="flex items-center gap-2">
+                               <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
+                               <p className="text-[10px] font-black text-white tracking-widest">
+                                  {Math.round((dashboardData?.user?.totalMeals > 0 ? (dashboardData?.user?.mealsLeft / dashboardData?.user?.totalMeals) * 100 : 0))}% AVAILABLE
+                               </p>
+                            </div>
+                         </div>
+                         <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5 p-[1px]">
+                            <motion.div 
+                               initial={{ width: 0 }}
+                               animate={{ width: `${(dashboardData?.user?.totalMeals > 0 ? (dashboardData?.user?.mealsLeft / dashboardData?.user?.totalMeals) * 100 : 0)}%` }}
+                               className="h-full bg-gradient-to-r from-orange-500 via-orange-400 to-red-600 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.3)]"
+                            />
+                         </div>
+                      </div>
+                    )}
                         <div className="pt-6 border-t border-white/5 flex items-center justify-between">
-                           <div>
-                              <p className="text-[9px] text-gray-600 uppercase font-black tracking-widest mb-1">Live Balance</p>
-                              <p className="text-4xl font-black text-white tracking-tighter">{dashboardData?.user?.mealsLeft || 0}<span className="text-xs text-gray-600 ml-1 font-bold">MEALS</span></p>
-                           </div>
-                           <button 
-                              onClick={() => {
-                                const target = document.getElementById('tailored-plans');
-                                if (target) target.scrollIntoView({ behavior: 'smooth' });
-                              }}
-                              className="px-7 py-3 bg-white/5 hover:bg-orange-600 rounded-2xl text-[10px] font-black transition-all uppercase tracking-widest border border-white/5 hover:border-orange-500 active:scale-95"
-                           >
-                              {dashboardData?.user?.subscriptionStatus === 'Active' ? 'Upgrade' : 'Buy Plan'}
-                           </button>
-                        </div>
+                            <div>
+                               {dashboardData?.user?.hasActivePlan ? (
+                                 <>
+                                   <p className="text-[9px] text-gray-600 uppercase font-black tracking-widest mb-1">Live Balance</p>
+                                   <p className="text-4xl font-black text-white tracking-tighter">{dashboardData?.user?.mealsLeft || 0}<span className="text-xs text-gray-600 ml-1 font-bold">MEALS</span></p>
+                                 </>
+                               ) : (
+                                 <>
+                                   <p className="text-[9px] text-gray-600 uppercase font-black tracking-widest mb-1">Status</p>
+                                   <p className="text-xl font-black text-red-500 uppercase tracking-tighter">Inactive</p>
+                                 </>
+                               )}
+                            </div>
+                            <button 
+                               onClick={() => {
+                                 const target = document.getElementById('tailored-plans');
+                                 if (target) target.scrollIntoView({ behavior: 'smooth' });
+                               }}
+                               className="px-7 py-3 bg-white/5 hover:bg-orange-600 rounded-2xl text-[10px] font-black transition-all uppercase tracking-widest border border-white/5 hover:border-orange-500 active:scale-95"
+                            >
+                               {dashboardData?.user?.subscriptionStatus === 'Active' ? 'Upgrade' : 'Buy Plan'}
+                            </button>
+                         </div>
                      </div>
                   </div>
                   <div className="absolute -bottom-10 -right-10 text-white/[0.03] transform -rotate-12 pointer-events-none group-hover:scale-110 group-hover:rotate-0 transition-all duration-700">
