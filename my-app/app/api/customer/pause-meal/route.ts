@@ -15,8 +15,8 @@ export async function GET(req: Request) {
     
     if (!customer) throw new Error("Customer not found");
 
-    const customerPauses = await PausedMeal.find({ customerName: customer.name }).lean();
-    const hasActivePlan = customer.subscription?.status === "Active";
+    const customerPauses = await PausedMeal.find({ customerId: customer._id }).lean();
+    const hasActivePlan = customer.subscription?.status === "Active" || customer.subscription?.status === "Paused";
 
     return NextResponse.json({ 
       hasActivePlan,
