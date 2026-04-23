@@ -677,6 +677,13 @@ const OrderTracker = ({ lunchStatus, dinnerStatus, lunchLocation, dinnerLocation
   const currentStatus = activeTab === "Lunch" ? lunchStatus : dinnerStatus;
   const currentLocation = activeTab === "Lunch" ? lunchLocation : dinnerLocation;
   const currentETA = activeTab === "Lunch" ? lunchETA : dinnerETA;
+
+  // Auto-switch to map when Out for Delivery
+  useEffect(() => {
+    if (currentStatus === "Out for Delivery") {
+      setShowMap(true);
+    }
+  }, [currentStatus]);
   
   const steps = [
     { label: "Confirmed", icon: "📋", matched: ["Confirmed", "Prepared", "Out for Delivery", "Delivered", "Scheduled"] },
@@ -765,15 +772,15 @@ const OrderTracker = ({ lunchStatus, dinnerStatus, lunchLocation, dinnerLocation
         ) : (
           <div 
             key="map-container"
-            className="h-64 bg-slate-100 rounded-[2rem] relative overflow-hidden flex items-center justify-center border-border shadow-inner"
+            className="h-72 bg-slate-100 rounded-[2rem] relative overflow-hidden flex items-center justify-center border border-gray-100 shadow-inner"
           >
              <div id="leaflet-map" className="absolute inset-0 z-0"></div>
              
-             {/* Overlay for status when no location */}
-             {!currentLocation && (
-               <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex items-center justify-center p-8 text-center">
-                  <div className="flex flex-col items-center gap-4">
-                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg animate-pulse">
+             {/* Overlay for status when no real coordinates yet */}
+             {(!currentLocation || !currentLocation.lat || !currentLocation.lng) && (
+               <div className="absolute inset-0 bg-white/70 backdrop-blur-[4px] z-10 flex items-center justify-center p-8 text-center">
+                  <div className="flex flex-col items-center gap-5">
+                     <div className="w-16 h-16 bg-white rounded-[1.5rem] flex items-center justify-center shadow-xl animate-bounce border-2 border-orange-50">
                         <span className="text-2xl">📡</span>
                      </div>
                      <p className="text-[10px] font-black text-gray-500 uppercase leading-relaxed tracking-widest max-w-[200px]">
@@ -833,13 +840,16 @@ const OrderTracker = ({ lunchStatus, dinnerStatus, lunchLocation, dinnerLocation
 
                     // Geocode Home
                     const homePos = await geocode(customerAddress);
-                    if (homePos) {
-                      homeMarker = L.marker([homePos.lat, homePos.lng], { icon: createIcon('🏠', '#1e293b') }).addTo(map);
-                      routeLine.setLatLngs([[driverLat, driverLng], [homePos.lat, homePos.lng]]);
-                      map.fitBounds(L.latLngBounds([[driverLat, driverLng], [homePos.lat, homePos.lng]]), { padding: [50, 50] });
-                    }
+                      if (homePos) {
+                        L.marker([homePos.lat, homePos.lng], { icon: createIcon('🏠', '#1e293b') }).addTo(map);
+                        routeLine.setLatLngs([[driverLat, driverLng], [homePos.lat, homePos.lng]]);
+                        map.fitBounds(L.latLngBounds([[driverLat, driverLng], [homePos.lat, homePos.lng]]), { padding: [50, 50] });
+                      }
 
-                    window._updateDriverPos = (newLat, newLng) => {
+                      // Force resize after init to fix grey box
+                      setTimeout(() => map.invalidateSize(), 500);
+
+                      window._updateDriverPos = (newLat, newLng) => {
                       if (!driverMarker) return;
                       const pos = [newLat, newLng];
                       driverMarker.setLatLng(pos);
