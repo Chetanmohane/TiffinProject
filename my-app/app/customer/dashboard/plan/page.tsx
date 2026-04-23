@@ -427,19 +427,6 @@ export default function PlanPage() {
                   <Play size={12} fill={hasPlan ? "white" : "gray"} />
                </button>
             </div>
-
-            <div className="bg-gray-900 p-10 rounded-[3rem] text-white flex flex-col gap-6 relative overflow-hidden shadow-2xl">
-                <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-orange-500">
-                   <MessageCircle size={28} />
-                </div>
-                <div>
-                   <h4 className="text-2xl font-black tracking-tight mb-2 uppercase">Need Help?</h4>
-                   <p className="text-xs font-bold text-gray-500 uppercase tracking-widest leading-relaxed">Speak with our chef for meal customizations.</p>
-                </div>
-                <button className="px-8 py-4 bg-orange-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all self-start active:scale-95 shadow-lg shadow-orange-900/20">
-                   Live Chat 🚀
-                </button>
-            </div>
           </div>
         </div>
 
