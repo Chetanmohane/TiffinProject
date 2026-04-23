@@ -384,11 +384,10 @@ export default function Order() {
           gradient={ (dashboardData?.user?.subscriptionStatus === 'Expired' || dashboardData?.user?.subscriptionStatus === 'Inactive') ? "from-gray-400 to-gray-500 opacity-50" : "from-rose-500 to-red-600"} 
         />
         <Action 
-          label="Live Chat" 
-          icon="💬" 
-          link="#" 
-          onClick={() => toast.success("Chef Assistant is coming soon!")}
-          gradient="from-blue-600 to-indigo-700" 
+          label="Payments" 
+          icon="💳" 
+          link="/customer/dashboard/payments" 
+          gradient="from-fuchsia-600 to-pink-600" 
         />
         <Action 
           label="Settings" 
