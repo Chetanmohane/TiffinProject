@@ -176,7 +176,7 @@ export default function AdminCustomers() {
   return (
     <div className="space-y-8 pb-20">
       {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 sm:ml-0 ml-2 pt-20 sm:pt-0">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
         <div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
              <Users size={32} className="text-orange-500" />
@@ -229,7 +229,7 @@ export default function AdminCustomers() {
       {/* Main Container */}
       <div className="bg-white rounded-[2.5rem] shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden text-black transition-all">
         {/* ================= DESKTOP TABLE ================= */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50/50">
@@ -332,7 +332,7 @@ export default function AdminCustomers() {
         </div>
 
         {/* ================= MOBILE CARD VIEW ================= */}
-        <div className="md:hidden divide-y divide-gray-50 transition-all">
+        <div className="lg:hidden divide-y divide-gray-50 transition-all">
            {filteredCustomers.map((customer, idx) => (
              <motion.div 
                key={customer.id}

@@ -17,9 +17,10 @@ import {
   Settings,
   Home,
   LogOut,
-  Calendar
+  Calendar,
 } from "lucide-react";
 import { useRBAC } from "@/hooks/useRBAC";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function AdminLayout({
   children,
@@ -100,33 +101,51 @@ export default function AdminLayout({
         </button>
       </div>
 
-      {/* SIDEBAR NAVIGATION - Fixed mobile visibility */}
+      {/* BACKDROP - Mobile only */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[35] md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* SIDEBAR NAVIGATION */}
       <aside
         className={`bg-[#0F172A] flex flex-col fixed inset-y-0 left-0 z-40 w-72 md:w-64 h-screen shadow-2xl transition-transform duration-300 md:sticky md:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* LOGO AREA - Screenshot Matching */}
-        <div className="hidden md:flex flex-col items-start justify-center h-24 px-6">
-          <h1 className="text-[#F97316] text-2xl font-bold leading-none tracking-tight">
-            Admin Panel
-          </h1>
+        {/* LOGO AREA */}
+        <div className="flex flex-col items-start justify-center h-20 md:h-24 px-6 border-b border-white/5 md:border-none">
+          <div className="flex items-center justify-between w-full">
+            <h1 className="text-[#F97316] text-xl md:text-2xl font-bold leading-none tracking-tight">
+              Admin Panel
+            </h1>
+            <button onClick={() => setOpen(false)} className="md:hidden text-gray-400">
+               <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* NAVIGATION LINKS */}
-        <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar">
           {links.map((link) => (
             <Link
               key={link.name}
               href={link.href}
               onClick={() => setOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-bold transition-all duration-200 ${
                 isActive(link.href)
-                  ? "bg-[#F97316] text-white shadow-lg"
+                  ? "bg-[#F97316] text-white shadow-lg shadow-orange-500/20"
                   : "text-gray-400 hover:bg-white/5 hover:text-white"
               }`}
             >
-              <span className={isActive(link.href) ? "text-white" : "text-gray-400"}>
+              <span className={isActive(link.href) ? "text-white" : "text-gray-500"}>
                 {link.icon}
               </span>
               {link.name}
@@ -135,17 +154,17 @@ export default function AdminLayout({
         </nav>
 
         {/* FOOTER ACTIONS */}
-        <div className="p-4 border-t border-white/5 space-y-1">
+        <div className="p-4 border-t border-white/5 space-y-1 bg-[#0F172A]">
           <Link
             href="/customer/dashboard"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-bold text-gray-400 hover:bg-white/5 hover:text-white transition-all"
           >
             <LayoutDashboard size={18} />
             Customer Dashboard
           </Link>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-500 hover:bg-red-500/10 transition-all"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-bold text-red-500 hover:bg-red-500/10 transition-all text-left"
           >
             <LogOut size={18} />
             Logout
@@ -154,8 +173,8 @@ export default function AdminLayout({
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 min-w-0 bg-[#F3F4F6]">
-        <div className="p-4 md:p-8 lg:p-10">
+      <main className="flex-1 min-w-0 bg-[#F3F4F6] min-h-screen">
+        <div className="p-5 sm:p-6 md:p-8 lg:p-10">
           {children}
         </div>
       </main>

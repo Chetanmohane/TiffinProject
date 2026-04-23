@@ -25,7 +25,8 @@ export async function GET(req: Request) {
     }
 
     const IST_OFFSET = 5.5 * 60 * 60 * 1000;
-    const today = new Date(new Date().getTime() + IST_OFFSET).toISOString().split("T")[0];
+    const nowIST = new Date(new Date().getTime() + IST_OFFSET);
+    const today = nowIST.toISOString().split("T")[0];
     
     // Auto-Deduction Logic
     if (customer && customer.subscription && customer.subscription.status !== "Expired") {
@@ -47,22 +48,30 @@ export async function GET(req: Request) {
          let currentDate = new Date(lastDate);
          currentDate.setDate(currentDate.getDate() + 1);
 
-         const PausedMeal = (await import("@/models/PausedMeal")).default;
+          const PausedMeal = (await import("@/models/PausedMeal")).default;
+          const CancelledMeal = (await import("@/models/CancelledMeal")).default;
 
-         while (currentDate < todayDate) {
-            const dateStr = currentDate.toISOString().split("T")[0];
-            const isPaused = await PausedMeal.findOne({
-               customerId: customer._id,
-               pauseFrom: { $lte: dateStr },
-               pauseTo: { $gte: dateStr },
-            });
+          while (currentDate < todayDate) {
+             const dateStr = currentDate.toISOString().split("T")[0];
+             
+             const [isPaused, isCancelled] = await Promise.all([
+               PausedMeal.findOne({
+                  customerId: customer._id,
+                  pauseFrom: { $lte: dateStr },
+                  pauseTo: { $gte: dateStr },
+               }),
+               CancelledMeal.findOne({
+                 customerId: customer._id,
+                 date: dateStr
+               })
+             ]);
 
-            if (!isPaused) {
-               const mealsPerDay = sub.mealType === "Both" ? 2 : 1;
-               mealsLost += mealsPerDay;
-            }
-            currentDate.setDate(currentDate.getDate() + 1);
-         }
+             if (!isPaused && !isCancelled) {
+                const mealsPerDay = sub.mealType === "Both" ? 2 : 1;
+                mealsLost += mealsPerDay;
+             }
+             currentDate.setDate(currentDate.getDate() + 1);
+          }
 
          if (mealsLost > 0) {
             await User.updateOne(

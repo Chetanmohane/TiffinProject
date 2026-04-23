@@ -87,9 +87,9 @@ export default function AdminHolidayPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 sm:p-10">
+    <div className="space-y-8">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-10">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-10">
           <div>
             <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
               <Calendar size={32} className="text-orange-500" />
@@ -101,7 +101,7 @@ export default function AdminHolidayPage() {
           </div>
           <button 
             onClick={() => setIsAdding(!isAdding)}
-            className="flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all active:scale-95"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all active:scale-95"
           >
             {isAdding ? "Cancel" : <><Plus size={16} /> Declare Holiday</>}
           </button>
@@ -115,8 +115,8 @@ export default function AdminHolidayPage() {
                 <h3 className="font-black uppercase text-sm tracking-tight">Holiday Declaration</h3>
              </div>
              
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="sm:col-span-2">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Event Title (e.g. Diwali Break)</label>
                   <input 
                     value={newHoliday.title}
@@ -143,7 +143,7 @@ export default function AdminHolidayPage() {
                     className="w-full px-5 py-3 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-orange-500 outline-none font-bold"
                   />
                 </div>
-                <div className="md:col-span-2">
+                <div className="sm:col-span-2">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Reason (Optional)</label>
                   <textarea 
                     value={newHoliday.reason}
@@ -179,7 +179,7 @@ export default function AdminHolidayPage() {
             </div>
           ) : (
             holidays.map((h: any) => (
-              <div key={h._id} className="group bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-gray-200/50 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6 overflow-hidden relative">
+              <div key={h._id} className="group bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-gray-200/50 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-6 overflow-hidden relative">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full blur-3xl -mr-16 -mt-16 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 
                 <div className="relative z-10">

@@ -2,6 +2,7 @@
 
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
+import { Utensils } from "lucide-react";
 
 const defaultMenus: { [key: string]: { lunch: string, dinner: string } } = {
   "Monday": { lunch: "Dal Tadka, Mix Veg, Roti, Rice, Salad", dinner: "Paneer Masala, Jeera Rice, Roti, Sweet" },
@@ -80,13 +81,14 @@ export default function MenuManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+    <div className="space-y-8">
       <div className="max-w-6xl mx-auto">
         {/* HEADER */}
-        <div className="mb-8 sm:ml-6 ml-2 pt-20 sm:pt-0 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
-              🍽 Menu Management
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+              <Utensils size={32} className="text-orange-500" />
+              Menu Management
             </h1>
             <p className="text-sm font-bold text-gray-500 mt-1">Update global weekly menus</p>
           </div>
@@ -116,7 +118,7 @@ export default function MenuManagementPage() {
                 <textarea 
                   value={menu.lunch}
                   onChange={(e) => handleChange(i, 'lunch', e.target.value)}
-                  className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-orange-400 outline-none h-20 mb-3"
+                  className="w-full border rounded-xl p-3 focus:ring-2 focus:ring-orange-400 outline-none h-20 mb-3 text-black"
                 />
                 <div className="grid grid-cols-2 gap-3">
                    <div>

@@ -138,11 +138,11 @@ export default function AdminCancellationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+    <div className="space-y-8">
       <div className="max-w-7xl mx-auto">
 
         {/* HEADER */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 ml-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 flex items-center gap-2">
               <XCircle className="text-red-500" size={30} />
@@ -162,7 +162,7 @@ export default function AdminCancellationsPage() {
         </div>
 
         {/* STATS */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           <StatCard title="Total Cancellations" value={totalCount} />
           <StatCard title="Today's Cancellations" value={todayCount} alert />
           <StatCard title="Cancellation Window" value="Before 10 AM" isText />
@@ -206,7 +206,7 @@ export default function AdminCancellationsPage() {
         ) : (
           <>
             {/* DESKTOP TABLE */}
-            <div className="hidden md:block bg-white rounded-2xl shadow-lg overflow-x-auto">
+            <div className="hidden lg:block bg-white rounded-2xl shadow-lg overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead className="bg-red-50 text-gray-800 border-b border-red-100">
                   <tr>
@@ -301,7 +301,7 @@ export default function AdminCancellationsPage() {
             </div>
 
             {/* MOBILE CARDS */}
-            <div className="md:hidden space-y-4">
+            <div className="lg:hidden space-y-4">
               {filtered.map((item) => (
                 <div
                   key={item.id}

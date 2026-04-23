@@ -54,10 +54,13 @@ async function performVerification(order_id: string, plan_id: string, email: str
   const existingSuccess = await Payment.findOne({ transactionId: order_id, status: "Success" });
   if (existingSuccess) return { success: true, alreadyProcessed: true };
 
-  const now = new Date();
-  const isBefore11AM = now.getHours() < 11;
-  let startDateObj = new Date();
-  if (!isBefore11AM) startDateObj.setDate(startDateObj.getDate() + 1);
+  const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+  const nowIST = new Date(new Date().getTime() + IST_OFFSET);
+  const hourIST = nowIST.getUTCHours();
+  const isBefore11AM = hourIST < 11;
+  
+  let startDateObj = new Date(nowIST);
+  if (!isBefore11AM) startDateObj.setUTCDate(startDateObj.getUTCDate() + 1);
   
   const startDate = startDateObj.toISOString().split("T")[0];
   const nextRenewal = new Date(startDateObj.getTime() + plan.duration * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -123,13 +126,15 @@ export async function GET(req: Request) {
       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?error=invalid_callback`);
     }
 
+    const origin = new URL(req.url).origin;
     await connectDB();
     await performVerification(order_id, plan_id, email, meal_type);
 
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?success=true`);
+    return NextResponse.redirect(`${origin}/customer/dashboard/plan?success=true`);
   } catch (error: any) {
+    const origin = new URL(req.url).origin;
     console.error("Verification Error:", error);
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/customer/dashboard/plan?error=${encodeURIComponent(error.message)}`);
+    return NextResponse.redirect(`${origin}/customer/dashboard/plan?error=${encodeURIComponent(error.message)}`);
   }
 }
 

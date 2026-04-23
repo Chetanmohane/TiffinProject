@@ -42,7 +42,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Customer not found" }, { status: 404 });
     }
 
-    const today = new Date().toISOString().split("T")[0];
+    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+    const today = new Date(new Date().getTime() + IST_OFFSET).toISOString().split("T")[0];
 
     // Check if already cancelled today
     const alreadyCancelled = await CancelledMeal.findOne({

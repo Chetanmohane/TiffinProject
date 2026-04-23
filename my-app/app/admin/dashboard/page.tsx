@@ -30,7 +30,7 @@ export default function AdminDashboard() {
   return (
     <section className="space-y-8">
       {/* HEADER */}
-      <header className="sm:ml-8 ml-2 pt-20 sm:pt-0">
+      <header className="mb-8">
         <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">
           Admin Dashboard
         </h1>
@@ -40,10 +40,10 @@ export default function AdminDashboard() {
       </header>
 
       {/* STATS */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
         {isAdmin && (
           <StatCard
-            title="Active Customers"
+            title="Customers"
             value={data.totalCustomers.toString()}
             Icon={Users}
             gradient="from-orange-500 to-red-500"
@@ -51,14 +51,14 @@ export default function AdminDashboard() {
         )}
 
         <StatCard
-          title="Today Delivered"
+          title="Delivered"
           value={data.todaysDeliveries.toString()}
           Icon={ShoppingBag}
           gradient="from-amber-400 to-orange-500"
         />
 
         <StatCard
-          title="Paused Customers"
+          title="Paused"
           value={data.pausedCustomers.toString()}
           Icon={PauseCircle}
           gradient="from-red-500 to-rose-700"
@@ -66,7 +66,7 @@ export default function AdminDashboard() {
 
         {isAdmin && (
           <StatCard
-            title="Today Revenue"
+            title="Revenue"
             value={data.revenue}
             Icon={IndianRupee}
             gradient="from-green-500 to-emerald-600"
@@ -75,21 +75,22 @@ export default function AdminDashboard() {
       </div>
 
       {/* LIVE DELIVERIES SECTION */}
-      <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
-        <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+      <div className="bg-white rounded-[2rem] sm:rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
+        <div className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50/50">
           <div>
-            <h2 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              Live Delivered Orders (Today)
+              Live Delivered Orders
             </h2>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">Real-time delivery pulse</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Real-time delivery pulse</p>
           </div>
           <div className="px-5 py-2 bg-green-100 text-green-700 rounded-full text-[10px] font-black uppercase tracking-widest">
-            {data.todaysDeliveries} DELIVERED
+            {data.todaysDeliveries} Today
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-gray-50/30">
               <tr>
@@ -130,6 +131,35 @@ export default function AdminDashboard() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile List View */}
+        <div className="md:hidden divide-y divide-gray-50">
+          {data.recentDeliveries && data.recentDeliveries.length > 0 ? (
+            data.recentDeliveries.map((delivery: any) => (
+              <div key={delivery._id} className="p-5 flex justify-between items-center bg-white">
+                <div className="space-y-1">
+                  <p className="font-bold text-gray-900">{delivery.customerName}</p>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase ${delivery.type === 'Lunch' ? 'bg-orange-50 text-orange-500' : 'bg-indigo-50 text-indigo-500'}`}>
+                      {delivery.type}
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-bold">
+                      {new Date(delivery.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 text-green-600 font-black text-[8px] uppercase tracking-widest">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  Delivered
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-10 text-center">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">No deliveries today</p>
+            </div>
+          )}
         </div>
       </div>
     </section>

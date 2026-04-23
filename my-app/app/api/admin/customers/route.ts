@@ -17,16 +17,17 @@ export async function GET() {
       .sort({ createdAt: -1 })
       .lean();
 
-    const today = new Date().toISOString().split("T")[0];
+    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+    const today = new Date(new Date().getTime() + IST_OFFSET).toISOString().split("T")[0];
+    
     const pauses = await PausedMeal.find({
       pauseFrom: { $lte: today },
       pauseTo: { $gte: today },
     }).lean();
 
     const merged = customers.map((c: any) => {
-      const customerName = (c.name || "").trim().toLowerCase();
       const activePause = pauses.find(
-        (p: any) => (p.customerName || "").trim().toLowerCase() === customerName
+        (p: any) => p.customerId?.toString() === c._id?.toString()
       );
 
       let finalStatus = "Inactive";

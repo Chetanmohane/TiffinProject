@@ -150,10 +150,10 @@ export default function PaymentManagementPage() {
   /* ---------------- UI ---------------- */
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+    <div className="space-y-8">
       <div className="max-w-7xl mx-auto">
         {/* HEADER */}
-        <div className="mb-8 sm:ml-6 ml-2 pt-20 sm:pt-0">
+        <div className="mb-8">
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
             💳 Payment Management
           </h1>
@@ -163,7 +163,7 @@ export default function PaymentManagementPage() {
         </div>
 
         {/* STATS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatCard title="Filtered Total" value={stats.total} />
           <StatCard
             title="Successful"
@@ -177,17 +177,17 @@ export default function PaymentManagementPage() {
         </div>
 
         {/* CONTROLS */}
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 mb-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex-1 flex flex-col md:flex-row gap-4 items-center">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+          <div className="flex-1 flex flex-col sm:flex-row gap-4 items-center">
              <input
                 placeholder="Search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full md:max-w-xs px-4 py-2 rounded-xl border-gray-200 border focus:ring-2 focus:ring-orange-400 outline-none"
+                className="w-full sm:max-w-xs px-4 py-2 rounded-xl border-gray-200 border focus:ring-2 focus:ring-orange-400 outline-none"
              />
              
              {/* DATE RANGE INPUTS */}
-             <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-200/50 w-full md:w-auto">
+             <div className="flex flex-wrap items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-200/50 w-full sm:w-auto">
                <div className="flex items-center gap-1">
                  <span className="text-[9px] font-black uppercase text-gray-400">From:</span>
                  <input 
@@ -240,7 +240,7 @@ export default function PaymentManagementPage() {
 
 
         {/* ================= DESKTOP TABLE ================= */}
-        <div className="hidden md:block bg-white rounded-2xl shadow-lg overflow-x-auto">
+        <div className="hidden lg:block bg-white rounded-2xl shadow-lg overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-orange-100">
               <tr>
@@ -319,7 +319,7 @@ export default function PaymentManagementPage() {
         </div>
 
         {/* ================= MOBILE CARDS ================= */}
-        <div className="md:hidden space-y-4">
+        <div className="lg:hidden space-y-4">
           {filteredPayments.map((p) => (
             <div
               key={p.id}

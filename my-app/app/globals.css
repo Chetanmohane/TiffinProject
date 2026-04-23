@@ -22,6 +22,16 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  width: 100%;
+  position: relative;
+}
+
+/* Fix for mobile Safari and others to ensure 100% width doesn't overflow */
+@media (max-width: 640px) {
+  .max-w-7xl, .container {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
 }
 
 /* Prevent layout shift on mobile */

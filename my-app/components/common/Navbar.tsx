@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Menu, X, ShoppingBag, User, LayoutDashboard } from "lucide-react";
+import { Menu, X, ShoppingBag, User, LayoutDashboard, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Font fallbacks for environments without next/font support
@@ -10,7 +10,7 @@ export const cinzelClass = "font-serif";
 export const greatVibesClass = "italic font-serif";
 
 export default function Navbar() {
-  const [open, setOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<any>(null);
 
@@ -130,70 +130,92 @@ export default function Navbar() {
         {/* MOBILE MENU BUTTON */}
         <button
           className="md:hidden p-2 text-gray-700 hover:text-orange-600 transition-colors"
-          onClick={() => setOpen(!open)}
+          onClick={() => setIsOpen(!isOpen)}
         >
-          {open ? <X size={28} /> : <Menu size={28} />}
+          {isOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </nav>
 
       {/* MOBILE MENU */}
       <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white/95 backdrop-blur-xl border-t border-orange-100 overflow-hidden"
-          >
-            <div className="flex flex-col px-6 py-8 space-y-6">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  className="text-gray-700 text-xl font-medium hover:text-orange-600 transition-colors"
+        {isOpen && (
+          <>
+            {/* BACKDROP */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOpen(false)}
+              className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[45] md:hidden"
+            />
+            
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed top-0 right-0 w-[80%] h-screen bg-white z-[50] shadow-2xl p-8 flex flex-col md:hidden"
+            >
+              <div className="flex items-center justify-between mb-10">
+                <div className="flex items-center gap-2">
+                   <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center text-white text-lg font-black italic">A</div>
+                   <span className="text-xl font-black text-gray-900 flex flex-col leading-none">
+                     Annapurna
+                     <span className="text-[10px] text-orange-600 tracking-widest uppercase">Delight</span>
+                   </span>
+                </div>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:text-orange-600"
                 >
-                  {link.name}
-                </Link>
-              ))}
-              <div className="flex flex-col gap-4 pt-4 border-t border-gray-100">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <nav className="flex flex-col gap-2 flex-1">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center justify-between px-6 py-4 rounded-2xl text-sm font-black text-gray-600 hover:bg-orange-50 hover:text-orange-600 transition-all uppercase tracking-widest"
+                  >
+                    {link.name}
+                    <div className="w-1.5 h-1.5 rounded-full bg-orange-100 group-hover:bg-orange-500"></div>
+                  </Link>
+                ))}
+              </nav>
+
+              <div className="mt-auto space-y-4 pt-8 border-t border-gray-100">
                 {user ? (
-                   <>
                    <Link
-                     href="/customer/dashboard"
-                     onClick={() => setOpen(false)}
-                     className="text-center text-gray-700 font-medium py-3 border border-gray-200 rounded-xl"
+                    href="/customer/dashboard"
+                    onClick={() => setIsOpen(false)}
+                    className="w-full py-4 bg-orange-600 text-white rounded-2xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest shadow-xl shadow-orange-200"
                    >
-                     Dashboard
+                     My Dashboard <ArrowRight size={16} />
                    </Link>
-                   <button
-                     onClick={handleLogout}
-                     className="bg-orange-600 text-white text-center py-3 rounded-xl font-bold hover:bg-orange-700 transition"
-                   >
-                     Logout
-                   </button>
-                 </>
                 ) : (
                   <>
-                  <Link
-                    href="/login"
-                    onClick={() => setOpen(false)}
-                    className="text-center text-gray-700 font-medium py-3 border border-gray-200 rounded-xl"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    href="/register"
-                    onClick={() => setOpen(false)}
-                    className="bg-orange-600 text-white text-center py-3 rounded-xl font-bold hover:bg-orange-700 transition"
-                  >
-                    Get Started
-                  </Link>
-                </>
+                    <Link
+                      href="/login"
+                      onClick={() => setIsOpen(false)}
+                      className="w-full py-4 bg-gray-900 text-white rounded-2xl flex items-center justify-center font-black text-xs uppercase tracking-widest"
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      href="/register"
+                      onClick={() => setIsOpen(false)}
+                      className="w-full py-4 bg-orange-600 text-white rounded-2xl flex items-center justify-center font-black text-xs uppercase tracking-widest shadow-xl shadow-orange-200"
+                    >
+                      Join Now
+                    </Link>
+                  </>
                 )}
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </header>
