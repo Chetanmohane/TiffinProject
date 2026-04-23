@@ -263,6 +263,8 @@ export default function Order() {
             dinnerLocation={dashboardData?.todayDinner?.driverLocation}
             lunchETA={dashboardData?.todayMeal?.estimatedArrival}
             dinnerETA={dashboardData?.todayDinner?.estimatedArrival}
+            lunchAddress={dashboardData?.todayMeal?.address}
+            dinnerAddress={dashboardData?.todayDinner?.address}
           />
         </div>
         
@@ -665,7 +667,12 @@ const MapPositionUpdater = ({ lat, lng }: { lat?: number, lng?: number }) => {
   return null;
 };
 
-const OrderTracker = ({ lunchStatus, dinnerStatus, lunchLocation, dinnerLocation, lunchETA, dinnerETA }: any) => {
+const OrderTracker = ({ 
+  lunchStatus, dinnerStatus, 
+  lunchLocation, dinnerLocation, 
+  lunchETA, dinnerETA,
+  lunchAddress, dinnerAddress
+}: any) => {
   const [activeTab, setActiveTab] = useState<"Lunch" | "Dinner">("Lunch");
   const [showMap, setShowMap] = useState(false);
   
@@ -677,6 +684,7 @@ const OrderTracker = ({ lunchStatus, dinnerStatus, lunchLocation, dinnerLocation
   const currentStatus = activeTab === "Lunch" ? lunchStatus : dinnerStatus;
   const currentLocation = activeTab === "Lunch" ? lunchLocation : dinnerLocation;
   const currentETA = activeTab === "Lunch" ? lunchETA : dinnerETA;
+  const currentAddress = activeTab === "Lunch" ? lunchAddress : dinnerAddress;
 
   // Auto-switch to map when Out for Delivery
   useEffect(() => {
@@ -816,7 +824,7 @@ const OrderTracker = ({ lunchStatus, dinnerStatus, lunchLocation, dinnerLocation
 
                     const driverLat = ${currentLocation?.lat || 23.2599};
                     const driverLng = ${currentLocation?.lng || 77.4126};
-                    const customerAddress = "${currentMeal?.address || "Bhopal"}";
+                    const customerAddress = "${currentAddress || "Bhopal"}";
                     
                     // Create Map
                     const map = L.map(mapId, { zoomControl: false }).setView([driverLat, driverLng], 14);

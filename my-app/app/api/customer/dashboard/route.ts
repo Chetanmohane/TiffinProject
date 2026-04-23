@@ -173,6 +173,7 @@ export async function GET(req: Request) {
         status: !todayMenu ? "Closed ❌" : getDeliveryStatus("Lunch", todayMenu.lunchTime || "01:00 PM"),
         driverLocation: userDeliveries.find(d => d.type === "Lunch")?.driverLocation || null,
         estimatedArrival: userDeliveries.find(d => d.type === "Lunch")?.estimatedArrival || null,
+        address: sub.deliveryAddress || ""
       },
       todayDinner: {
         items: isPaused
@@ -183,6 +184,7 @@ export async function GET(req: Request) {
         status: !todayMenu ? "Closed ❌" : getDeliveryStatus("Dinner", todayMenu.dinnerTime || "08:00 PM"),
         driverLocation: userDeliveries.find(d => d.type === "Dinner")?.driverLocation || null,
         estimatedArrival: userDeliveries.find(d => d.type === "Dinner")?.estimatedArrival || null,
+        address: sub.deliveryAddress || ""
       },
       quickStats: [
         {
