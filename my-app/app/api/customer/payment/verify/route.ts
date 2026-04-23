@@ -25,12 +25,24 @@ async function performVerification(order_id: string, plan_id: string, email: str
     ? `https://api.cashfree.com/pg/orders/${order_id}` 
     : `https://sandbox.cashfree.com/pg/orders/${order_id}`;
 
-  const response = await fetch(url, options);
-  const orderData = await response.json();
+  let orderData: any = null;
+  let attempts = 0;
+  const maxAttempts = 3;
+
+  while (attempts < maxAttempts) {
+    const response = await fetch(url, options);
+    orderData = await response.json();
+
+    if (orderData.order_status === "PAID") break;
+    
+    // Wait 2 seconds before retry
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    attempts++;
+  }
 
   if (orderData.order_status !== "PAID") {
-    await Payment.findOneAndUpdate({ transactionId: order_id }, { status: "Failed" });
-    throw new Error(`Payment status: ${orderData.order_status}`);
+    // Don't mark as Failed yet, just throw error so user can retry manually or wait
+    throw new Error(`Payment verification pending. Status: ${orderData.order_status}. Please refresh in a moment.`);
   }
 
   const plan = await Plan.findById(plan_id).lean() as any;
