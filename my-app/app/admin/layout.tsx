@@ -16,7 +16,8 @@ import {
   XCircle,
   Settings,
   Home,
-  LogOut
+  LogOut,
+  Calendar
 } from "lucide-react";
 import { useRBAC } from "@/hooks/useRBAC";
 
@@ -74,6 +75,7 @@ export default function AdminLayout({
     { name: "Cancellations", href: "/admin/cancellations", icon: <XCircle size={20} />, roles: ["admin"] },
     { name: "Payments", href: "/admin/payments", icon: <CreditCard size={20} />, roles: ["admin"] },
     { name: "Daily Delivery", href: "/admin/delivery", icon: <Truck size={20} />, roles: ["admin", "editor", "viewer"] },
+    { name: "Service Holidays", href: "/admin/holiday", icon: <Calendar size={20} />, roles: ["admin"] },
     { name: "Menu", href: "/admin/menu", icon: <Utensils size={20} />, roles: ["admin", "editor"] },
     { name: "Site Content", href: "/admin/site-content", icon: <Home size={20} />, roles: ["admin", "editor"] },
   ];

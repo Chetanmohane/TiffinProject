@@ -122,24 +122,32 @@ export async function GET(req: Request) {
       date: today 
     }).lean() as any[];
 
-    const getDeliveryStatus = (mType: "Lunch" | "Dinner", timeStr: string) => {
-       if (isPaused) return "Meal Paused ⏸️";
-       
-       const record = userDeliveries.find(d => d.type === mType);
-       if (record && record.status === "Delivered") return "Delivered ✅";
+      const Holiday = (await import("@/models/Holiday")).default;
+      const todayHoliday = await Holiday.findOne({
+        startDate: { $lte: today },
+        endDate: { $gte: today },
+        isActive: true
+      }).lean();
 
-       // Time calculation for "Scheduled" vs "Out for Delivery"
-       const [time, modifier] = (timeStr || "01:00 PM").trim().split(" ");
-       let [hours] = (time || "00").split(":").map(Number);
-       if (modifier === "PM" && hours < 12) hours += 12;
-       if (modifier === "AM" && hours === 12) hours = 0;
-       
-       const nowIST = new Date(new Date().getTime() + IST_OFFSET);
-       const currentHour = nowIST.getHours();
+      const getDeliveryStatus = (mType: "Lunch" | "Dinner", timeStr: string) => {
+         if (todayHoliday) return `Global Holiday: ${todayHoliday.title} 🏝️`;
+         if (isPaused) return "Meal Paused ⏸️";
+         
+         const record = userDeliveries.find(d => d.type === mType);
+         if (record && record.status === "Delivered") return "Delivered ✅";
 
-       if (currentHour >= hours) return "Out for Delivery 🛵";
-       return "Scheduled 🕒";
-    };
+         // Time calculation for "Scheduled" vs "Out for Delivery"
+         const [time, modifier] = (timeStr || "01:00 PM").trim().split(" ");
+         let [hours] = (time || "00").split(":").map(Number);
+         if (modifier === "PM" && hours < 12) hours += 12;
+         if (modifier === "AM" && hours === 12) hours = 0;
+         
+         const nowIST = new Date(new Date().getTime() + IST_OFFSET);
+         const currentHour = nowIST.getHours();
+
+         if (currentHour >= hours) return "Out for Delivery 🛵";
+         return "Scheduled 🕒";
+      };
 
     const hasActivePlan = !!(sub.planName && (liveStatus === "Active" || liveStatus === "Paused"));
 
@@ -198,6 +206,24 @@ export async function GET(req: Request) {
           subtext: hasActivePlan ? `Out of ${sub.totalMeals || 0} meals` : "Plan ended or not found",
         },
       ],
+      holiday: await (async () => {
+        const nextMonth = new Date();
+        nextMonth.setDate(nextMonth.getDate() + 30);
+        const nextMonthStr = nextMonth.toISOString().split("T")[0];
+        
+        const upcomingHolidays = await Holiday.find({
+          endDate: { $gte: today },
+          startDate: { $lte: nextMonthStr },
+          isActive: true
+        }).sort({ startDate: 1 }).lean();
+        
+        return upcomingHolidays.length > 0 ? { 
+          title: upcomingHolidays[0].title, 
+          reason: upcomingHolidays[0].reason,
+          startDate: upcomingHolidays[0].startDate,
+          endDate: upcomingHolidays[0].endDate
+        } : null;
+      })()
     });
   } catch (error: any) {
     console.error("Dashboard API Error:", error);

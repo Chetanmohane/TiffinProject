@@ -198,6 +198,27 @@ export default function Order() {
         </div>
       </div>
 
+      {/* Global Holiday Notice */}
+      {dashboardData?.holiday && (
+        <div className="bg-gradient-to-r from-orange-500/10 to-orange-600/5 border border-orange-200/50 rounded-[2.5rem] p-6 sm:p-8 flex items-center gap-6 overflow-hidden relative group animate-in slide-in-from-top-4 duration-500">
+           <div className="w-16 h-16 bg-white rounded-[2rem] flex items-center justify-center text-3xl shadow-xl shadow-orange-100 border border-orange-50 shrink-0 group-hover:scale-110 transition-all">
+              🏝️
+           </div>
+           <div className="relative z-10 flex-1">
+              <p className="text-[10px] font-black text-orange-600 uppercase tracking-[0.2em] mb-1">Service Holiday Notice</p>
+              <h4 className="text-xl font-black text-gray-900 leading-none mb-1">{dashboardData.holiday.title}</h4>
+              <p className="text-xs font-bold text-gray-800 uppercase tracking-widest mb-1">
+                📅 Period: <span className="text-orange-600">{dashboardData.holiday.startDate}</span> to <span className="text-orange-600">{dashboardData.holiday.endDate}</span>
+              </p>
+              <p className="text-[10px] font-bold text-gray-500 opacity-80 uppercase tracking-widest">
+                {dashboardData.holiday.reason || "The kitchen is closed. All plans have been automatically extended."}
+              </p>
+           </div>
+           {/* Decorative pattern */}
+           <div className="absolute -right-10 -top-10 w-40 h-40 bg-orange-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-orange-500/20 transition-colors" />
+        </div>
+      )}
+
       {/* Pause Notice */}
       {dashboardData?.user?.pauseDetails && (
         <div className="bg-gradient-to-r from-red-500/5 to-red-600/10 border border-red-500/20 rounded-[2.5rem] p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 overflow-hidden relative group">
