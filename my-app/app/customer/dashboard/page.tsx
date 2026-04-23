@@ -783,12 +783,23 @@ const OrderTracker = ({ lunchStatus, dinnerStatus, lunchLocation, dinnerLocation
                </div>
              )}
 
-             {/* Leaflet Initialization Script */}
+             {/* Leaflet Initialization Script - Swiggy Style High-End Tracker */}
              <script dangerouslySetInnerHTML={{ __html: `
                 (function() {
                   if (typeof window === 'undefined') return;
                   
-                  function initMap() {
+                  async function geocode(address) {
+                    try {
+                      const res = await fetch(\`https://nominatim.openstreetmap.org/search?format=json&q=\${encodeURIComponent(address)}\`);
+                      const data = await res.json();
+                      if (data && data.length > 0) {
+                        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+                      }
+                    } catch (e) { console.error("Geocoding failed", e); }
+                    return null;
+                  }
+
+                  async function initMap() {
                     if (!window.L) return setTimeout(initMap, 200);
                     
                     const mapId = 'leaflet-map';
@@ -796,29 +807,51 @@ const OrderTracker = ({ lunchStatus, dinnerStatus, lunchLocation, dinnerLocation
                     if (!container) return setTimeout(initMap, 200);
                     if (container._leaflet_id) return;
 
-                    const lat = ${currentLocation?.lat || 23.2599};
-                    const lng = ${currentLocation?.lng || 77.4126};
+                    const driverLat = ${currentLocation?.lat || 23.2599};
+                    const driverLng = ${currentLocation?.lng || 77.4126};
+                    const customerAddress = "${currentMeal?.address || "Bhopal"}";
                     
-                    const map = L.map(mapId, { zoomControl: false }).setView([lat, lng], 15);
-                    L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(map);
+                    // Create Map
+                    const map = L.map(mapId, { zoomControl: false }).setView([driverLat, driverLng], 14);
+                    
+                    // Premium CartoDB Voyager Layer (Cleaner theme)
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                      attribution: '&copy; CartoDB'
+                    }).addTo(map);
 
                     const createIcon = (emoji, color) => L.divIcon({
                       className: 'custom-div-icon',
-                      html: \`<div style="background-color:\${color}; width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; border:3px solid white; box-shadow:0 10px 15px -3px rgba(0,0,0,0.2); font-size:20px;">\${emoji}</div>\`,
-                      iconSize: [40, 40],
-                      iconAnchor: [20, 20]
+                      html: \`<div style="background-color:\${color}; width:42px; height:42px; border-radius:14px; display:flex; align-items:center; justify-content:center; border:3px solid white; box-shadow:0 12px 20px -5px rgba(0,0,0,0.3); font-size:22px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">\${emoji}</div>\`,
+                      iconSize: [42, 42],
+                      iconAnchor: [21, 21]
                     });
 
-                    const driverMarker = L.marker([lat, lng], { icon: createIcon('🛵', '#f97316') }).addTo(map);
-                    
-                    // Add home marker if we have an idea of where it is - for now just slightly offset or centered
-                    // If we had customer lat/lng we would use it here.
-                    
+                    // Markers
+                    const driverMarker = L.marker([driverLat, driverLng], { icon: createIcon('🛵', '#f97316') }).addTo(map);
+                    let homeMarker = null;
+                    let routeLine = L.polyline([], { color: '#f97316', weight: 4, opacity: 0.6, dashArray: '8, 12' }).addTo(map);
+
+                    // Geocode Home
+                    const homePos = await geocode(customerAddress);
+                    if (homePos) {
+                      homeMarker = L.marker([homePos.lat, homePos.lng], { icon: createIcon('🏠', '#1e293b') }).addTo(map);
+                      routeLine.setLatLngs([[driverLat, driverLng], [homePos.lat, homePos.lng]]);
+                      map.fitBounds(L.latLngBounds([[driverLat, driverLng], [homePos.lat, homePos.lng]]), { padding: [50, 50] });
+                    }
+
                     window._updateDriverPos = (newLat, newLng) => {
                       if (!driverMarker) return;
                       const pos = [newLat, newLng];
                       driverMarker.setLatLng(pos);
-                      map.panTo(pos);
+                      
+                      if (homeMarker) {
+                         const hPos = homeMarker.getLatLng();
+                         routeLine.setLatLngs([pos, [hPos.lat, hPos.lng]]);
+                         // Only auto-refit if driver moves significantly
+                         // map.panTo(pos);
+                      } else {
+                         map.panTo(pos);
+                      }
                     };
                   }
 

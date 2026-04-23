@@ -262,27 +262,48 @@ export default function DailyDeliveryPage() {
                 <script dangerouslySetInnerHTML={{ __html: `
                   (function() {
                     if (typeof window === 'undefined') return;
-                    function initAdminMap() {
+                    
+                    async function geocode(address) {
+                      try {
+                        const res = await fetch("https://nominatim.openstreetmap.org/search?format=json&q=" + encodeURIComponent(address));
+                        const data = await res.json();
+                        if (data && data.length > 0) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+                      } catch (e) { console.error("Geocode error", e); }
+                      return null;
+                    }
+
+                    async function initAdminMap() {
                       if (!window.L) return setTimeout(initAdminMap, 200);
                       const mapId = 'admin-live-map';
                       const container = document.getElementById(mapId);
                       if (!container || container._leaflet_id) return;
                       
-                      const map = L.map(mapId, { zoomControl: false }).setView([23.2599, 77.4126], 13);
-                      L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(map);
+                      const startLat = 23.2599, startLng = 77.4126;
+                      const map = L.map(mapId, { zoomControl: false }).setView([startLat, startLng], 14);
+                      
+                      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
-                      const driverIcon = L.divIcon({
+                      const createIcon = (emoji, color) => L.divIcon({
                         className: 'adm-icon',
-                        html: "<div style='background-color:#10b981; width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; border:3px solid white; box-shadow:0 10px 15px -3px rgba(0,0,0,0.3); font-size:20px;'>🚚</div>",
-                        iconAnchor: [20, 20]
+                        html: "<div style='background-color:"+color+"; width:42px; height:42px; border-radius:14px; display:flex; align-items:center; justify-content:center; border:3px solid white; box-shadow:0 12px 20px -5px rgba(0,0,0,0.3); font-size:22px;'>"+emoji+"</div>",
+                        iconAnchor: [21, 21]
                       });
 
-                      const marker = L.marker([23.2599, 77.4126], { icon: driverIcon }).addTo(map);
+                      const marker = L.marker([startLat, startLng], { icon: createIcon('🚚', '#10b981') }).addTo(map);
+                      let routeLine = L.polyline([], { color: '#10b981', weight: 4, opacity: 0.5, dashArray: '8, 12' }).addTo(map);
+
+                      const targetAddress = "${deliveries.find(d => (d.deliveryId || d.id) === activeTrackingId)?.address || "Bhopal"}";
+                      const homePos = await geocode(targetAddress);
+                      if (homePos) {
+                        L.marker([homePos.lat, homePos.lon], { icon: createIcon('🏠', '#1e293b') }).addTo(map);
+                        routeLine.setLatLngs([[startLat, startLng], [homePos.lat, homePos.lon]]);
+                        map.fitBounds(L.latLngBounds([[startLat, startLng], [homePos.lat, homePos.lon]]), { padding: [40, 40] });
+                      }
 
                       window._updateAdminMap = (lat, lng) => {
                         if (!marker) return;
                         marker.setLatLng([lat, lng]);
-                        map.panTo([lat, lng]);
+                        if (homePos) routeLine.setLatLngs([[lat, lng], [homePos.lat, homePos.lon]]);
                       };
                     }
 
