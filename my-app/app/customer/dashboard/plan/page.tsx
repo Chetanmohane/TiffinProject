@@ -66,10 +66,10 @@ export default function PlanPage() {
     async function loadData() {
       try {
         const user = JSON.parse(userStr!);
-        const emailQuery = `?email=${encodeURIComponent(user.email)}`;
+        const emailQuery = `?email=${encodeURIComponent(user.email)}&_t=${Date.now()}`;
 
         const [dashRes, plansRes] = await Promise.all([
-          fetch(`/api/customer/dashboard${emailQuery}`),
+          fetch(`/api/customer/dashboard${emailQuery}`, { cache: 'no-store' }),
           fetch(`/api/customer/plans`),
         ]);
         const dash = await dashRes.json();

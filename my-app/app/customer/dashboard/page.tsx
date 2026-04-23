@@ -47,7 +47,7 @@ export default function Order() {
     async function loadData() {
       try {
         const user = userStr ? JSON.parse(userStr) : null;
-        const emailQuery = user?.email ? `?email=${encodeURIComponent(user.email)}` : "";
+        const emailQuery = user?.email ? `?email=${encodeURIComponent(user.email)}&_t=${Date.now()}` : `?_t=${Date.now()}`;
 
         // Pre-fill delivery info
         if (user) {
@@ -59,9 +59,9 @@ export default function Order() {
         }
 
         const [dashRes, histRes, plansRes] = await Promise.all([
-          fetch(`/api/customer/dashboard${emailQuery}`),
-          fetch(`/api/customer/history${emailQuery}`),
-          fetch(`/api/customer/plans`),
+          fetch(`/api/customer/dashboard${emailQuery}`, { cache: 'no-store' }),
+          fetch(`/api/customer/history${emailQuery}`, { cache: 'no-store' }),
+          fetch(`/api/customer/plans`, { cache: 'no-store' }),
         ]);
         const dash = await dashRes.json();
         const hist = await histRes.json();

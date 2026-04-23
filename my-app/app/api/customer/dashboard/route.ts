@@ -109,18 +109,9 @@ export async function GET(req: Request) {
       }
     }
 
-    // Projected Renewal Date
-    const mealsPerDay = sub.mealType === "Both" ? 2 : 1;
-    const daysRemaining = sub.mealsLeft > 0 ? Math.ceil(sub.mealsLeft / mealsPerDay) : 0;
-    let liveRenewalDate = sub.nextRenewal || "N/A";
-    
-    if (liveStatus !== "Expired" && daysRemaining > 0) {
-      const projected = new Date();
-      projected.setDate(projected.getDate() + daysRemaining);
-      liveRenewalDate = projected.toLocaleDateString('en-GB', {
-        day: '2-digit', month: 'short', year: 'numeric'
-      });
-    } else if (sub.nextRenewal) {
+    // Display actual Renewal Date from DB
+    let liveRenewalDate = "---";
+    if (sub.nextRenewal) {
       liveRenewalDate = new Date(sub.nextRenewal).toLocaleDateString('en-GB', {
         day: '2-digit', month: 'short', year: 'numeric'
       });
