@@ -130,23 +130,19 @@ export async function GET(req: Request) {
       }).lean();
 
       const getDeliveryStatus = (mType: "Lunch" | "Dinner", timeStr: string) => {
-         if (todayHoliday) return `Global Holiday: ${todayHoliday.title} 🏝️`;
-         if (isPaused) return "Meal Paused ⏸️";
+         if (todayHoliday) return `Holiday: ${todayHoliday.title}`;
+         if (isPaused) return "Paused";
          
          const record = userDeliveries.find(d => d.type === mType);
-         if (record && record.status === "Delivered") return "Delivered ✅";
+         if (record) {
+            if (record.status === "Delivered") return "Delivered";
+            if (record.status === "Out for Delivery") return "Out for Delivery";
+            if (record.status === "Prepared") return "Prepared";
+            if (record.status === "Pending") return "Confirmed";
+            if (record.status === "Cancelled") return "Cancelled";
+         }
 
-         // Time calculation for "Scheduled" vs "Out for Delivery"
-         const [time, modifier] = (timeStr || "01:00 PM").trim().split(" ");
-         let [hours] = (time || "00").split(":").map(Number);
-         if (modifier === "PM" && hours < 12) hours += 12;
-         if (modifier === "AM" && hours === 12) hours = 0;
-         
-         const nowIST = new Date(new Date().getTime() + IST_OFFSET);
-         const currentHour = nowIST.getHours();
-
-         if (currentHour >= hours) return "Out for Delivery 🛵";
-         return "Scheduled 🕒";
+         return "Scheduled";
       };
 
     const hasActivePlan = !!(sub.planName && (liveStatus === "Active" || liveStatus === "Paused"));
@@ -175,6 +171,8 @@ export async function GET(req: Request) {
         type: "Lunch",
         deliveryTime: (isPaused || !todayMenu) ? "--:-- PM" : (todayMenu.lunchTime || "01:00 PM"),
         status: !todayMenu ? "Closed ❌" : getDeliveryStatus("Lunch", todayMenu.lunchTime || "01:00 PM"),
+        driverLocation: userDeliveries.find(d => d.type === "Lunch")?.driverLocation || null,
+        estimatedArrival: userDeliveries.find(d => d.type === "Lunch")?.estimatedArrival || null,
       },
       todayDinner: {
         items: isPaused
@@ -183,6 +181,8 @@ export async function GET(req: Request) {
         type: "Dinner",
         deliveryTime: (isPaused || !todayMenu) ? "--:-- PM" : (todayMenu.dinnerTime || "08:00 PM"),
         status: !todayMenu ? "Closed ❌" : getDeliveryStatus("Dinner", todayMenu.dinnerTime || "08:00 PM"),
+        driverLocation: userDeliveries.find(d => d.type === "Dinner")?.driverLocation || null,
+        estimatedArrival: userDeliveries.find(d => d.type === "Dinner")?.estimatedArrival || null,
       },
       quickStats: [
         {

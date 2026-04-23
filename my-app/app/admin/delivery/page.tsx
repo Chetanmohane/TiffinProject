@@ -1,5 +1,5 @@
 "use client";
-import { Phone, CheckCircle, Clock } from "lucide-react";
+import { Phone, CheckCircle, Clock, MapPin, Truck } from "lucide-react";
 import toast from "react-hot-toast";
 import { useEffect, useMemo, useState } from "react";
 
@@ -24,6 +24,7 @@ interface DeliveryCustomer {
 export default function DailyDeliveryPage() {
   const [deliveries, setDeliveries] = useState<DeliveryCustomer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTrackingId, setActiveTrackingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"ALL" | "Lunch" | "Dinner" | "Both">("ALL");
   const [search, setSearch] = useState("");
 
@@ -71,6 +72,63 @@ export default function DailyDeliveryPage() {
   const resumeService = async (customerId: string) => {
      window.location.href = "/admin/pause";
   };
+
+  const simulateLiveTracking = async (item: DeliveryCustomer) => {
+    try {
+      const res = await fetch("/api/admin/delivery/update-location", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          deliveryId: item.deliveryId || item.id,
+          lat: 18.5204 + (Math.random() * 0.01),
+          lng: 73.8567 + (Math.random() * 0.01),
+          estimatedArrival: Math.floor(Math.random() * 15 + 5).toString()
+        })
+      });
+      if (res.ok) {
+        toast.success("Live Location Updated!");
+        fetchDeliveries();
+      }
+    } catch (e) {
+      toast.error("Simulation failed");
+    }
+  };
+
+  /* ---------------- REAL TRACKING LOGIC ---------------- */
+  useEffect(() => {
+    let watchId: number;
+    if (activeTrackingId) {
+      if ("geolocation" in navigator) {
+        toast.success("Live GPS Tracking Started! 📡");
+        watchId = navigator.geolocation.watchPosition(
+          async (pos) => {
+            const { latitude, longitude } = pos.coords;
+            try {
+              if ((window as any)._updateAdminMap) {
+                (window as any)._updateAdminMap(latitude, longitude);
+              }
+              await fetch("/api/admin/delivery/update-location", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                  deliveryId: activeTrackingId,
+                  lat: latitude,
+                  lng: longitude,
+                  estimatedArrival: "Calculating..." // Real math could go here
+                })
+              });
+            } catch (e) { console.error("Sync error", e); }
+          },
+          (err) => {
+            toast.error("GPS Permission Denied");
+            setActiveTrackingId(null);
+          },
+          { enableHighAccuracy: true }
+        );
+      }
+    }
+    return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
+  }, [activeTrackingId]);
 
   /* ---------------- DERIVED DATA ---------------- */
 
@@ -143,6 +201,108 @@ export default function DailyDeliveryPage() {
             ))}
           </div>
         </div>
+        
+        {/* LIVE TRACKING NAVIGATOR FOR DRIVER */}
+        {activeTrackingId && (
+          <div className="mb-8 bg-gray-900 rounded-[2.5rem] p-6 shadow-2xl border border-white/10 overflow-hidden">
+             <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                   <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center animate-pulse">
+                      <Truck className="text-white" size={20} />
+                   </div>
+                   <div>
+                      <h4 className="text-white font-black text-sm uppercase tracking-widest">Live Delivery Navigation</h4>
+                      <p className="text-green-400 text-[10px] font-bold uppercase tracking-tighter">Broadcasting your location to Customer...</p>
+                   </div>
+                </div>
+                <button 
+                  onClick={() => setActiveTrackingId(null)}
+                  className="px-4 py-2 bg-red-500/10 text-red-500 rounded-xl text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all"
+                >
+                  Close Navigation
+                </button>
+             </div>
+              <div className="h-96 w-full rounded-2xl overflow-hidden bg-gray-800 relative group">
+                <div id="admin-live-map" className="absolute inset-0 z-0"></div>
+                
+                <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-60"></div>
+                
+                <div className="absolute bottom-6 left-6 right-6 z-20 flex flex-col sm:flex-row gap-3">
+                   <a 
+                     href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(deliveries.find(d => (d.deliveryId || d.id) === activeTrackingId)?.address || "")}&travelmode=driving`}
+                     target="_blank"
+                     className="flex-1 px-8 py-5 bg-orange-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-orange-600/40 hover:scale-[1.02] active:scale-95 transition-all text-center flex items-center justify-center gap-2 pointer-events-auto"
+                   >
+                      <MapPin size={18} /> Start Navigation
+                   </a>
+                   
+                   <button 
+                     onClick={() => {
+                       const item = deliveries.find(d => (d.deliveryId || d.id) === activeTrackingId);
+                       if (item) {
+                         updateStatus(item, "Delivered");
+                         setActiveTrackingId(null);
+                       }
+                     }}
+                     className="flex-1 px-8 py-5 bg-green-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-green-600/40 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 pointer-events-auto"
+                   >
+                      <CheckCircle size={18} /> Mark Delivered
+                   </button>
+                </div>
+
+                <div className="absolute top-6 left-6 z-20 pointer-events-none">
+                  <div className="bg-white/90 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl border border-white flex flex-col gap-1">
+                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter leading-none">Destination</p>
+                     <p className="text-[11px] font-black text-gray-900 uppercase truncate max-w-[200px]">
+                        {deliveries.find(d => (d.deliveryId || d.id) === activeTrackingId)?.address || "Detecting..."}
+                     </p>
+                  </div>
+                </div>
+
+                <script dangerouslySetInnerHTML={{ __html: `
+                  (function() {
+                    if (typeof window === 'undefined') return;
+                    function initAdminMap() {
+                      if (!window.L) return setTimeout(initAdminMap, 200);
+                      const mapId = 'admin-live-map';
+                      const container = document.getElementById(mapId);
+                      if (!container || container._leaflet_id) return;
+                      
+                      const map = L.map(mapId, { zoomControl: false }).setView([23.2599, 77.4126], 13);
+                      L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(map);
+
+                      const driverIcon = L.divIcon({
+                        className: 'adm-icon',
+                        html: "<div style='background-color:#10b981; width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; border:3px solid white; box-shadow:0 10px 15px -3px rgba(0,0,0,0.3); font-size:20px;'>🚚</div>",
+                        iconAnchor: [20, 20]
+                      });
+
+                      const marker = L.marker([23.2599, 77.4126], { icon: driverIcon }).addTo(map);
+
+                      window._updateAdminMap = (lat, lng) => {
+                        if (!marker) return;
+                        marker.setLatLng([lat, lng]);
+                        map.panTo([lat, lng]);
+                      };
+                    }
+
+                    if (!window.L) {
+                      const link = document.createElement('link');
+                      link.rel = 'stylesheet'; link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                      document.head.appendChild(link);
+                      const script = document.createElement('script');
+                      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                      script.onload = initAdminMap;
+                      document.head.appendChild(script);
+                    } else {
+                      setTimeout(initAdminMap, 100);
+                    }
+                  })();
+                `}} />
+             </div>
+             <AdminMapUpdater activeId={activeTrackingId} />
+          </div>
+        )}
 
         {/* LIST */}
         <div className="bg-white rounded-[2rem] shadow-xl shadow-gray-200/50 overflow-hidden border border-gray-100">
@@ -188,25 +348,79 @@ export default function DailyDeliveryPage() {
                                 </div>
                              </div>
                           </td>
-                          <td className="px-8 py-5 text-sm text-gray-600 max-w-xs truncate font-bold uppercase">{item.address}</td>
+                           <td className="px-8 py-5">
+                              <div className="flex items-center gap-2 group">
+                                 <span className="text-xs text-gray-600 max-w-[200px] truncate font-bold uppercase">{item.address}</span>
+                                 <a 
+                                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}`}
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   className="p-1.5 rounded-lg bg-orange-50 text-orange-600 opacity-0 group-hover:opacity-100 transition-all hover:bg-orange-600 hover:text-white"
+                                   title="Navigate to Address"
+                                 >
+                                    <MapPin size={14} />
+                                 </a>
+                              </div>
+                           </td>
                           <td className="px-8 py-5 text-right">
                              {item.paused ? (
                                 <div className="flex items-center justify-end gap-3 text-red-600 font-bold text-xs uppercase tracking-widest">
                                    ⏸️ Paused
                                 </div>
-                             ) : item.status === "Delivered" ? (
-                                <div className="flex items-center justify-end gap-2 text-green-600 font-black text-[10px] uppercase tracking-[0.2em] italic">
-                                   <CheckCircle size={14} className="animate-bounce" />
-                                   Delivered
-                                </div>
                              ) : (
-                                <button 
-                                  onClick={() => updateStatus(item, "Delivered")}
-                                  className="px-5 py-2.5 bg-gray-900 text-white text-[10px] font-black uppercase rounded-xl hover:bg-orange-600 transition-all shadow-lg shadow-gray-200 flex items-center gap-2 ml-auto"
-                                >
-                                   <Clock size={12} />
-                                   Mark Delivered
-                                </button>
+                                <div className="flex flex-wrap justify-end gap-2 items-center">
+                                   {item.status === "Delivered" ? (
+                                      <div className="flex items-center justify-end gap-2 text-green-600 font-black text-[10px] uppercase tracking-[0.2em] italic">
+                                         <CheckCircle size={14} className="animate-bounce" />
+                                         Delivered
+                                      </div>
+                                   ) : (
+                                      <>
+                                         {(item.status === "Scheduled" || item.status === "Pending") && (
+                                            <button 
+                                               onClick={() => updateStatus(item, "Prepared")}
+                                               className="px-4 py-2.5 bg-amber-500 text-white text-[10px] font-black uppercase rounded-xl hover:bg-amber-600 transition-all shadow-md shadow-amber-100"
+                                            >
+                                               Mark Prepared
+                                            </button>
+                                         )}
+                                         {item.status === "Prepared" && (
+                                            <button 
+                                               onClick={() => updateStatus(item, "Out for Delivery")}
+                                               className="px-4 py-2.5 bg-blue-500 text-white text-[10px] font-black uppercase rounded-xl hover:bg-blue-600 transition-all shadow-md shadow-blue-100"
+                                            >
+                                               Mark Dispatched
+                                            </button>
+                                         )}
+                                         {item.status === "Out for Delivery" && (
+                                            <div className="flex items-center gap-2">
+                                               <button 
+                                                  onClick={() => updateStatus(item, "Delivered")}
+                                                  className="px-4 py-2.5 bg-green-600 text-white text-[10px] font-black uppercase rounded-xl hover:bg-green-700 transition-all shadow-md"
+                                               >
+                                                  Deliver
+                                               </button>
+                                               <button 
+                                                  onClick={() => simulateLiveTracking(item)}
+                                                  className="px-4 py-2.5 bg-purple-600 text-white text-[10px] font-black uppercase rounded-xl hover:bg-purple-700 transition-all shadow-md"
+                                                  title="Simulate GPS Movement"
+                                               >
+                                                  📍 SIM
+                                               </button>
+                                               <button 
+                                                  onClick={() => setActiveTrackingId(activeTrackingId === (item.deliveryId || item.id) ? null : (item.deliveryId || item.id))}
+                                                  className={`px-4 py-2.5 text-white text-[10px] font-black uppercase rounded-xl transition-all shadow-md animate-pulse ${
+                                                    activeTrackingId === (item.deliveryId || item.id) ? 'bg-red-600' : 'bg-green-600'
+                                                  }`}
+                                               >
+                                                  {activeTrackingId === (item.deliveryId || item.id) ? 'STOP GPS' : 'GO LIVE 📡'}
+                                               </button>
+                                            </div>
+                                         )}
+                                         <div className="text-[10px] font-black text-gray-400 bg-gray-100 px-3 py-1 rounded-full uppercase ml-2 select-none">{item.status}</div>
+                                      </>
+                                   )}
+                                </div>
                              )}
                           </td>
                        </tr>
@@ -237,7 +451,17 @@ export default function DailyDeliveryPage() {
                           </div>
                        </div>
                     </div>
-                    <div className="text-xs text-gray-600 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100 font-medium font-bold uppercase">📍 {item.address}</div>
+                    <div className="flex items-center justify-between gap-3 mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                       <div className="text-xs text-gray-600 font-bold uppercase flex-1">📍 {item.address}</div>
+                       <a 
+                         href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}`}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center shadow-lg shadow-orange-100 active:scale-95"
+                       >
+                          <MapPin size={18} />
+                       </a>
+                    </div>
                     
                     {item.paused ? (
                         <div className="bg-red-100 text-red-600 p-4 rounded-2xl text-center text-[10px] font-black uppercase tracking-widest">
@@ -249,13 +473,51 @@ export default function DailyDeliveryPage() {
                            Delivered Successfully
                         </div>
                     ) : (
-                       <button 
-                        onClick={() => updateStatus(item, "Delivered")}
-                        className="w-full py-4 bg-gray-900 text-white text-[10px] font-black uppercase rounded-2xl shadow-xl shadow-gray-200 flex items-center justify-center gap-2"
-                       >
-                          <Clock size={14} />
-                          Mark as Delivered
-                       </button>
+                        <div className="flex flex-col gap-2">
+                           <div className="flex flex-col gap-2">
+                              {(item.status === "Scheduled" || item.status === "Pending" || item.status === "Confirmed") && (
+                                 <button 
+                                    onClick={() => updateStatus(item, "Prepared")}
+                                    className="flex-1 py-4 bg-amber-500 text-white text-[11px] font-black uppercase rounded-2xl shadow-xl shadow-amber-100"
+                                 >
+                                    Mark Prepared
+                                 </button>
+                               )}
+                              {item.status === "Prepared" && (
+                                 <button 
+                                    onClick={() => updateStatus(item, "Out for Delivery")}
+                                    className="flex-1 py-4 bg-blue-500 text-white text-[11px] font-black uppercase rounded-2xl shadow-xl shadow-blue-100"
+                                 >
+                                    Mark Dispatched
+                                 </button>
+                              )}
+                              {item.status === "Out for Delivery" && (
+                                 <div className="flex flex-col gap-2 w-full">
+                                    <button 
+                                       onClick={() => updateStatus(item, "Delivered")}
+                                       className="flex-1 py-4 bg-green-600 text-white text-[11px] font-black uppercase rounded-2xl shadow-xl hover:bg-green-700"
+                                    >
+                                       Mark Delivered
+                                    </button>
+                                    <button 
+                                       onClick={() => simulateLiveTracking(item)}
+                                       className="flex-1 py-4 bg-purple-600 text-white text-[11px] font-black uppercase rounded-2xl shadow-xl"
+                                    >
+                                       📍 SIM GPS
+                                    </button>
+                                    <button 
+                                       onClick={() => setActiveTrackingId(activeTrackingId === (item.deliveryId || item.id) ? null : (item.deliveryId || item.id))}
+                                       className={`flex-1 py-4 text-white text-[11px] font-black uppercase rounded-2xl shadow-xl animate-pulse ${
+                                          activeTrackingId === (item.deliveryId || item.id) ? 'bg-red-600' : 'bg-green-600'
+                                       }`}
+                                    >
+                                       {activeTrackingId === (item.deliveryId || item.id) ? '🛑 STOP LIVE GPS' : '📡 START LIVE PATH'}
+                                    </button>
+                                 </div>
+                              )}
+                           </div>
+                           <div className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2 border-t border-gray-100 pt-2">Current: {item.status}</div>
+                        </div>
                     )}
                  </div>
               ))}
@@ -271,6 +533,10 @@ export default function DailyDeliveryPage() {
       </div>
     </div>
   );
+}
+
+const AdminMapUpdater = ({ activeId }: { activeId: string | null }) => {
+  return null;
 }
 
 function StatCard({ title, value, color }: { title: string; value: number; color: string }) {

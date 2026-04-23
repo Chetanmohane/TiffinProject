@@ -98,43 +98,19 @@ export async function POST(req: Request) {
       }
     }
 
-    // If status changed to Delivered, deduct 1 meal
+    // Handle meal deduction/return logic
     if (status === "Delivered" && oldStatus !== "Delivered") {
        const targetCustomerId = delivery ? delivery.customerId : customerId;
-       if (!targetCustomerId) throw new Error("Customer ID required for new delivery");
-
-       // Deduct meal and check for exhaustion
        const updatedUser = await User.findById(targetCustomerId);
        if (updatedUser && updatedUser.subscription) {
           updatedUser.subscription.mealsLeft = Math.max(0, (updatedUser.subscription.mealsLeft || 0) - 1);
-          
-          // If no meals left, mark as Expired
-          if (updatedUser.subscription.mealsLeft <= 0) {
-             updatedUser.subscription.status = "Expired";
-          }
+          if (updatedUser.subscription.mealsLeft <= 0) updatedUser.subscription.status = "Expired";
           await updatedUser.save();
        }
-
-       if (!delivery) {
-          // Create new record for today
-          const customer = await User.findById(targetCustomerId).select("name").lean() as any;
-          delivery = await Delivery.create({
-            customerId: targetCustomerId,
-            customerName: customer?.name || "Customer",
-            type: type || "Lunch",
-            date: today,
-            status: "Delivered",
-            targetTime: type === "Dinner" ? "08:00 PM" : "01:00 PM"
-          });
-          return NextResponse.json({ success: true, id: delivery._id });
-       }
-    } 
-    // If status was Delivered and changed back to something else, add 1 meal back
-    else if (status !== "Delivered" && oldStatus === "Delivered" && delivery) {
+    } else if (status !== "Delivered" && oldStatus === "Delivered" && delivery) {
        const updatedUser = await User.findById(delivery.customerId);
        if (updatedUser && updatedUser.subscription) {
           updatedUser.subscription.mealsLeft += 1;
-          // If we added a meal back and it was Expired, reactivate it
           if (updatedUser.subscription.status === "Expired" && updatedUser.subscription.mealsLeft > 0) {
              updatedUser.subscription.status = "Active";
           }
@@ -142,9 +118,20 @@ export async function POST(req: Request) {
        }
     }
 
-    if (delivery) {
-      delivery.status = status;
-      await delivery.save();
+    if (!delivery) {
+       const targetCustomerId = customerId;
+       const customer = await User.findById(targetCustomerId).select("name").lean() as any;
+       await Delivery.create({
+         customerId: targetCustomerId,
+         customerName: customer?.name || "Customer",
+         type: type || "Lunch",
+         date: today,
+         status: status,
+         targetTime: type === "Dinner" ? "08:00 PM" : "01:00 PM"
+       });
+    } else {
+       delivery.status = status;
+       await delivery.save();
     }
     
     return NextResponse.json({ success: true });

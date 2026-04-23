@@ -8,6 +8,7 @@ import { Package, Shield, Home } from "lucide-react";
 import StatCard from "./StatCard";
 import MealHero from "./MealHero";
 import HistoryTable from "./HistoryTable";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, 
   ArrowRight, 
@@ -15,7 +16,7 @@ import {
   Zap 
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { motion, AnimatePresence } from "framer-motion";
+
 
 export default function Order() {
   const router = useRouter();
@@ -79,6 +80,10 @@ export default function Order() {
       }
     }
     loadData();
+
+    // Live Polling for Tracking
+    const pollInterval = setInterval(loadData, 15000);
+    return () => clearInterval(pollInterval);
   }, [router]);
 
   const confirmPurchase = async () => {
@@ -247,8 +252,18 @@ export default function Order() {
       {/* Hero & Quick Actions Grid */}
       {/* Hero & Subscription Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
-        <div className="lg:col-span-2 rounded-[3rem] shadow-2xl shadow-gray-200/40 overflow-hidden h-fit">
-          <MealHero meal={dashboardData?.todayMeal} dinner={dashboardData?.todayDinner} />
+        <div className="lg:col-span-2 space-y-6 sm:space-y-8">
+          <div className="rounded-[3rem] shadow-2xl shadow-gray-200/40 overflow-hidden h-fit">
+            <MealHero meal={dashboardData?.todayMeal} dinner={dashboardData?.todayDinner} />
+          </div>
+          <OrderTracker 
+            lunchStatus={dashboardData?.todayMeal?.status} 
+            dinnerStatus={dashboardData?.todayDinner?.status} 
+            lunchLocation={dashboardData?.todayMeal?.driverLocation}
+            dinnerLocation={dashboardData?.todayDinner?.driverLocation}
+            lunchETA={dashboardData?.todayMeal?.estimatedArrival}
+            dinnerETA={dashboardData?.todayDinner?.estimatedArrival}
+          />
         </div>
         
         <div className="lg:col-span-1">
@@ -639,3 +654,233 @@ const Action = ({ label, icon, link, gradient, onClick }: any) => (
     </span>
   </Link>
 );
+
+/* ================= Order Tracker Component ================= */
+const MapPositionUpdater = ({ lat, lng }: { lat?: number, lng?: number }) => {
+  useEffect(() => {
+    if (lat && lng && (window as any)._updateDriverPos) {
+      (window as any)._updateDriverPos(lat, lng);
+    }
+  }, [lat, lng]);
+  return null;
+};
+
+const OrderTracker = ({ lunchStatus, dinnerStatus, lunchLocation, dinnerLocation, lunchETA, dinnerETA }: any) => {
+  const [activeTab, setActiveTab] = useState<"Lunch" | "Dinner">("Lunch");
+  const [showMap, setShowMap] = useState(false);
+  
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour >= 15) setActiveTab("Dinner");
+  }, []);
+
+  const currentStatus = activeTab === "Lunch" ? lunchStatus : dinnerStatus;
+  const currentLocation = activeTab === "Lunch" ? lunchLocation : dinnerLocation;
+  const currentETA = activeTab === "Lunch" ? lunchETA : dinnerETA;
+  
+  const steps = [
+    { label: "Confirmed", icon: "📋", matched: ["Confirmed", "Prepared", "Out for Delivery", "Delivered", "Scheduled"] },
+    { label: "Prepared", icon: "🍳", matched: ["Prepared", "Out for Delivery", "Delivered"] },
+    { label: "On the Way", icon: "🛵", matched: ["Out for Delivery", "Delivered"] },
+    { label: "Delivered", icon: "✅", matched: ["Delivered"] },
+  ];
+
+  const activeIndex = steps.findLastIndex(s => s.matched.includes(currentStatus));
+
+  if (currentStatus === "Paused" || (currentStatus && currentStatus.includes("Holiday"))) return null;
+
+  return (
+    <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-xl shadow-gray-200/40 border border-gray-50 relative overflow-hidden group transition-all duration-700 hover:border-orange-200">
+      <div className="flex items-center justify-between mb-8 relative z-10">
+        <div>
+          <p className="text-[10px] font-black text-orange-600 uppercase tracking-[0.2em] mb-1">Live Order Tracking</p>
+          <h4 className="text-xl font-black text-gray-900 leading-none tracking-tight">Track Your {activeTab} 🍱</h4>
+        </div>
+        <div className="flex bg-gray-100 p-1 rounded-xl">
+           <button 
+            onClick={() => setActiveTab("Lunch")}
+            className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'Lunch' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+           >
+             Lunch
+           </button>
+           <button 
+            onClick={() => setActiveTab("Dinner")}
+            className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'Dinner' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+           >
+             Dinner
+           </button>
+        </div>
+      </div>
+
+      <AnimatePresence mode="wait">
+        {!showMap ? (
+          <motion.div 
+            key="stepper"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            className="relative pt-2"
+          >
+            {/* Progress Line */}
+            <div className="absolute top-7 left-8 right-8 h-1 bg-gray-100 rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${(activeIndex / (steps.length - 1)) * 100}%` }}
+                className="h-full bg-gradient-to-r from-orange-500 to-orange-400"
+              />
+            </div>
+
+            {/* Steps */}
+            <div className="flex justify-between relative z-10">
+              {steps.map((step, idx) => {
+                const isActive = idx <= activeIndex;
+                const isCurrent = idx === activeIndex;
+
+                return (
+                  <div key={idx} className="flex flex-col items-center gap-3 w-1/4">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all duration-700 shadow-lg ${
+                      isCurrent ? 'bg-orange-500 text-white scale-110 shadow-orange-200 rotate-[360deg]' : 
+                      isActive ? 'bg-orange-100 text-orange-600' : 
+                      'bg-white text-gray-200 border border-gray-100'
+                    }`}>
+                      {step.icon}
+                    </div>
+                    <div className="text-center">
+                      <p className={`text-[9px] font-black uppercase tracking-tighter ${isActive ? 'text-gray-900 font-black' : 'text-gray-300 font-bold'}`}>
+                        {step.label}
+                      </p>
+                      {isCurrent && (
+                        <motion.div 
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="w-1.5 h-1.5 bg-orange-500 rounded-full mx-auto mt-1 animate-pulse"
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        ) : (
+          <div 
+            key="map-container"
+            className="h-64 bg-slate-100 rounded-[2rem] relative overflow-hidden flex items-center justify-center border-border shadow-inner"
+          >
+             <div id="leaflet-map" className="absolute inset-0 z-0"></div>
+             
+             {/* Overlay for status when no location */}
+             {!currentLocation && (
+               <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex items-center justify-center p-8 text-center">
+                  <div className="flex flex-col items-center gap-4">
+                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                        <span className="text-2xl">📡</span>
+                     </div>
+                     <p className="text-[10px] font-black text-gray-500 uppercase leading-relaxed tracking-widest max-w-[200px]">
+                       Awaiting GPS Signal from the Driver...
+                     </p>
+                  </div>
+               </div>
+             )}
+
+             {/* Leaflet Initialization Script */}
+             <script dangerouslySetInnerHTML={{ __html: `
+                (function() {
+                  if (typeof window === 'undefined') return;
+                  
+                  function initMap() {
+                    if (!window.L) return setTimeout(initMap, 200);
+                    
+                    const mapId = 'leaflet-map';
+                    const container = document.getElementById(mapId);
+                    if (!container) return setTimeout(initMap, 200);
+                    if (container._leaflet_id) return;
+
+                    const lat = ${currentLocation?.lat || 23.2599};
+                    const lng = ${currentLocation?.lng || 77.4126};
+                    
+                    const map = L.map(mapId, { zoomControl: false }).setView([lat, lng], 15);
+                    L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(map);
+
+                    const createIcon = (emoji, color) => L.divIcon({
+                      className: 'custom-div-icon',
+                      html: \`<div style="background-color:\${color}; width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; border:3px solid white; box-shadow:0 10px 15px -3px rgba(0,0,0,0.2); font-size:20px;">\${emoji}</div>\`,
+                      iconSize: [40, 40],
+                      iconAnchor: [20, 20]
+                    });
+
+                    const driverMarker = L.marker([lat, lng], { icon: createIcon('🛵', '#f97316') }).addTo(map);
+                    
+                    // Add home marker if we have an idea of where it is - for now just slightly offset or centered
+                    // If we had customer lat/lng we would use it here.
+                    
+                    window._updateDriverPos = (newLat, newLng) => {
+                      if (!driverMarker) return;
+                      const pos = [newLat, newLng];
+                      driverMarker.setLatLng(pos);
+                      map.panTo(pos);
+                    };
+                  }
+
+                  if (!window.L) {
+                    const link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                    document.head.appendChild(link);
+                    
+                    const script = document.createElement('script');
+                    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                    script.onload = initMap;
+                    document.head.appendChild(script);
+                  } else {
+                    setTimeout(initMap, 100);
+                  }
+                })();
+             `}} />
+             
+             {/* Update effect bridge */}
+             <MapPositionUpdater lat={currentLocation?.lat} lng={currentLocation?.lng} />
+          </div>
+        )}
+      </AnimatePresence>
+
+      <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
+         <div className="flex items-center gap-3">
+            <div className={`w-2 h-2 rounded-full ${currentStatus === 'Delivered' ? 'bg-green-500' : 'bg-orange-500 animate-ping'}`} />
+            <div>
+               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] leading-none mb-1">
+                 STATUS: <span className="text-gray-900 font-black">{currentStatus || "Scheduled"}</span>
+               </p>
+               {currentLocation ? (
+                 <motion.p 
+                   initial={{ opacity: 0 }} 
+                   animate={{ opacity: 1 }}
+                   className="text-[9px] font-black text-green-600 uppercase tracking-widest flex items-center gap-1"
+                 >
+                    <span className="w-1 h-1 bg-green-500 rounded-full animate-pulse" />
+                    Live Driver Location Sharing Active 📡
+                 </motion.p>
+               ) : (
+                 currentETA && (
+                    <p className="text-[9px] font-black text-orange-600 uppercase tracking-widest">
+                        Arrival in {currentETA} mins ⚡
+                    </p>
+                 )
+               )}
+            </div>
+         </div>
+         <button 
+           onClick={() => setShowMap(!showMap)}
+           className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 ${
+              showMap ? 'bg-gray-900 text-white shadow-gray-200' : 'bg-orange-600 text-white shadow-orange-100'
+           }`}
+         >
+           {showMap ? 'Show Progress' : 'Live Tracking'}
+         </button>
+      </div>
+
+      {/* Decorative bg */}
+      <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-orange-50/30 rounded-full blur-3xl pointer-events-none group-hover:bg-orange-100/40 transition-all duration-700" />
+    </div>
+  );
+};
