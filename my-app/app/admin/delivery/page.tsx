@@ -16,6 +16,7 @@ interface DeliveryCustomer {
   planType: "Lunch" | "Dinner" | "Both";
   status: string;
   paused: boolean;
+  mealsLeft: number;
 }
 
 /* ---------------- COMPONENT ---------------- */
@@ -181,6 +182,10 @@ export default function DailyDeliveryPage() {
                                 {item.planType === "Both" && (
                                    <span className="text-[10px] font-black text-orange-500 bg-orange-50 px-2 py-1 rounded-lg uppercase tracking-tighter">Both Plan</span>
                                 )}
+                                <div className="ml-2 flex flex-col">
+                                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Remaining</span>
+                                   <span className="text-xs font-black text-orange-600">{item.mealsLeft} Meals</span>
+                                </div>
                              </div>
                           </td>
                           <td className="px-8 py-5 text-sm text-gray-600 max-w-xs truncate font-bold uppercase">{item.address}</td>

@@ -150,17 +150,24 @@ export async function GET(req: Request) {
        return "Scheduled 🕒";
     };
 
+    const hasActivePlan = !!(sub.planName && (liveStatus === "Active" || liveStatus === "Paused"));
+
     return NextResponse.json({
       user: {
         name: customer.name,
         subscriptionStatus: liveStatus,
-        nextRenewal: liveStatus === "Expired" ? "Plan is Expired" : liveRenewalDate,
-        activePlanName: liveStatus === "Expired" ? "No Active Plan" : (sub.planName || "No Plan"),
+        nextRenewal: hasActivePlan ? liveRenewalDate : "---",
+        activePlanName: hasActivePlan ? sub.planName : "No Active Plan",
+        startDate: hasActivePlan ? sub.startDate : "---",
+        totalMeals: hasActivePlan ? (sub.totalMeals || 0) : 0,
+        mealsLeft: hasActivePlan ? (sub.mealsLeft || 0) : 0,
+        mealType: sub.mealType || "Both",
         pauseDetails: isPaused ? {
           from: pauseEntry.pauseFrom,
           to: pauseEntry.pauseTo,
           reason: pauseEntry.reason
         } : null,
+        hasActivePlan: hasActivePlan,
       },
       todayMeal: {
         items: isPaused
@@ -181,23 +188,23 @@ export async function GET(req: Request) {
       quickStats: [
         {
           title: "Active Plan",
-          value: liveStatus === "Expired" ? "No Active Plan" : (sub.planName || "No Plan"),
+          value: hasActivePlan ? sub.planName : "No Active Plan",
           icon: "👑",
-          subtext: `Status: ${liveStatus}`,
-          subtextClass: liveStatus === "Expired" || liveStatus === "Paused" ? "text-red-500 font-bold" : "text-orange-600 font-bold",
+          subtext: `Status: ${liveStatus || "Inactive"}`,
+          subtextClass: (liveStatus === "Expired" || liveStatus === "Inactive") ? "text-red-500 font-bold" : liveStatus === "Paused" ? "text-yellow-500 font-bold" : "text-orange-600 font-bold",
         },
         {
           title: "Delivery Status",
-          value: liveStatus === "Paused" ? "Paused" : "Dispatched",
+          value: liveStatus === "Paused" ? "Paused" : (hasActivePlan ? "Active" : "None"),
           icon: liveStatus === "Paused" ? "⏸️" : "🛵",
-          subtext: liveStatus === "Paused" ? "Service paused by you" : "Arriving by 01:00 PM",
+          subtext: liveStatus === "Paused" ? "Service paused by you" : (hasActivePlan ? "Arriving by 01:00 PM" : "No active subscription"),
           subtextClass: liveStatus === "Paused" ? "text-red-500 font-bold" : "text-orange-600",
         },
         {
           title: "Meals Left",
-          value: liveStatus === "Expired" ? 0 : (sub.mealsLeft || 0),
+          value: hasActivePlan ? (sub.mealsLeft || 0) : 0,
           icon: "🍱",
-          subtext: liveStatus === "Expired" ? "Plan ended" : `Out of ${sub.totalMeals || 0} meals`,
+          subtext: hasActivePlan ? `Out of ${sub.totalMeals || 0} meals` : "Plan ended or not found",
         },
       ],
     });

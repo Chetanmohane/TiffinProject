@@ -70,6 +70,7 @@ export async function GET() {
           planType: sub.mealType || "Both", // The overall plan (Lunch, Dinner, or Both)
           status: finalStatus,
           paused: !!isPausedToday,
+          mealsLeft: sub.mealsLeft || 0,
         });
       }
     }
@@ -102,9 +103,17 @@ export async function POST(req: Request) {
        const targetCustomerId = delivery ? delivery.customerId : customerId;
        if (!targetCustomerId) throw new Error("Customer ID required for new delivery");
 
-       await User.findByIdAndUpdate(targetCustomerId, {
-          $inc: { "subscription.mealsLeft": -1 }
-       });
+       // Deduct meal and check for exhaustion
+       const updatedUser = await User.findById(targetCustomerId);
+       if (updatedUser && updatedUser.subscription) {
+          updatedUser.subscription.mealsLeft = Math.max(0, (updatedUser.subscription.mealsLeft || 0) - 1);
+          
+          // If no meals left, mark as Expired
+          if (updatedUser.subscription.mealsLeft <= 0) {
+             updatedUser.subscription.status = "Expired";
+          }
+          await updatedUser.save();
+       }
 
        if (!delivery) {
           // Create new record for today
@@ -122,9 +131,15 @@ export async function POST(req: Request) {
     } 
     // If status was Delivered and changed back to something else, add 1 meal back
     else if (status !== "Delivered" && oldStatus === "Delivered" && delivery) {
-       await User.findByIdAndUpdate(delivery.customerId, {
-          $inc: { "subscription.mealsLeft": 1 }
-       });
+       const updatedUser = await User.findById(delivery.customerId);
+       if (updatedUser && updatedUser.subscription) {
+          updatedUser.subscription.mealsLeft += 1;
+          // If we added a meal back and it was Expired, reactivate it
+          if (updatedUser.subscription.status === "Expired" && updatedUser.subscription.mealsLeft > 0) {
+             updatedUser.subscription.status = "Active";
+          }
+          await updatedUser.save();
+       }
     }
 
     if (delivery) {

@@ -241,39 +241,99 @@ export default function Order() {
                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Live Subscription</span>
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-black mb-1 group-hover:text-orange-500 transition-colors">
-                   {dashboardData?.user?.subscriptionStatus === 'Active' 
-                      ? (dashboardData?.user?.activePlanName || "Premium Thali") 
-                      : (dashboardData?.user?.subscriptionStatus || "No Plan")}
+                   {dashboardData?.user?.hasActivePlan ? dashboardData?.user?.activePlanName : "No Active Plan"}
                 </h3>
-                <p className="text-gray-500 text-xs sm:text-sm font-bold mb-8">
-                   {dashboardData?.user?.subscriptionStatus === 'Active' ? `Ending ${dashboardData?.user?.nextRenewal}` : "Get started with your custom diet"}
-                </p>
-                
-                <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between">
-                   <div>
-                      <p className="text-[9px] text-gray-600 uppercase font-black tracking-widest mb-1">Remaining Meals</p>
-                      <p className="text-3xl font-black text-white">{dashboardData?.quickStats?.find((s: any) => s.title === 'Meals Left')?.value || 0}</p>
+                <div className="mb-6">
+                   <div className="flex items-center gap-2 mb-2">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${
+                        dashboardData?.user?.subscriptionStatus === 'Active' ? 'bg-green-500/20 text-green-500' :
+                        dashboardData?.user?.subscriptionStatus === 'Paused' ? 'bg-yellow-500/20 text-yellow-500' :
+                        'bg-red-500/20 text-red-500'
+                      }`}>
+                        {dashboardData?.user?.subscriptionStatus || "Inactive"}
+                      </span>
+                      {dashboardData?.user?.subscriptionStatus === 'Active' && (
+                         <span className="text-[10px] font-bold text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-full uppercase italic">Live Now ⚡</span>
+                      )}
                    </div>
-                   <button 
-                      onClick={() => {
-                        const target = document.getElementById('tailored-plans');
-                        if (target) target.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      className="px-7 py-3 bg-white/5 hover:bg-orange-600 rounded-2xl text-[10px] font-black transition-all uppercase tracking-widest border border-white/5 hover:border-orange-500 active:scale-95"
-                   >
-                      Upgrade
-                   </button>
+                   {dashboardData?.user?.hasActivePlan && (
+                     <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                           <div className="w-1.5 h-1.5 rounded-full bg-gray-600"></div>
+                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Duration</p>
+                        </div>
+                        <p className="text-xs font-bold text-gray-300">
+                           {dashboardData?.user?.startDate} <span className="text-orange-500 mx-1">→</span> {dashboardData?.user?.nextRenewal}
+                        </p>
+                     </div>
+                   )}
                 </div>
-             </div>
-             <div className="absolute -bottom-10 -right-10 text-white/[0.03] transform -rotate-12 pointer-events-none group-hover:scale-110 group-hover:rotate-0 transition-all duration-700">
-                <Package size={220} />
-             </div>
-          </div>
-        </div>
+                  <div className="mt-auto">
+                    {dashboardData?.user?.hasActivePlan && (
+                      <div className="mb-8 bg-black/20 p-4 rounded-2xl border border-white/5 shadow-inner">
+                         <div className="flex items-center justify-between gap-4">
+                            <div className="text-center flex-1">
+                               <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Delivered</p>
+                               <p className="text-xl font-black text-green-500">{(dashboardData?.user?.totalMeals || 0) - (dashboardData?.user?.mealsLeft || 0)}</p>
+                            </div>
+                            <div className="w-px h-6 bg-white/10"></div>
+                            <div className="text-center flex-1">
+                               <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Remaining</p>
+                               <p className="text-xl font-black text-orange-500">{dashboardData?.user?.mealsLeft || 0}</p>
+                            </div>
+                            <div className="w-px h-6 bg-white/10"></div>
+                            <div className="text-center flex-1">
+                               <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Total</p>
+                               <p className="text-xl font-black text-white">{dashboardData?.user?.totalMeals || 0}</p>
+                            </div>
+                         </div>
+                      </div>
+                    )}
+
+                    <div className="mb-6">
+                       <div className="flex items-center justify-between mb-2 px-1">
+                          <p className="text-[9px] text-gray-500 uppercase font-black tracking-[0.2em]">Meal Inventory</p>
+                          <div className="flex items-center gap-2">
+                             <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
+                             <p className="text-[10px] font-black text-white tracking-widest">
+                                {Math.round((dashboardData?.user?.totalMeals > 0 ? (dashboardData?.user?.mealsLeft / dashboardData?.user?.totalMeals) * 100 : 0))}% AVAILABLE
+                             </p>
+                          </div>
+                       </div>
+                       <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5 p-[1px]">
+                          <motion.div 
+                             initial={{ width: 0 }}
+                             animate={{ width: `${(dashboardData?.user?.totalMeals > 0 ? (dashboardData?.user?.mealsLeft / dashboardData?.user?.totalMeals) * 100 : 0)}%` }}
+                             className="h-full bg-gradient-to-r from-orange-500 via-orange-400 to-red-600 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.3)]"
+                          />
+                       </div>
+                    </div>
+                        <div className="pt-6 border-t border-white/5 flex items-center justify-between">
+                           <div>
+                              <p className="text-[9px] text-gray-600 uppercase font-black tracking-widest mb-1">Live Balance</p>
+                              <p className="text-4xl font-black text-white tracking-tighter">{dashboardData?.user?.mealsLeft || 0}<span className="text-xs text-gray-600 ml-1 font-bold">MEALS</span></p>
+                           </div>
+                           <button 
+                              onClick={() => {
+                                const target = document.getElementById('tailored-plans');
+                                if (target) target.scrollIntoView({ behavior: 'smooth' });
+                              }}
+                              className="px-7 py-3 bg-white/5 hover:bg-orange-600 rounded-2xl text-[10px] font-black transition-all uppercase tracking-widest border border-white/5 hover:border-orange-500 active:scale-95"
+                           >
+                              {dashboardData?.user?.subscriptionStatus === 'Active' ? 'Upgrade' : 'Buy Plan'}
+                           </button>
+                        </div>
+                     </div>
+                  </div>
+                  <div className="absolute -bottom-10 -right-10 text-white/[0.03] transform -rotate-12 pointer-events-none group-hover:scale-110 group-hover:rotate-0 transition-all duration-700">
+                     <Package size={220} />
+                  </div>
+               </div>
+            </div>
       </div>
 
       {/* QUICK ACTIONS ROW */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mt-10">
         <Action 
           label="Menu Card" 
           icon="🍽️" 
@@ -331,31 +391,37 @@ export default function Order() {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
-          {availablePlans.slice(0, 3).map((plan: any, idx: number) => (
-            <div key={idx} className="bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl shadow-gray-200/40 border border-gray-50 group hover:border-orange-500 transition-all duration-500 flex flex-col h-full">
-               <div className="h-48 sm:h-56 w-full rounded-[2rem] bg-gray-100 mb-8 overflow-hidden relative shadow-inner">
-                  <img src={`/img${idx+3}.webp`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={plan.name} />
-                  <div className="absolute top-5 right-5 bg-black/80 backdrop-blur-md text-white text-[9px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-white/10">{plan.tag || 'Popular Choice'}</div>
-               </div>
-               <h3 className="text-xl font-black text-gray-900 mb-2 px-1">{plan.name}</h3>
-               <div className="flex items-baseline gap-1 mb-8 px-1">
-                  <span className="text-2xl font-black text-orange-600">₹{plan.price}</span>
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">/ {plan.duration} days intensive</span>
-               </div>
-               <div className="mt-auto">
-                  <button 
-                    onClick={() => {
-                       setSelectedPlan(plan);
-                       setSelectedMealType("Both");
-                       setCheckoutStep(1);
-                    }}
-                    className="w-full py-4 bg-gray-900 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest text-center block hover:bg-orange-500 hover:shadow-xl hover:shadow-orange-200 transition-all active:scale-95"
-                   >
-                     Activate Now
-                   </button>
-               </div>
+          {availablePlans.length > 0 ? (
+            availablePlans.slice(0, 3).map((plan: any, idx: number) => (
+              <div key={idx} className="bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl shadow-gray-200/40 border border-gray-50 group hover:border-orange-500 transition-all duration-500 flex flex-col h-full">
+                <div className="h-48 sm:h-56 w-full rounded-[2rem] bg-gray-100 mb-8 overflow-hidden relative shadow-inner">
+                    <img src={`/img${idx+3}.webp`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={plan.name} />
+                    <div className="absolute top-5 right-5 bg-black/80 backdrop-blur-md text-white text-[9px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-white/10">{plan.tag || 'Popular Choice'}</div>
+                </div>
+                <h3 className="text-xl font-black text-gray-900 mb-2 px-1">{plan.name}</h3>
+                <div className="flex items-baseline gap-1 mb-8 px-1">
+                    <span className="text-2xl font-black text-orange-600">₹{plan.price}</span>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">/ {plan.duration} days intensive</span>
+                </div>
+                <div className="mt-auto">
+                    <button 
+                      onClick={() => {
+                        setSelectedPlan(plan);
+                        setSelectedMealType("Both");
+                        setCheckoutStep(1);
+                      }}
+                      className="w-full py-4 bg-gray-900 text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest text-center block hover:bg-orange-500 hover:shadow-xl hover:shadow-orange-200 transition-all active:scale-95"
+                    >
+                      Activate Now
+                    </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full bg-white rounded-[3rem] p-20 text-center border border-dashed border-gray-200">
+               <p className="text-gray-400 font-black uppercase tracking-widest">No plans available at the moment. 🍽️</p>
             </div>
-          ))}
+          )}
         </div>
       </div>
 

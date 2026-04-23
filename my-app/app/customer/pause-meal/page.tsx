@@ -1,7 +1,7 @@
 "use client";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type PauseItem = {
@@ -115,26 +115,34 @@ export default function PauseMealPage() {
           <span className="text-sm font-bold uppercase tracking-widest">Back to Dashboard</span>
         </button>
 
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Pause Meal 🍽️</h1>
-        <p className="text-sm text-gray-500 mt-1 mb-6">
-          Pause your tiffin delivery for selected dates.
+        <h1 className="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-tight">Pause Meal 🍱</h1>
+        <p className="text-sm font-bold text-gray-400 mt-1 mb-8 uppercase tracking-widest text-[10px]">
+          Freeze your subscription during holidays
           {planStartDate && planEndDate && (
-             <span className="block mt-2 font-bold text-orange-600 bg-orange-50 p-2 rounded-lg border border-orange-100">
-               ⚠️ You can only pause between your active plan dates: {planStartDate} to {planEndDate}
+             <span className="block mt-4 font-black text-orange-600 bg-orange-50/50 p-4 rounded-2xl border border-orange-100/50 text-[10px]">
+               ⚠️ ELIGIBLE WINDOW: {planStartDate} TO {planEndDate}
              </span>
           )}
         </p>
 
         {!hasActivePlan && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
-            <span className="text-2xl">⚠️</span>
+          <div className="mb-8 p-6 bg-red-50/50 border border-red-100 rounded-[2rem] flex flex-col items-center gap-3 text-center">
+            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-red-500 shadow-sm border border-red-100 mb-2">
+               <AlertCircle size={24} />
+            </div>
             <div>
-              <p className="text-xs sm:text-sm font-bold text-red-600">
-                You don&apos;t have any active plan.
+              <p className="text-sm font-black text-red-900 uppercase tracking-tight">
+                No Active Subscription Found
               </p>
-              <p className="text-[10px] sm:text-xs text-red-500 mt-0.5">
-                Please <a href="/customer/dashboard/plan" className="underline font-black hover:text-red-700">buy a plan here</a> to enable the Pause Meal feature.
+              <p className="text-[10px] font-bold text-red-800 opacity-60 mt-1">
+                Please buy a plan to enable the Pause Meal feature.
               </p>
+              <button 
+                onClick={() => router.push('/customer/dashboard/plan')}
+                className="mt-6 px-8 py-3 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all active:scale-95"
+              >
+                 Buy Plan Now
+              </button>
             </div>
           </div>
         )}
