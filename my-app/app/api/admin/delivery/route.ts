@@ -75,7 +75,15 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({ deliveries: list, date: today });
+    const SiteSettings = (await import("@/models/SiteSettings")).default;
+    const settings = await SiteSettings.findOne().lean() as any;
+    const kitchenAddress = settings?.contact?.address || "Indore, India";
+
+    return NextResponse.json({ 
+      deliveries: list, 
+      date: today,
+      kitchenAddress 
+    });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

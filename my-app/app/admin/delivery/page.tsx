@@ -27,6 +27,8 @@ export default function DailyDeliveryPage() {
   const [activeTrackingId, setActiveTrackingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"ALL" | "Lunch" | "Dinner" | "Both">("ALL");
   const [search, setSearch] = useState("");
+  const [kitchenAddress, setKitchenAddress] = useState("Bhopal, India");
+  const [savingKitchen, setSavingKitchen] = useState(false);
 
   const IST_OFFSET = 5.5 * 60 * 60 * 1000;
   const todayStr = new Date(new Date().getTime() + IST_OFFSET).toISOString().split("T")[0];
@@ -37,9 +39,26 @@ export default function DailyDeliveryPage() {
       .then(res => res.json())
       .then(data => {
         setDeliveries(data.deliveries || []);
+        if (data.kitchenAddress) setKitchenAddress(data.kitchenAddress);
         setLoading(false);
       })
       .catch(() => setLoading(false));
+  };
+
+  const saveKitchenAddress = async () => {
+    setSavingKitchen(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contact: { address: kitchenAddress } })
+      });
+      if (res.ok) toast.success("Kitchen Location Fixed! 📍");
+    } catch (e) {
+      toast.error("Failed to save location");
+    } finally {
+      setSavingKitchen(false);
+    }
   };
 
   useEffect(() => {
@@ -172,6 +191,29 @@ export default function DailyDeliveryPage() {
           </p>
         </div>
 
+        {/* KITCHEN CONFIG */}
+        <div className="mb-8 bg-orange-50 border border-orange-100 rounded-[2rem] p-6 flex flex-col md:flex-row items-center gap-4">
+           <div className="bg-white p-3 rounded-2xl text-orange-600 shadow-sm">
+              <MapPin size={24} />
+           </div>
+           <div className="flex-1">
+              <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Kitchen / Restaurant Location (Dispatch Origin)</p>
+              <input 
+                value={kitchenAddress}
+                onChange={(e) => setKitchenAddress(e.target.value)}
+                placeholder="Enter Restaurant Address..."
+                className="w-full bg-transparent border-none outline-none font-black text-slate-800 p-0 text-sm placeholder:text-slate-300"
+              />
+           </div>
+           <button 
+             onClick={saveKitchenAddress}
+             disabled={savingKitchen}
+             className="px-8 py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all disabled:opacity-50"
+           >
+             {savingKitchen ? "Saving..." : "Fix Origin"}
+           </button>
+        </div>
+
         {/* STATS */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <StatCard title="Total Orders" value={total} color="bg-white text-gray-900" />
@@ -292,18 +334,31 @@ export default function DailyDeliveryPage() {
                       const marker = L.marker([startLat, startLng], { icon: createIcon('🚚', '#10b981') }).addTo(map);
                       let routeLine = L.polyline([], { color: '#10b981', weight: 4, opacity: 0.5, dashArray: '8, 12' }).addTo(map);
 
+                      const kPos = await geocode("${kitchenAddress}");
+                      if (kPos) {
+                        L.marker([kPos.lat, kPos.lon], { icon: createIcon('🏪', '#f59e0b') }).addTo(map);
+                      }
+
                       const targetAddress = "${deliveries.find(d => (d.deliveryId || d.id) === activeTrackingId)?.address || "Bhopal"}";
                       const homePos = await geocode(targetAddress);
                       if (homePos) {
                         L.marker([homePos.lat, homePos.lon], { icon: createIcon('🏠', '#1e293b') }).addTo(map);
-                        routeLine.setLatLngs([[startLat, startLng], [homePos.lat, homePos.lon]]);
-                        map.fitBounds(L.latLngBounds([[startLat, startLng], [homePos.lat, homePos.lon]]), { padding: [40, 40] });
+                        const points = [];
+                        if (kPos) points.push([kPos.lat, kPos.lon]);
+                        points.push([startLat, startLng]);
+                        points.push([homePos.lat, homePos.lon]);
+                        routeLine.setLatLngs(points);
+                        map.fitBounds(L.latLngBounds(points), { padding: [40, 40] });
                       }
 
                       window._updateAdminMap = (lat, lng) => {
                         if (!marker) return;
                         marker.setLatLng([lat, lng]);
-                        if (homePos) routeLine.setLatLngs([[lat, lng], [homePos.lat, homePos.lon]]);
+                        const pts = [];
+                        if (kPos) pts.push([kPos.lat, kPos.lon]);
+                        pts.push([lat, lng]);
+                        if (homePos) pts.push([homePos.lat, homePos.lon]);
+                        routeLine.setLatLngs(pts);
                       };
                     }
 

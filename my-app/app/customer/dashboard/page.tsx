@@ -265,6 +265,7 @@ export default function Order() {
             dinnerETA={dashboardData?.todayDinner?.estimatedArrival}
             lunchAddress={dashboardData?.todayMeal?.address}
             dinnerAddress={dashboardData?.todayDinner?.address}
+            kitchenAddress={dashboardData?.kitchenAddress}
           />
         </div>
         
@@ -671,7 +672,8 @@ const OrderTracker = ({
   lunchStatus, dinnerStatus, 
   lunchLocation, dinnerLocation, 
   lunchETA, dinnerETA,
-  lunchAddress, dinnerAddress
+  lunchAddress, dinnerAddress,
+  kitchenAddress
 }: any) => {
   const [activeTab, setActiveTab] = useState<"Lunch" | "Dinner">("Lunch");
   const [showMap, setShowMap] = useState(false);
@@ -825,6 +827,7 @@ const OrderTracker = ({
                     const dLat = parseFloat("${currentLocation?.lat}") || 23.2599;
                     const dLng = parseFloat("${currentLocation?.lng}") || 77.4126;
                     const customerAddress = "${currentAddress || "Bhopal, India"}";
+                    const restAddress = "${kitchenAddress || "Bhopal, India"}";
                     
                     const map = L.map(mapId, { zoomControl: false }).setView([dLat, dLng], 14);
                     
@@ -840,11 +843,23 @@ const OrderTracker = ({
                     const driverMarker = L.marker([dLat, dLng], { icon: createIcon('🛵', '#f97316') }).addTo(map);
                     let routeLine = L.polyline([], { color: '#f97316', weight: 5, opacity: 0.6, dashArray: '10, 15' }).addTo(map);
 
-                    const homePos = await geocode(customerAddress);
+                    const [homePos, restPos] = await Promise.all([
+                       geocode(customerAddress),
+                       geocode(restAddress)
+                    ]);
+
+                    if (restPos) {
+                       L.marker([restPos.lat, restPos.lng], { icon: createIcon('🏪', '#f59e0b') }).addTo(map);
+                    }
+
                     if (homePos) {
                       L.marker([homePos.lat, homePos.lng], { icon: createIcon('🏠', '#1e293b') }).addTo(map);
-                      routeLine.setLatLngs([[dLat, dLng], [homePos.lat, homePos.lng]]);
-                      map.fitBounds(L.latLngBounds([[dLat, dLng], [homePos.lat, homePos.lng]]), { padding: [60, 60] });
+                      const pts = [];
+                      if (restPos) pts.push([restPos.lat, restPos.lng]);
+                      pts.push([dLat, dLng]);
+                      pts.push([homePos.lat, homePos.lng]);
+                      routeLine.setLatLngs(pts);
+                      map.fitBounds(L.latLngBounds(pts), { padding: [60, 60] });
                     }
 
                     setTimeout(() => map.invalidateSize(), 800);
@@ -853,7 +868,11 @@ const OrderTracker = ({
                       if (!driverMarker) return;
                       const nl = parseFloat(newLat), ng = parseFloat(newLng);
                       driverMarker.setLatLng([nl, ng]);
-                      if (homePos) routeLine.setLatLngs([[nl, ng], [homePos.lat, homePos.lng]]);
+                      const pts = [];
+                      if (restPos) pts.push([restPos.lat, restPos.lng]);
+                      pts.push([nl, ng]);
+                      if (homePos) pts.push([homePos.lat, homePos.lng]);
+                      routeLine.setLatLngs(pts);
                     };
                   }
 

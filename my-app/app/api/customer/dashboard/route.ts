@@ -147,7 +147,12 @@ export async function GET(req: Request) {
 
     const hasActivePlan = !!(sub.planName && (liveStatus === "Active" || liveStatus === "Paused"));
 
+    const SiteSettings = (await import("@/models/SiteSettings")).default;
+    const settings = await SiteSettings.findOne().lean() as any;
+    const kitchenAddress = settings?.contact?.address || "Indore, India";
+
     return NextResponse.json({
+      kitchenAddress,
       user: {
         name: customer.name,
         subscriptionStatus: liveStatus,
