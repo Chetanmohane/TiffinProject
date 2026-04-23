@@ -8,6 +8,7 @@ export interface IPausedMeal extends Document {
   pauseFrom: string;
   pauseTo: string;
   reason: string;
+  daysCount?: number;
   status: "Pending" | "Approved" | "Rejected";
 }
 
@@ -20,6 +21,7 @@ const PausedMealSchema = new Schema<IPausedMeal>(
     pauseFrom: { type: String, required: true },
     pauseTo: { type: String, required: true },
     reason: { type: String, default: "" },
+    daysCount: { type: Number },
     status: { type: String, enum: ["Pending", "Approved", "Rejected"], default: "Pending" },
   },
   { timestamps: true }

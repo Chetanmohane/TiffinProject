@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     if (!customer) throw new Error("Customer not found");
 
     if (action === "add") {
-      const hasActivePlan = customer.subscription?.status === "Active";
+      const hasActivePlan = customer.subscription?.status === "Active" || customer.subscription?.status === "Paused";
       if (!hasActivePlan) {
         throw new Error("You don't have any active plan. Please buy a plan to pause your meals.");
       }
@@ -58,8 +58,9 @@ export async function POST(req: Request) {
           throw new Error(`You can only pause meals after your plan starts (${planStart}).`);
       }
       
-      if (planEnd && item.to > planEnd) {
-          throw new Error(`You can only pause meals before your plan ends (${planEnd}).`);
+      // If we are adding a pause, user can pause up to the current end date
+      if (planEnd && item.from > planEnd) {
+          throw new Error(`Pause start date cannot be after plan expiry (${planEnd}).`);
       }
       
       const existingPauses = await PausedMeal.find({ customerId: customer._id }).lean();
@@ -76,6 +77,23 @@ export async function POST(req: Request) {
         }
       }
 
+      // Calculate days to extend
+      const diffTime = Math.abs(newEnd - newStart);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+      // Update User Renewal Date
+      const currentEnd = new Date(customer.subscription.nextRenewal);
+      const newRenewalDate = new Date(currentEnd.getTime() + (diffDays * 24 * 60 * 60 * 1000));
+      const nextRenewalStr = newRenewalDate.toISOString().split("T")[0];
+
+      await User.findOneAndUpdate(
+        { _id: customer._id },
+        { 
+          "subscription.nextRenewal": nextRenewalStr,
+          "subscription.status": "Paused" // Mark as paused if currently active
+        }
+      );
+
       await PausedMeal.create({ 
         customerId: customer._id,
         customerName: customer.name, 
@@ -83,10 +101,27 @@ export async function POST(req: Request) {
         planName: customer.subscription?.planName || "Active Plan",
         pauseFrom: item.from,
         pauseTo: item.to,
-        reason: item.reason
+        reason: item.reason,
+        daysCount: diffDays // Storing for easier removal
       });
     } else if (action === "remove") {
-      await PausedMeal.findByIdAndDelete(body.id);
+      const pm = await PausedMeal.findById(body.id);
+      if (pm) {
+        // Reverse the extension
+        const diffDays = pm.daysCount || 1;
+        const currentEnd = new Date(customer.subscription.nextRenewal);
+        const newRenewalDate = new Date(currentEnd.getTime() - (diffDays * 24 * 60 * 60 * 1000));
+        const nextRenewalStr = newRenewalDate.toISOString().split("T")[0];
+
+        await User.findOneAndUpdate(
+          { _id: customer._id },
+          { 
+            "subscription.nextRenewal": nextRenewalStr,
+            "subscription.status": "Active" // Resume if all pauses removed (simple logic)
+          }
+        );
+        await PausedMeal.findByIdAndDelete(body.id);
+      }
     }
     
     const customerPauses = await PausedMeal.find({ customerName: customer.name }).lean();
