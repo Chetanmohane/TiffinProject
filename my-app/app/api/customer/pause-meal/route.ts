@@ -106,20 +106,50 @@ export async function POST(req: Request) {
       });
     } else if (action === "remove") {
       const pm = await PausedMeal.findById(body.id);
-      if (pm) {
-        // Reverse the extension
-        const diffDays = pm.daysCount || 1;
-        const currentEnd = new Date(customer.subscription.nextRenewal);
-        const newRenewalDate = new Date(currentEnd.getTime() - (diffDays * 24 * 60 * 60 * 1000));
-        const nextRenewalStr = newRenewalDate.toISOString().split("T")[0];
+      if (pm && customer.subscription) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const pauseStart = new Date(pm.pauseFrom);
+        pauseStart.setHours(0, 0, 0, 0);
+        
+        const pauseEnd = new Date(pm.pauseTo);
+        pauseEnd.setHours(0, 0, 0, 0);
 
-        await User.findOneAndUpdate(
-          { _id: customer._id },
-          { 
-            "subscription.nextRenewal": nextRenewalStr,
-            "subscription.status": "Active" // Resume if all pauses removed (simple logic)
-          }
-        );
+        const originalDiffDays = pm.daysCount || 1;
+        let actualDaysToKeep = originalDiffDays;
+
+        if (today < pauseStart) {
+          // Case 1: Resuming before the pause even started
+          actualDaysToKeep = 0;
+        } else if (today <= pauseEnd) {
+          // Case 2: Early resume during the pause
+          const timeSpent = Math.abs(today.getTime() - pauseStart.getTime());
+          actualDaysToKeep = Math.ceil(timeSpent / (1000 * 60 * 60 * 24));
+          // If they resume on the same day it started, they kept 0 pause days
+        } else {
+          // Case 3: Already finished (just cleaning up)
+          actualDaysToKeep = originalDiffDays;
+        }
+
+        const daysToSubtract = originalDiffDays - actualDaysToKeep;
+
+        if (daysToSubtract > 0) {
+          const currentEnd = new Date(customer.subscription.nextRenewal);
+          const adjustedEnd = new Date(currentEnd.getTime() - (daysToSubtract * 24 * 60 * 60 * 1000));
+          const adjustedEndStr = adjustedEnd.toISOString().split("T")[0];
+
+          await User.findOneAndUpdate(
+            { _id: customer._id },
+            { 
+              "subscription.nextRenewal": adjustedEndStr,
+              "subscription.status": "Active" 
+            }
+          );
+        } else {
+            await User.findOneAndUpdate({ _id: customer._id }, { "subscription.status": "Active" });
+        }
+        
         await PausedMeal.findByIdAndDelete(body.id);
       }
     }
