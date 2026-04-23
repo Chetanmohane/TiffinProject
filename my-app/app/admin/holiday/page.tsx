@@ -57,9 +57,10 @@ export default function AdminHolidayPage() {
     }
   };
 
+  const [holidayToDelete, setHolidayToDelete] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure? This will delete the holiday and REVERT plan extensions for all customers.")) return;
-    
+    setHolidayToDelete(null);
     toast.loading("🔄 Reverting Holiday Extensions...", { id: "revert" });
     
     try {
@@ -193,7 +194,7 @@ export default function AdminHolidayPage() {
                 </div>
 
                 <button 
-                  onClick={() => handleDelete(h._id)}
+                  onClick={() => setHolidayToDelete(h._id)}
                   className="relative z-10 w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-600 hover:text-white transition-all active:scale-90 shadow-sm"
                   title="Delete Holiday & Revert"
                 >
@@ -204,6 +205,36 @@ export default function AdminHolidayPage() {
           )}
         </div>
       </div>
+
+      {/* CUSTOM CONFIRMATION MODAL */}
+      {holidayToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setHolidayToDelete(null)} />
+          <div className="relative bg-white w-full max-w-sm rounded-[2.5rem] p-10 shadow-2xl border border-red-100 flex flex-col items-center text-center animate-in scale-in-95 duration-200">
+             <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-6">
+                <ShieldAlert size={40} />
+             </div>
+             <h3 className="text-xl font-black text-gray-900 mb-3 tracking-tight">Are you sure?</h3>
+             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest leading-relaxed mb-10">
+               Deleting this holiday will <span className="text-red-600">REVERT</span> plan extensions for all customers.
+             </p>
+             <div className="flex flex-col w-full gap-3">
+                <button 
+                  onClick={() => handleDelete(holidayToDelete)}
+                  className="w-full py-4 bg-red-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all active:scale-95 shadow-lg shadow-red-200"
+                >
+                   Yes, Revert & Delete
+                </button>
+                <button 
+                  onClick={() => setHolidayToDelete(null)}
+                  className="w-full py-4 bg-gray-100 text-gray-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all active:scale-95"
+                >
+                   Cancel
+                </button>
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
