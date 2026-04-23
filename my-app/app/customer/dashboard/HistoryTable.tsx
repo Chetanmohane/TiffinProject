@@ -62,8 +62,10 @@ export default function HistoryTable({ history }: HistoryTableProps) {
                 <span
                   className={`text-[10px] font-extrabold px-3 py-1 rounded-full
                   ${
-                    item.status === "Delivered" || item.status === "Success"
+                    item.status === "Delivered" || item.status === "Success" || item.status === "SUCCESS"
                       ? "bg-green-100 text-green-600"
+                      : item.status === "Pending" || item.status === "PENDING"
+                      ? "bg-orange-100 text-orange-600"
                       : "bg-red-100 text-red-500"
                   }`}
                 >
@@ -123,8 +125,10 @@ export default function HistoryTable({ history }: HistoryTableProps) {
                     <span
                       className={`inline-flex px-3 py-1 rounded-full text-[10px] font-extrabold
                       ${
-                        item.status === "Delivered" || item.status === "Success"
+                        item.status === "Delivered" || item.status === "Success" || item.status === "SUCCESS"
                           ? "bg-green-100 text-green-600"
+                          : item.status === "Pending" || item.status === "PENDING"
+                          ? "bg-orange-100 text-orange-600"
                           : "bg-red-100 text-red-500"
                       }`}
                     >
