@@ -782,17 +782,17 @@ const OrderTracker = ({
             key="map-container"
             className="h-72 bg-slate-100 rounded-[2rem] relative overflow-hidden flex items-center justify-center border border-gray-100 shadow-inner"
           >
-             <div id="leaflet-map" className="absolute inset-0 z-0"></div>
+             <div id="leaflet-map" className="absolute inset-0 z-0" style={{ height: '100%', width: '100%', background: '#f8fafc' }}></div>
              
              {/* Overlay for status when no real coordinates yet */}
              {(!currentLocation || !currentLocation.lat || !currentLocation.lng) && (
-               <div className="absolute inset-0 bg-white/70 backdrop-blur-[4px] z-10 flex items-center justify-center p-8 text-center">
+               <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-[2px] z-20 flex items-center justify-center p-8 text-center transition-all">
                   <div className="flex flex-col items-center gap-5">
-                     <div className="w-16 h-16 bg-white rounded-[1.5rem] flex items-center justify-center shadow-xl animate-bounce border-2 border-orange-50">
+                     <div className="w-16 h-16 bg-white rounded-[1.5rem] flex items-center justify-center shadow-2xl animate-bounce border-2 border-orange-100">
                         <span className="text-2xl">📡</span>
                      </div>
-                     <p className="text-[10px] font-black text-gray-500 uppercase leading-relaxed tracking-widest max-w-[200px]">
-                       Awaiting GPS Signal from the Driver...
+                     <p className="text-[11px] font-black text-gray-500 uppercase leading-relaxed tracking-[0.2em] max-w-[220px]">
+                       Connecting to Driver's GPS...
                      </p>
                   </div>
                </div>
@@ -819,72 +819,57 @@ const OrderTracker = ({
                     
                     const mapId = 'leaflet-map';
                     const container = document.getElementById(mapId);
-                    if (!container) return setTimeout(initMap, 200);
+                    if (!container) return setTimeout(initMap, 300);
                     if (container._leaflet_id) return;
 
-                    const driverLat = ${currentLocation?.lat || 23.2599};
-                    const driverLng = ${currentLocation?.lng || 77.4126};
-                    const customerAddress = "${currentAddress || "Bhopal"}";
+                    const dLat = parseFloat("${currentLocation?.lat}") || 23.2599;
+                    const dLng = parseFloat("${currentLocation?.lng}") || 77.4126;
+                    const customerAddress = "${currentAddress || "Bhopal, India"}";
                     
-                    // Create Map
-                    const map = L.map(mapId, { zoomControl: false }).setView([driverLat, driverLng], 14);
+                    const map = L.map(mapId, { zoomControl: false }).setView([dLat, dLng], 14);
                     
-                    // Premium CartoDB Voyager Layer (Cleaner theme)
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                      attribution: '&copy; CartoDB'
-                    }).addTo(map);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
                     const createIcon = (emoji, color) => L.divIcon({
                       className: 'custom-div-icon',
-                      html: \`<div style="background-color:\${color}; width:42px; height:42px; border-radius:14px; display:flex; align-items:center; justify-content:center; border:3px solid white; box-shadow:0 12px 20px -5px rgba(0,0,0,0.3); font-size:22px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">\${emoji}</div>\`,
-                      iconSize: [42, 42],
-                      iconAnchor: [21, 21]
+                      html: \`<div style="background-color:\${color}; width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; border:3px solid white; box-shadow:0 12px 24px -5px rgba(0,0,0,0.3); font-size:24px;">\${emoji}</div>\`,
+                      iconSize: [44, 44],
+                      iconAnchor: [22, 22]
                     });
 
-                    // Markers
-                    const driverMarker = L.marker([driverLat, driverLng], { icon: createIcon('🛵', '#f97316') }).addTo(map);
-                    let homeMarker = null;
-                    let routeLine = L.polyline([], { color: '#f97316', weight: 4, opacity: 0.6, dashArray: '8, 12' }).addTo(map);
+                    const driverMarker = L.marker([dLat, dLng], { icon: createIcon('🛵', '#f97316') }).addTo(map);
+                    let routeLine = L.polyline([], { color: '#f97316', weight: 5, opacity: 0.6, dashArray: '10, 15' }).addTo(map);
 
-                    // Geocode Home
                     const homePos = await geocode(customerAddress);
-                      if (homePos) {
-                        L.marker([homePos.lat, homePos.lng], { icon: createIcon('🏠', '#1e293b') }).addTo(map);
-                        routeLine.setLatLngs([[driverLat, driverLng], [homePos.lat, homePos.lng]]);
-                        map.fitBounds(L.latLngBounds([[driverLat, driverLng], [homePos.lat, homePos.lng]]), { padding: [50, 50] });
-                      }
+                    if (homePos) {
+                      L.marker([homePos.lat, homePos.lng], { icon: createIcon('🏠', '#1e293b') }).addTo(map);
+                      routeLine.setLatLngs([[dLat, dLng], [homePos.lat, homePos.lng]]);
+                      map.fitBounds(L.latLngBounds([[dLat, dLng], [homePos.lat, homePos.lng]]), { padding: [60, 60] });
+                    }
 
-                      // Force resize after init to fix grey box
-                      setTimeout(() => map.invalidateSize(), 500);
+                    setTimeout(() => map.invalidateSize(), 800);
 
-                      window._updateDriverPos = (newLat, newLng) => {
+                    window._updateDriverPos = (newLat, newLng) => {
                       if (!driverMarker) return;
-                      const pos = [newLat, newLng];
-                      driverMarker.setLatLng(pos);
-                      
-                      if (homeMarker) {
-                         const hPos = homeMarker.getLatLng();
-                         routeLine.setLatLngs([pos, [hPos.lat, hPos.lng]]);
-                         // Only auto-refit if driver moves significantly
-                         // map.panTo(pos);
-                      } else {
-                         map.panTo(pos);
-                      }
+                      const nl = parseFloat(newLat), ng = parseFloat(newLng);
+                      driverMarker.setLatLng([nl, ng]);
+                      if (homePos) routeLine.setLatLngs([[nl, ng], [homePos.lat, homePos.lng]]);
                     };
                   }
 
-                  if (!window.L) {
+                  if (!document.getElementById('leaflet-css-link')) {
                     const link = document.createElement('link');
+                    link.id = 'leaflet-css-link';
                     link.rel = 'stylesheet';
                     link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
                     document.head.appendChild(link);
                     
                     const script = document.createElement('script');
                     script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-                    script.onload = initMap;
+                    script.onload = () => setTimeout(initMap, 100);
                     document.head.appendChild(script);
                   } else {
-                    setTimeout(initMap, 100);
+                    setTimeout(initMap, 200);
                   }
                 })();
              `}} />
