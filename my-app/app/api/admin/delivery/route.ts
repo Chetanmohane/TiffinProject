@@ -79,7 +79,7 @@ export async function GET() {
 
     const SiteSettings = (await import("@/models/SiteSettings")).default;
     const settings = await SiteSettings.findOne().lean() as any;
-    const kitchenAddress = settings?.contact?.address || "Indore, India";
+    const kitchenAddress = settings?.contact?.address || "Karond, Bhopal, Madhya Pradesh, India";
 
     return NextResponse.json({ 
       deliveries: list, 

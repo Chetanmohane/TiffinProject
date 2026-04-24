@@ -149,9 +149,9 @@ export async function GET(req: Request) {
 
     const SiteSettings = (await import("@/models/SiteSettings")).default;
     const settings = await SiteSettings.findOne().lean() as any;
-    const kitchenAddress = settings?.contact?.address || "Indore, India";
-    const kitchenLat = settings?.contact?.latitude || 22.7196;
-    const kitchenLng = settings?.contact?.longitude || 75.8577;
+    const kitchenAddress = settings?.contact?.address || "Karond, Bhopal, Madhya Pradesh, India";
+    const kitchenLat = settings?.contact?.latitude || 23.2974;
+    const kitchenLng = settings?.contact?.longitude || 77.4025;
 
     return NextResponse.json({
       kitchenAddress,
