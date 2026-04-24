@@ -1,7 +1,9 @@
 "use client";
-import { Phone, CheckCircle, Clock, MapPin, Truck } from "lucide-react";
+import { Phone, CheckCircle, Clock, MapPin, Truck, Map as MapIcon, X, Navigation, Crosshair } from "lucide-react";
 import toast from "react-hot-toast";
 import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import KitchenMapPicker from "./KitchenMapPicker";
 
 /* ---------------- TYPES ---------------- */
 
@@ -29,9 +31,32 @@ export default function DailyDeliveryPage() {
   const [search, setSearch] = useState("");
   const [kitchenAddress, setKitchenAddress] = useState("Bhopal, India");
   const [savingKitchen, setSavingKitchen] = useState(false);
+  const [mapCoords, setMapCoords] = useState<{lat: number, lng: number} | null>(null);
+  const [isKitchenModalOpen, setIsKitchenModalOpen] = useState(false);
+  const [kitchenForm, setKitchenForm] = useState({
+    hNo: "",
+    colony: "",
+    area: "",
+    city: "Bhopal",
+    state: "Madhya Pradesh",
+    pincode: ""
+  });
+  const [showMapPicker, setShowMapPicker] = useState(false);
+
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    if (isKitchenModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isKitchenModalOpen]);
 
   const IST_OFFSET = 5.5 * 60 * 60 * 1000;
   const todayStr = new Date(new Date().getTime() + IST_OFFSET).toISOString().split("T")[0];
+
+  const [serverDate, setServerDate] = useState("");
 
   const fetchDeliveries = () => {
     setLoading(true);
@@ -39,21 +64,33 @@ export default function DailyDeliveryPage() {
       .then(res => res.json())
       .then(data => {
         setDeliveries(data.deliveries || []);
+        if (data.date) setServerDate(data.date);
         if (data.kitchenAddress) setKitchenAddress(data.kitchenAddress);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   };
 
-  const saveKitchenAddress = async () => {
+  const saveKitchenAddress = async (manualAddress?: string, coords?: { lat: number, lng: number }) => {
     setSavingKitchen(true);
+    const finalAddress = manualAddress || kitchenAddress;
     try {
       const res = await fetch("/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contact: { address: kitchenAddress } })
+        body: JSON.stringify({ 
+          contact: { 
+            address: finalAddress,
+            latitude: coords?.lat,
+            longitude: coords?.lng
+          } 
+        })
       });
-      if (res.ok) toast.success("Kitchen Location Fixed! 📍");
+      if (res.ok) {
+        setKitchenAddress(finalAddress);
+        toast.success("Kitchen Location Fixed! 📍");
+        setIsKitchenModalOpen(false);
+      }
     } catch (e) {
       toast.error("Failed to save location");
     } finally {
@@ -61,8 +98,121 @@ export default function DailyDeliveryPage() {
     }
   };
 
+  const handleLiveLocation = () => {
+    if (!('geolocation' in navigator)) return toast.error("Geolocation not supported");
+    
+    toast.loading("Fetching live address details...");
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
+        const data = await res.json();
+        toast.dismiss();
+        
+        if (data.address || data.display_name) {
+          const addr = data.address || {};
+          const displayName = data.display_name || "";
+          const parts = displayName.split(',').map(p => p.trim());
+          
+          setKitchenForm({
+            hNo: addr.house_number || addr.building || addr.office || addr.house_name || "",
+            colony: addr.suburb || addr.neighbourhood || addr.residential || addr.community || addr.subdistrict || parts[1] || "",
+            area: addr.road || addr.pedestrian || addr.path || addr.industrial || addr.commercial || parts[0] || "",
+            city: addr.city || addr.town || addr.village || addr.municipality || addr.county || parts[2] || "Bhopal",
+            state: addr.state || addr.region || parts[3] || "Madhya Pradesh",
+            pincode: addr.postcode || ""
+          });
+          toast.success("GPS Data Received! 📍");
+        }
+      } catch (e) {
+        toast.dismiss();
+        toast.error("Could not resolve address details. Please fill manually.");
+      }
+    }, () => {
+      toast.dismiss();
+      toast.error("GPS access denied");
+    });
+  };
+
+  const initMapPicker = () => {
+    if (!('geolocation' in navigator)) return;
+    setShowMapPicker(true);
+    
+    setTimeout(() => {
+        const container = document.getElementById('kitchen-map-picker');
+        if (!container || !window.L || container._leaflet_id) {
+           if (container?._leaflet_id) {
+              const map = container._leaflet_map; 
+              if (map) {
+                 map.invalidateSize();
+                 navigator.geolocation.getCurrentPosition((pos) => {
+                    map.setView([pos.coords.latitude, pos.coords.longitude], 16);
+                 });
+              }
+           }
+           return;
+        }
+
+        navigator.geolocation.getCurrentPosition((pos) => {
+           const lat = pos.coords.latitude;
+           const lng = pos.coords.longitude;
+           const map = L.map('kitchen-map-picker', { 
+             zoomControl: false,
+             attributionControl: false 
+           }).setView([lat, lng], 16);
+           
+           container._leaflet_map = map; // Store for ref
+           
+           L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(map);
+           const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+           
+           // CRITICAL: Fix grey box issue
+           setTimeout(() => map.invalidateSize(), 400);
+
+           const updateFromPos = async (lt: number, lg: number) => {
+              try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lt}&lon=${lg}`);
+                const data = await res.json();
+                if (data.display_name) {
+                   const addr = data.address || {};
+                   const parts = data.display_name.split(',').map((p:any) => p.trim());
+                   setKitchenForm({
+                      hNo: addr.house_number || addr.building || "",
+                      colony: addr.suburb || addr.neighbourhood || addr.residential || parts[1] || "",
+                      area: addr.road || addr.pedestrian || parts[0] || "",
+                      city: addr.city || addr.town || addr.village || parts[2] || "Bhopal",
+                      state: addr.state || parts[3] || "Madhya Pradesh",
+                      pincode: addr.postcode || ""
+                   });
+                }
+              } catch(e) {}
+           };
+
+           updateFromPos(lat, lng);
+           marker.on('dragend', (e) => {
+              const { lat, lng } = e.target.getLatLng();
+              updateFromPos(lat, lng);
+           });
+        });
+    }, 500);
+  };
+
   useEffect(() => {
     fetchDeliveries();
+    
+    // Auto-refresh every 30 seconds for live updates
+    const interval = setInterval(() => {
+      // Fetch without global loading spinner for a smoother experience
+      fetch("/api/admin/delivery")
+        .then(res => res.json())
+        .then(data => {
+          setDeliveries(data.deliveries || []);
+          if (data.date) setServerDate(data.date);
+          if (data.kitchenAddress) setKitchenAddress(data.kitchenAddress);
+        })
+        .catch(err => console.error("Auto-refresh failed", err));
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const updateStatus = async (item: DeliveryCustomer, newStatus: string) => {
@@ -184,33 +334,43 @@ export default function DailyDeliveryPage() {
     <div className="space-y-8">
       <div className="max-w-7xl mx-auto">
         {/* HEADER */}
-        <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900">🚚 Daily Delivery List</h1>
-          <p className="text-sm font-bold text-gray-500 mt-1">
-            Live schedule for <b className="text-gray-900">{todayStr}</b>
-          </p>
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-black text-gray-900">🚚 Daily Delivery List</h1>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-600 rounded-full border border-green-100">
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest">Live</span>
+              </div>
+            </div>
+            <p className="text-sm font-bold text-gray-500 mt-1">
+              Showing all active plans for <b className="text-gray-900">{serverDate || todayStr}</b>
+            </p>
+          </div>
+          <button 
+            onClick={fetchDeliveries}
+            className="px-6 py-3 bg-white border border-gray-200 text-gray-900 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-gray-50 transition-all flex items-center gap-2 shadow-sm"
+          >
+            <Clock size={16} /> Refresh Now
+          </button>
         </div>
 
         {/* KITCHEN CONFIG */}
-        <div className="mb-8 bg-orange-50 border border-orange-100 rounded-[2rem] p-6 flex flex-col md:flex-row items-center gap-4">
-           <div className="bg-white p-3 rounded-2xl text-orange-600 shadow-sm">
-              <MapPin size={24} />
+        <div className="mb-8 bg-orange-50 border border-orange-100 rounded-[2.5rem] p-8 flex flex-col md:flex-row items-center gap-6 shadow-sm">
+           <div className="bg-white w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-orange-600 shadow-md border border-orange-50">
+              <MapIcon size={30} />
            </div>
-           <div className="flex-1">
-              <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Kitchen / Restaurant Location (Dispatch Origin)</p>
-              <input 
-                value={kitchenAddress}
-                onChange={(e) => setKitchenAddress(e.target.value)}
-                placeholder="Enter Restaurant Address..."
-                className="w-full bg-transparent border-none outline-none font-black text-slate-800 p-0 text-sm placeholder:text-slate-300"
-              />
+           <div className="flex-1 w-full text-center md:text-left">
+              <p className="text-[10px] font-black text-orange-600 uppercase tracking-[0.2em] mb-2">Kitchen / Restaurant Origin (Live Tracking Source)</p>
+              <h2 className="text-xl font-black text-slate-900 leading-tight">
+                {kitchenAddress || "Location Not Configured"}
+              </h2>
            </div>
            <button 
-             onClick={saveKitchenAddress}
-             disabled={savingKitchen}
-             className="px-8 py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all disabled:opacity-50"
+             onClick={() => setIsKitchenModalOpen(true)}
+             className="w-full md:w-auto px-10 py-5 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-orange-600 transition-all flex items-center justify-center gap-3 shadow-xl"
            >
-             {savingKitchen ? "Saving..." : "Fix Origin"}
+             <Navigation size={18} /> Update Location
            </button>
         </div>
 
@@ -477,14 +637,11 @@ export default function DailyDeliveryPage() {
                                                   Deliver
                                                </button>
                                                <button 
-                                                  onClick={() => simulateLiveTracking(item)}
-                                                  className="px-4 py-2.5 bg-purple-600 text-white text-[10px] font-black uppercase rounded-xl hover:bg-purple-700 transition-all shadow-md"
-                                                  title="Simulate GPS Movement"
-                                               >
-                                                  📍 SIM
-                                               </button>
-                                               <button 
-                                                  onClick={() => setActiveTrackingId(activeTrackingId === (item.deliveryId || item.id) ? null : (item.deliveryId || item.id))}
+                                                  onClick={async () => {
+                                                     const deliveryId = item.deliveryId || item.id;
+                                                     if (item.status !== "Out for Delivery") await updateStatus(item, "Out for Delivery");
+                                                     setActiveTrackingId(activeTrackingId === deliveryId ? null : deliveryId);
+                                                  }}
                                                   className={`px-4 py-2.5 text-white text-[10px] font-black uppercase rounded-xl transition-all shadow-md animate-pulse ${
                                                     activeTrackingId === (item.deliveryId || item.id) ? 'bg-red-600' : 'bg-green-600'
                                                   }`}
@@ -576,13 +733,11 @@ export default function DailyDeliveryPage() {
                                        Mark Delivered
                                     </button>
                                     <button 
-                                       onClick={() => simulateLiveTracking(item)}
-                                       className="flex-1 py-4 bg-purple-600 text-white text-[11px] font-black uppercase rounded-2xl shadow-xl"
-                                    >
-                                       📍 SIM GPS
-                                    </button>
-                                    <button 
-                                       onClick={() => setActiveTrackingId(activeTrackingId === (item.deliveryId || item.id) ? null : (item.deliveryId || item.id))}
+                                       onClick={async () => {
+                                          const deliveryId = item.deliveryId || item.id;
+                                          if (item.status !== "Out for Delivery") await updateStatus(item, "Out for Delivery");
+                                          setActiveTrackingId(activeTrackingId === deliveryId ? null : deliveryId);
+                                       }}
                                        className={`flex-1 py-4 text-white text-[11px] font-black uppercase rounded-2xl shadow-xl animate-pulse ${
                                           activeTrackingId === (item.deliveryId || item.id) ? 'bg-red-600' : 'bg-green-600'
                                        }`}
@@ -606,6 +761,107 @@ export default function DailyDeliveryPage() {
               </div>
            )}
         </div>
+
+        <AnimatePresence>
+          {isKitchenModalOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+               <motion.div 
+                 initial={{ opacity: 0 }}
+                 animate={{ opacity: 1 }}
+                 exit={{ opacity: 0 }}
+                 className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+                 onClick={() => setIsKitchenModalOpen(false)}
+               />
+               <motion.div 
+                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                 animate={{ opacity: 1, scale: 1, y: 0 }}
+                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                 className="relative bg-white w-full max-w-lg rounded-[3rem] shadow-2xl p-8 sm:p-12 overflow-hidden border border-slate-100"
+               >
+                  <div className="flex items-center justify-between mb-8">
+                     <div className="space-y-1">
+                        <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">Setup Origin</p>
+                        <h2 className="text-3xl font-black text-slate-900">Kitchen Details</h2>
+                     </div>
+                     <button onClick={() => setIsKitchenModalOpen(false)} className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center hover:bg-orange-50 hover:text-orange-600 transition-all font-bold shadow-sm">✕</button>
+                  </div>
+
+                  <div className="space-y-6">
+                      {!showMapPicker ? (
+                        <>
+                          <KitchenMapPicker 
+                            onLocationSelect={(lat, lng, details) => {
+                              setMapCoords({ lat, lng });
+                              setKitchenForm({
+                                hNo: details.hNo || kitchenForm.hNo,
+                                pincode: details.pincode || kitchenForm.pincode,
+                                colony: details.area || kitchenForm.colony,
+                                area: details.area || kitchenForm.area,
+                                city: details.city || kitchenForm.city,
+                                state: details.state || kitchenForm.state
+                              });
+                              toast.success("Location Pin Dropped! 📍");
+                            }} 
+                          />
+
+                          <button 
+                             onClick={() => setShowMapPicker(true)} 
+                             className="w-full py-5 bg-black text-white rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:bg-orange-600 transition-all"
+                          >
+                             Review & confirm details
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">House/Shop No.</label>
+                                <input value={kitchenForm.hNo} onChange={(e) => setKitchenForm({...kitchenForm, hNo: e.target.value})} placeholder="Ex: 12-B" className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold outline-none" />
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Pincode</label>
+                                <input value={kitchenForm.pincode} onChange={(e) => setKitchenForm({...kitchenForm, pincode: e.target.value})} placeholder="Ex: 462001" className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold outline-none" />
+                             </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Colony</label>
+                                <input value={kitchenForm.colony} onChange={(e) => setKitchenForm({...kitchenForm, colony: e.target.value})} placeholder="Ex: Arera Colony" className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold outline-none" />
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Area / Road</label>
+                                <input value={kitchenForm.area} onChange={(e) => setKitchenForm({...kitchenForm, area: e.target.value})} placeholder="Ex: Karond Choraha" className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold outline-none" />
+                             </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">City</label>
+                                <input value={kitchenForm.city} onChange={(e) => setKitchenForm({...kitchenForm, city: e.target.value})} placeholder="Ex: Bhopal" className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold outline-none" />
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">State</label>
+                                <input value={kitchenForm.state} onChange={(e) => setKitchenForm({...kitchenForm, state: e.target.value})} placeholder="Ex: MP" className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-bold outline-none" />
+                             </div>
+                          </div>
+                          <button 
+                             onClick={() => {
+                                const addr = `${kitchenForm.hNo ? kitchenForm.hNo + ', ' : ''}${kitchenForm.colony ? kitchenForm.colony + ', ' : ''}${kitchenForm.area}, ${kitchenForm.city}, ${kitchenForm.state} - ${kitchenForm.pincode}`;
+                                saveKitchenAddress(addr, mapCoords || undefined);
+                             }}
+                             disabled={savingKitchen}
+                             className="w-full py-5 bg-slate-900 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] hover:bg-orange-600 transition-all mt-4 shadow-2xl disabled:opacity-50 disabled:grayscale"
+                           >
+                              {savingKitchen ? "SAVING..." : "CONFIRM KITCHEN LOCATION"}
+                           </button>
+                           <button onClick={() => setShowMapPicker(false)} className="w-full text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-orange-600 transition-all mt-4">← Back to Map</button>
+                        </>
+                      )}
+
+                   </div>
+               </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

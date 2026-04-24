@@ -150,9 +150,12 @@ export async function GET(req: Request) {
     const SiteSettings = (await import("@/models/SiteSettings")).default;
     const settings = await SiteSettings.findOne().lean() as any;
     const kitchenAddress = settings?.contact?.address || "Indore, India";
+    const kitchenLat = settings?.contact?.latitude || 22.7196;
+    const kitchenLng = settings?.contact?.longitude || 75.8577;
 
     return NextResponse.json({
       kitchenAddress,
+      kitchenLocation: { lat: kitchenLat, lng: kitchenLng },
       user: {
         name: customer.name,
         subscriptionStatus: liveStatus,

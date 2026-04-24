@@ -6,13 +6,14 @@ import React, { useState, useEffect } from "react";
 /* ---------------- TYPES ---------------- */
 
 interface PauseEntry {
-  id: number;
+  id: string; // Changed from number to string for Mongo IDs
   customerName: string;
   phone: string;
   planName: string;
   pauseFrom: string;
   pauseTo: string;
   reason?: string;
+  isGlobal?: boolean;
 }
 
 /* ---------------- COMPONENT ---------------- */
@@ -40,17 +41,18 @@ export default function PauseManagementPage() {
   const isPausedToday = (from: string, to: string) =>
     today >= from && today <= to;
 
-  const resumeDelivery = async (id: number) => {
+  const resumeDelivery = async (id: string, isGlobal?: boolean) => {
     try {
       setPausedCustomers((prev) => prev.filter((entry) => entry.id !== id));
       const res = await fetch("/api/admin/pause", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "resume", id })
+        body: JSON.stringify({ action: "resume", id, isGlobal })
       });
       if (!res.ok) {
         toast.error("Failed to resume delivery on server");
-        // Optionally refresh list if it fails
+      } else {
+        toast.success("Delivery resumed successfully!");
       }
     } catch (err) {
       console.error(err);
@@ -107,7 +109,7 @@ export default function PauseManagementPage() {
               )}
 
               {pausedCustomers?.map((entry) => {
-                const pausedToday = isPausedToday(
+                const pausedToday = entry.isGlobal || isPausedToday(
                   entry.pauseFrom,
                   entry.pauseTo,
                 );
@@ -142,7 +144,7 @@ export default function PauseManagementPage() {
                     <td className="px-4 py-4 italic">{entry.reason || "—"}</td>
                     <td className="px-4 py-4">
                       <button
-                         onClick={() => resumeDelivery(entry.id)}
+                         onClick={() => resumeDelivery(entry.id, entry.isGlobal)}
                         className="px-4 py-1.5 rounded-lg bg-orange-500 text-white text-xs font-semibold hover:bg-orange-600 transition"
                       >
                         Resume
@@ -164,7 +166,7 @@ export default function PauseManagementPage() {
           )}
 
           {pausedCustomers?.map((entry) => {
-            const pausedToday = isPausedToday(entry.pauseFrom, entry.pauseTo);
+            const pausedToday = entry.isGlobal || isPausedToday(entry.pauseFrom, entry.pauseTo);
 
             return (
               <div
@@ -198,7 +200,7 @@ export default function PauseManagementPage() {
                 </div>
 
                 <button
-                  onClick={() => resumeDelivery(entry.id)}
+                  onClick={() => resumeDelivery(entry.id, entry.isGlobal)}
                   className="w-full mt-2 px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition"
                 >
                   Resume Delivery

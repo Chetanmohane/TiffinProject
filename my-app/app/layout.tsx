@@ -18,6 +18,7 @@ export default function RootLayout({
       <body
         className="antialiased m-0 p-0 overflow-x-hidden font-sans"
       >
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossOrigin="" />
         <IdleTimer />
         {/* <Navbar /> */}
         {children}

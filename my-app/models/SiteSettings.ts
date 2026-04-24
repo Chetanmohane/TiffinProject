@@ -48,6 +48,8 @@ export interface ISiteSettings extends Document {
     phone: string;
     email: string;
     address: string;
+    latitude?: number;
+    longitude?: number;
     instagram: string;
     facebook: string;
     footerMsg: string;
@@ -104,6 +106,8 @@ const SiteSettingsSchema = new Schema<ISiteSettings>(
       phone: { type: String, default: "+91 91316 48092" },
       email: { type: String, default: "support@annapurnadelight.com" },
       address: { type: String, default: "Indore, India" },
+      latitude: { type: Number, default: 22.7196 },
+      longitude: { type: Number, default: 75.8577 },
       instagram: { type: String, default: "#" },
       facebook: { type: String, default: "#" },
       footerMsg: { type: String, default: "Subscribe for daily menu updates & offers." },

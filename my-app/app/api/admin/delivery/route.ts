@@ -9,10 +9,10 @@ export async function GET() {
     const IST_OFFSET = 5.5 * 60 * 60 * 1000;
     const today = new Date(new Date().getTime() + IST_OFFSET).toISOString().split("T")[0];
 
-    // 1. Fetch all customers with an active subscription
+    // 1. Fetch all customers with an active or paused subscription
     const customers = await User.find({ 
       role: "customer", 
-      "subscription.status": "Active" 
+      "subscription.status": { $in: ["Active", "Paused"] } 
     }).lean() as any[];
 
     const PausedMeal = (await import("@/models/PausedMeal")).default;
@@ -25,8 +25,8 @@ export async function GET() {
       if (!sub) continue;
 
       // Skip if totally expired by date or meals
-      const renewalDate = new Date(sub.nextRenewal);
-      if (renewalDate < new Date() || sub.mealsLeft <= 0) continue;
+      // Use today's date string for comparison to avoid timezone/time-of-day issues
+      if (sub.nextRenewal < today || sub.mealsLeft <= 0) continue;
 
       // Check pause status for today
       const isPausedToday = await PausedMeal.findOne({
@@ -52,8 +52,10 @@ export async function GET() {
           (d) => d.customerId.toString() === customer._id.toString() && d.type === mType
         );
 
+        const isGloballyPaused = sub.status === "Paused";
+        
         let finalStatus = "Scheduled";
-        if (isPausedToday) {
+        if (isPausedToday || isGloballyPaused) {
           finalStatus = "Paused";
         } else if (existingDelivery) {
           finalStatus = existingDelivery.status;
@@ -69,7 +71,7 @@ export async function GET() {
           type: mType, // The specific slot (Lunch or Dinner)
           planType: sub.mealType || "Both", // The overall plan (Lunch, Dinner, or Both)
           status: finalStatus,
-          paused: !!isPausedToday,
+          paused: !!isPausedToday || isGloballyPaused,
           mealsLeft: sub.mealsLeft || 0,
         });
       }
