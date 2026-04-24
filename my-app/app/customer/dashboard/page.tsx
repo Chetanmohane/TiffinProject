@@ -1,47 +1,74 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Package, Shield, Home } from "lucide-react";
-import StatCard from "./StatCard";
-import MealHero from "./MealHero";
-import HistoryTable from "./HistoryTable";
-import OrderTracker from "./OrderTracker";
-import { motion, AnimatePresence } from "framer-motion";
 import { 
-  X, 
-  ArrowRight, 
-  ShieldCheck, 
-  Zap 
+  Package, 
+  MapPin, 
+  ChevronRight, 
+  Clock, 
+  Wallet, 
+  Calendar,
+  CheckCircle,
+  Truck,
+  ArrowRight,
+  Shield,
+  Home,
+  MessageSquare,
+  CreditCard,
+  Settings
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import HistoryTable from "./HistoryTable";
+import MealHero from "./MealHero";
+import StatCard from "./StatCard";
+import OrderTracker from "./OrderTracker";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
+/* ================= TYPES ================= */
+interface DashboardData {
+  user: {
+    name: string;
+    email: string;
+    balance: number;
+    hasActivePlan: boolean;
+    activePlanName: string;
+    subscriptionStatus: string;
+    mealsLeft: number;
+    totalMeals: number;
+    startDate: string;
+    nextRenewal: string;
+    pauseDetails?: { from: string; to: string; reason: string };
+  };
+  todayMeal: any;
+  todayDinner: any;
+  kitchenAddress?: string;
+  kitchenLocation?: { lat: number; lng: number };
+  quickStats: any[];
+  holiday?: { title: string; startDate: string; endDate: string; reason: string };
+}
 
-export default function Order() {
+export default function Dashboard() {
   const router = useRouter();
-  const [dashboardData, setDashboardData] = useState<any>(null);
-  const [historyData, setHistoryData] = useState<any>(null);
-  const [availablePlans, setAvailablePlans] = useState<any[]>([]);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [historyData, setHistoryData] = useState([]);
+  const [availablePlans, setAvailablePlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState("customer");
   const [activeTab, setActiveTab] = useState<"Lunch" | "Dinner">("Lunch");
-
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour >= 15) setActiveTab("Dinner");
-  }, []);
+  
+  // Checkout State
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [selectedMealType, setSelectedMealType] = useState<"Lunch" | "Dinner" | "Both">("Both");
   const [checkoutStep, setCheckoutStep] = useState(1);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
-  const [deliveryInfo, setDeliveryInfo] = useState({ 
-    name: "", 
-    houseNo: "", 
-    area: "", 
-    pincode: "",
-    phone: "" 
+  const [deliveryInfo, setDeliveryInfo] = useState({
+    name: "",
+    phone: "",
+    houseNo: "",
+    area: "",
+    pincode: ""
   });
 
   useEffect(() => {
@@ -75,7 +102,7 @@ export default function Order() {
         const plansData = await plansRes.json();
         
         setDashboardData(dash);
-        setHistoryData(hist.history);
+        setHistoryData(hist.history || []);
         setAvailablePlans(plansData.plans || []);
         setRole(user?.role || "customer");
         window.dispatchEvent(new Event("walletUpdate"));
@@ -87,8 +114,8 @@ export default function Order() {
     }
     loadData();
 
-    // Live Polling for Tracking
-    const pollInterval = setInterval(loadData, 15000);
+    // High-frequency polling for real-time tracking (Swiggy-style)
+    const pollInterval = setInterval(loadData, 6000);
     return () => clearInterval(pollInterval);
   }, [router]);
 
@@ -113,7 +140,6 @@ export default function Order() {
 
     setLoadingCheckout(true);
     try {
-      // Create order securely
       const res = await fetch("/api/customer/payment/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -132,7 +158,6 @@ export default function Order() {
         return;
       }
 
-      // Initialize Cashfree
       if (!(window as any).Cashfree) {
          await new Promise((resolve, reject) => {
              const script = document.createElement("script");
@@ -161,17 +186,17 @@ export default function Order() {
           }
       });
     } catch (err: any) {
-      toast.error(`❌ Error: ${err.message}`);
-      setLoadingCheckout(false);
+       toast.error("Payment initiation failed");
+       setLoadingCheckout(false);
     }
-  };
+  }
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="flex items-center justify-center min-h-[70vh]">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-100 border-t-orange-500"></div>
-          <p className="text-sm font-bold text-gray-500">Loading your dashboard...</p>
+           <div className="w-16 h-16 border-t-4 border-orange-500 border-solid rounded-full animate-spin"></div>
+           <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 animate-pulse">Initializing Dashboard...</p>
         </div>
       </div>
     );
@@ -184,7 +209,7 @@ export default function Order() {
         <div>
            <p className="text-[10px] font-black text-orange-600 uppercase tracking-[0.2em] mb-2 px-1">Customer Dashboard</p>
            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 tracking-tight leading-none">
-             Welcome Back, <span className="text-orange-500">{dashboardData?.user?.name?.split(' ')[0] || "Chetan"}</span> 👋
+             Welcome Back, <span className="text-orange-500">{dashboardData?.user?.name?.split(' ')[0] || "User"}</span> 👋
            </h1>
            <p className="text-sm font-bold text-gray-400 mt-2 px-1">Your healthy meals are just a click away.</p>
         </div>
@@ -225,7 +250,6 @@ export default function Order() {
                 {dashboardData.holiday.reason || "The kitchen is closed. All plans have been automatically extended."}
               </p>
            </div>
-           {/* Decorative pattern */}
            <div className="absolute -right-10 -top-10 w-40 h-40 bg-orange-500/10 rounded-full blur-3xl pointer-events-none group-hover:bg-orange-500/20 transition-colors" />
         </div>
       )}
@@ -250,24 +274,19 @@ export default function Order() {
            >
               Manage Pause
            </Link>
-           {/* Decorative design */}
            <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
         </div>
       )}
 
-      {/* Hero & Quick Actions Grid */}
       {/* Hero & Subscription Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
-        {/* TOP HERO SECTION: MEAL VIEW (2/3) */}
         <div className="lg:col-span-2">
           <div className="rounded-[3rem] shadow-2xl shadow-gray-200/40 overflow-hidden h-full">
             <MealHero meal={dashboardData?.todayMeal} dinner={dashboardData?.todayDinner} />
           </div>
         </div>
         
-        {/* TOP HERO SECTION: SUBSCRIPTION (1/3) */}
         <div className="lg:col-span-1">
-          {/* Plan Summary Card */}
           <div className="h-full bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800 rounded-[3rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-gray-400/20 group">
              <div className="relative z-10 h-full flex flex-col">
                 <div className="flex items-center gap-2 mb-6">
@@ -370,12 +389,12 @@ export default function Order() {
                                {dashboardData?.user?.subscriptionStatus === 'Active' ? 'Upgrade' : 'Buy Plan'}
                             </button>
                          </div>
-                     </div>
-                  </div>
-                  <div className="absolute -bottom-10 -right-10 text-white/[0.03] transform -rotate-12 pointer-events-none group-hover:scale-110 group-hover:rotate-0 transition-all duration-700">
-                     <Package size={220} />
-                  </div>
-               </div>
+                      </div>
+                   </div>
+                   <div className="absolute -bottom-10 -right-10 text-white/[0.03] transform -rotate-12 pointer-events-none group-hover:scale-110 group-hover:rotate-0 transition-all duration-700">
+                      <Package size={220} />
+                   </div>
+                </div>
             </div>
       </div>
 
@@ -395,44 +414,26 @@ export default function Order() {
 
       {/* QUICK ACTIONS ROW */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mt-10">
-        <Action 
-          label="Menu Card" 
-          icon="🍽️" 
-          link="/customer/dashboard/menu" 
-          gradient="from-orange-500 to-amber-600" 
-        />
+        <Action label="Menu Card" icon="🍽️" link="/customer/dashboard/menu" gradient="from-orange-500 to-amber-600" />
         <Action 
           label={(dashboardData?.user?.subscriptionStatus === 'Expired' || dashboardData?.user?.subscriptionStatus === 'Inactive') ? "No Active Plan" : "Pause Meal"}
           icon="⏸️" 
           link={ (dashboardData?.user?.subscriptionStatus === 'Expired' || dashboardData?.user?.subscriptionStatus === 'Inactive') ? "#" : "/customer/pause-meal"} 
           onClick={() => {
             if (dashboardData?.user?.subscriptionStatus === 'Expired' || dashboardData?.user?.subscriptionStatus === 'Inactive') {
-               import("react-hot-toast").then(t => t.default.error("Please buy a plan first to pause the service."));
+               toast.error("Please buy a plan first to pause the service.");
             }
           }}
           gradient={ (dashboardData?.user?.subscriptionStatus === 'Expired' || dashboardData?.user?.subscriptionStatus === 'Inactive') ? "from-gray-400 to-gray-500 opacity-50" : "from-rose-500 to-red-600"} 
         />
-        <Action 
-          label="Payments" 
-          icon="💳" 
-          link="/customer/dashboard/payments" 
-          gradient="from-fuchsia-600 to-pink-600" 
-        />
-        <Action 
-          label="Settings" 
-          icon="⚙️" 
-          link="/customer/settings" 
-          gradient="from-emerald-500 to-teal-600" 
-        />
+        <Action label="Payments" icon="💳" link="/customer/dashboard/payments" gradient="from-fuchsia-600 to-pink-600" />
+        <Action label="Settings" icon="⚙️" link="/customer/settings" gradient="from-emerald-500 to-teal-600" />
       </div>
 
       {/* STATS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 tracking-tight">
         {dashboardData?.quickStats?.filter((s: any) => s.title !== 'Wallet Balance' && s.title !== 'Total Balance').map((stat: any, idx: number) => (
-          <StatCard 
-            key={idx} 
-            {...stat} 
-            onClick={() => {
+          <StatCard key={idx} {...stat} onClick={() => {
               if (stat.title === 'Active Plan') {
                  const target = document.getElementById('tailored-plans');
                  if (target) target.scrollIntoView({ behavior: 'smooth' });
@@ -442,6 +443,7 @@ export default function Order() {
         ))}
       </div>
 
+      {/* TAILORED PLANS */}
       <div className="pt-10" id="tailored-plans">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10 px-1">
           <div>
@@ -461,7 +463,7 @@ export default function Order() {
                 <h3 className="text-xl font-black text-gray-900 mb-2 px-1">{plan.name}</h3>
                 <div className="flex items-baseline gap-1 mb-8 px-1">
                     <span className="text-2xl font-black text-orange-600">₹{plan.price}</span>
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">/ {plan.duration} days intensive</span>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">/ {plan.duration} days</span>
                 </div>
                 <div className="mt-auto">
                     <button 
@@ -498,37 +500,17 @@ export default function Order() {
       <AnimatePresence>
         {selectedPlan && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-gray-900/60 backdrop-blur-md"
-              onClick={() => setSelectedPlan(null)}
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative bg-white w-full max-w-xl rounded-[2.5rem] sm:rounded-[3rem] shadow-2xl overflow-hidden p-6 sm:p-12 border border-gray-100 max-h-[90vh] overflow-y-auto"
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-gray-900/60 backdrop-blur-md" onClick={() => setSelectedPlan(null)} />
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white w-full max-w-xl rounded-[2.5rem] sm:rounded-[3rem] shadow-2xl overflow-hidden p-6 sm:p-12 border border-gray-100 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-start mb-8">
                 <div>
-                  <span className="px-3 py-1 bg-orange-100 text-orange-600 text-[10px] font-black uppercase tracking-widest rounded-lg mb-2 inline-block">
-                    Step {checkoutStep} of 2
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
-                    {checkoutStep === 1 ? "Delivery Details 🚚" : "Payment 💳"}
-                  </h2>
+                  <span className="px-3 py-1 bg-orange-100 text-orange-600 text-[10px] font-black uppercase tracking-widest rounded-lg mb-2 inline-block">Step {checkoutStep} of 2</span>
+                  <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">{checkoutStep === 1 ? "Delivery Details 🚚" : "Payment 💳"}</h2>
                 </div>
-                <button 
-                  onClick={() => setSelectedPlan(null)}
-                  className="w-10 h-10 bg-gray-50 text-gray-400 rounded-full flex items-center justify-center hover:bg-orange-50 hover:text-orange-500 transition-all font-bold"
-                >
-                  ✕
-                </button>
+                <button onClick={() => setSelectedPlan(null)} className="w-10 h-10 bg-gray-50 text-gray-400 rounded-full flex items-center justify-center hover:bg-orange-50 hover:text-orange-500 transition-all font-bold">✕</button>
               </div>
 
-              {/* Meal Selection */}
               <div className="mb-8 p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">Select Meal Type</p>
                   <div className="grid grid-cols-3 gap-2">
@@ -537,13 +519,10 @@ export default function Order() {
                         { id: 'Dinner', label: 'Dinner', price: selectedPlan.dinnerPrice || (selectedPlan.price / 2) },
                         { id: 'Both', label: 'Both', price: selectedPlan.bothPrice || selectedPlan.price }
                     ].map((option) => (
-                        <button
-                          key={option.id}
-                          onClick={() => setSelectedMealType(option.id as any)}
-                          className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all ${selectedMealType === option.id ? 'bg-orange-500 border-orange-500 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500 hover:border-orange-200'}`}
-                        >
+                        <button key={option.id} onClick={() => setSelectedMealType(option.id as any)}
+                          className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all \${selectedMealType === option.id ? 'bg-orange-500 border-orange-500 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500 hover:border-orange-200'}`}>
                           <span className="text-[10px] font-black uppercase tracking-tighter">{option.label}</span>
-                          <span className={`text-xs font-black ${selectedMealType === option.id ? 'text-white' : 'text-slate-900'}`}>₹{option.price}</span>
+                          <span className={`text-xs font-black \${selectedMealType === option.id ? 'text-white' : 'text-slate-900'}`}>₹{option.price}</span>
                         </button>
                     ))}
                   </div>
@@ -551,61 +530,18 @@ export default function Order() {
 
               {checkoutStep === 1 ? (
                 <div className="space-y-4 mb-8">
-                  <input 
-                    type="text"
-                    value={deliveryInfo.name}
-                    onChange={(e) => setDeliveryInfo({...deliveryInfo, name: e.target.value})}
-                    placeholder="Receiver Name"
-                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none ring-orange-500/20 focus:ring-2"
-                  />
-                  <input 
-                    type="text"
-                    value={deliveryInfo.phone}
-                    maxLength={10}
-                    onChange={(e) => setDeliveryInfo({...deliveryInfo, phone: e.target.value.replace(/\D/g, '')})}
-                    placeholder="10-Digit Contact"
-                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none ring-orange-500/20 focus:ring-2"
-                  />
+                  <input type="text" value={deliveryInfo.name} onChange={(e) => setDeliveryInfo({...deliveryInfo, name: e.target.value})} placeholder="Receiver Name" className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-orange-500/20" />
+                  <input type="text" value={deliveryInfo.phone} maxLength={10} onChange={(e) => setDeliveryInfo({...deliveryInfo, phone: e.target.value.replace(/\D/g, '')})} placeholder="10-Digit Contact" className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-orange-500/20" />
                   <div className="grid grid-cols-2 gap-4">
-                    <input 
-                      type="text"
-                      value={deliveryInfo.houseNo}
-                      onChange={(e) => setDeliveryInfo({...deliveryInfo, houseNo: e.target.value})}
-                      placeholder="Flat/House No."
-                      className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none ring-orange-500/20 focus:ring-2"
-                    />
-                    <input 
-                      type="text"
-                      value={deliveryInfo.pincode}
-                      maxLength={6}
-                      onChange={(e) => setDeliveryInfo({...deliveryInfo, pincode: e.target.value.replace(/\D/g, '')})}
-                      placeholder="Pincode"
-                      className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none ring-orange-500/20 focus:ring-2"
-                    />
+                    <input type="text" value={deliveryInfo.houseNo} onChange={(e) => setDeliveryInfo({...deliveryInfo, houseNo: e.target.value})} placeholder="Flat/House No." className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-orange-500/20" />
+                    <input type="text" value={deliveryInfo.pincode} maxLength={6} onChange={(e) => setDeliveryInfo({...deliveryInfo, pincode: e.target.value.replace(/\D/g, '')})} placeholder="Pincode" className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-orange-500/20" />
                   </div>
-                  <textarea 
-                    rows={2}
-                    value={deliveryInfo.area}
-                    onChange={(e) => setDeliveryInfo({...deliveryInfo, area: e.target.value})}
-                    placeholder="Area / Landmark"
-                    className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none ring-orange-500/20 focus:ring-2 resize-none"
-                  />
-                  <button 
-                    onClick={() => {
-                      if (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.houseNo || !deliveryInfo.area || !deliveryInfo.pincode) {
-                        toast.error("Please fill all details");
-                        return;
-                      }
-                      if (deliveryInfo.phone.length !== 10 || deliveryInfo.pincode.length !== 6) {
-                        toast.error("Validation failed");
-                        return;
-                      }
+                  <textarea rows={2} value={deliveryInfo.area} onChange={(e) => setDeliveryInfo({...deliveryInfo, area: e.target.value})} placeholder="Area / Landmark" className="w-full px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-orange-500/20 resize-none" />
+                  <button onClick={() => {
+                      if (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.houseNo || !deliveryInfo.area || !deliveryInfo.pincode) { toast.error("Please fill all details"); return; }
+                      if (deliveryInfo.phone.length !== 10 || deliveryInfo.pincode.length !== 6) { toast.error("Validation failed"); return; }
                       setCheckoutStep(2);
-                    }}
-                    className="w-full py-5 rounded-2xl bg-gray-900 text-white font-black uppercase text-xs tracking-widest hover:bg-orange-500 transition-all flex items-center justify-center gap-2"
-                  >
-                    Next Step <ArrowRight size={14} />
-                  </button>
+                    }} className="w-full py-5 rounded-2xl bg-gray-900 text-white font-black uppercase text-xs tracking-widest hover:bg-orange-500 transition-all flex items-center justify-center gap-2">Next Step <ArrowRight size={14} /></button>
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -621,13 +557,7 @@ export default function Order() {
                   </div>
                   <div className="flex gap-4">
                     <button onClick={() => setCheckoutStep(1)} className="flex-1 py-5 rounded-2xl bg-gray-50 text-gray-400 font-black uppercase text-xs tracking-widest">Back</button>
-                    <button 
-                      onClick={confirmPurchase}
-                      disabled={loadingCheckout}
-                      className="flex-[2] py-5 rounded-2xl bg-orange-600 text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-orange-200"
-                    >
-                      {loadingCheckout ? "Loading..." : "Pay Securely"}
-                    </button>
+                    <button onClick={confirmPurchase} disabled={loadingCheckout} className="flex-[2] py-5 rounded-2xl bg-orange-600 text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-orange-200">{loadingCheckout ? "Loading..." : "Pay Securely"}</button>
                   </div>
                 </div>
               )}
@@ -639,33 +569,14 @@ export default function Order() {
   );
 }
 
-/* ================= Action Component ================= */
 const Action = ({ label, icon, link, gradient, onClick }: any) => (
-  <Link
-    href={link}
-    onClick={(e) => {
-      if (onClick) {
-        onClick();
-        if (link === "#") e.preventDefault();
-      }
-    }}
-    className={`bg-gradient-to-br ${gradient} shadow-2xl shadow-gray-400/10
-               p-5 sm:p-6 rounded-[2.5rem] flex flex-col items-center justify-center gap-4
-               hover:shadow-xl hover:-translate-y-1.5 transition-all duration-500 group h-full min-h-[140px] relative overflow-hidden active:scale-95`}
-  >
-    {/* Decorative inner glow/glass layer */}
+  <Link href={link} onClick={(e) => { if (onClick) { onClick(); if (link === "#") e.preventDefault(); } }}
+    className={`bg-gradient-to-br \${gradient} shadow-2xl shadow-gray-400/10 p-5 sm:p-6 rounded-[2.5rem] flex flex-col items-center justify-center gap-4 hover:shadow-xl hover:-translate-y-1.5 transition-all duration-500 group h-full min-h-[140px] relative overflow-hidden active:scale-95`}>
     <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
     <div className="absolute -top-10 -right-10 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
-    
     <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-inner relative z-10">
-      <span className="text-3xl group-hover:rotate-12 group-hover:scale-125 transition-all duration-500">
-        {icon}
-      </span>
+      <span className="text-3xl group-hover:rotate-12 group-hover:scale-125 transition-all duration-500">{icon}</span>
     </div>
-    
-    <span className="text-[11px] sm:text-xs font-black text-white text-center tracking-widest uppercase relative z-10 px-1">
-      {label}
-    </span>
+    <span className="text-[11px] sm:text-xs font-black text-white text-center tracking-widest uppercase relative z-10 px-1">{label}</span>
   </Link>
 );
-
