@@ -890,8 +890,8 @@ const AdminMapUpdater = ({ activeId }: { activeId: string | null }) => {
           (window as any)._updateAdminMap(latitude, longitude);
         }
 
-        // Throttle API updates to every 5 seconds
-        if (now - lastUpdate > 5000) {
+        // Send first update immediately, then throttle to 5s
+        if (lastUpdate === 0 || now - lastUpdate > 5000) {
           try {
             await fetch("/api/admin/delivery/update-location", {
               method: "POST",

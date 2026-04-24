@@ -115,7 +115,7 @@ export default function Dashboard() {
     loadData();
 
     // High-frequency polling for real-time tracking (Swiggy-style)
-    const pollInterval = setInterval(loadData, 6000);
+    const pollInterval = setInterval(loadData, 5000);
     return () => clearInterval(pollInterval);
   }, [router]);
 

@@ -226,14 +226,21 @@ export default function OrderTracker({
   useEffect(() => {
     if (!mapRef.current || !driverMarkerRef.current || !driverLocation?.lat) return;
     const newPos: [number, number] = [driverLocation.lat, driverLocation.lng];
+    // Move driver marker smoothly
     driverMarkerRef.current.setLatLng(newPos);
     
-    // Pan map to follow driver slightly
-    mapRef.current.panTo(newPos, { animate: true, duration: 1 });
+    // Auto-fit bounds to keep driver and home in view if they are far apart
+    const home = coordsRef.current.home;
+    if (home && mapRef.current) {
+       const bounds = L.latLngBounds([newPos, [home.lat, home.lng]]);
+       // Only fly to / fit if coordinates are valid
+       mapRef.current.fitBounds(bounds, { padding: [100, 100], animate: true, duration: 2 });
+    } else {
+       mapRef.current.panTo(newPos, { animate: true, duration: 1 });
+    }
 
     // Update road route from driver current position to customer home
     const updateRoadRoute = async () => {
-      const home = coordsRef.current.home;
       if (!home || !polylineRef.current) return;
       
       try {
@@ -243,14 +250,12 @@ export default function OrderTracker({
         if (data.routes?.[0]) {
           const coords = data.routes[0].geometry.coordinates.map((c: any) => [c[1], c[0]]);
           polylineRef.current.setLatLngs(coords);
-          // If we had a straight line with dashArray, remove it for solid road line
           if (polylineRef.current.options.dashArray) {
-             polylineRef.current.setStyle({ dashArray: null, opacity: 0.85 });
+             polylineRef.current.setStyle({ dashArray: null, opacity: 0.9, weight: 6, color: '#f97316' });
           }
         }
       } catch (e) {
-        // Fallback to simple line if road routing fails during update
-        if (polylineRef.current) {
+        if (polylineRef.current && home) {
           polylineRef.current.setLatLngs([newPos, [home.lat, home.lng]]);
         }
       }
