@@ -69,13 +69,31 @@ export default function OrderTracker({
     const L = (window as any).L;
     if (!L || !mapContainerRef.current) return;
 
-    // Geocode helper
+    // Robust Geocode helper with retries
     const geocode = async (addr: string) => {
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}&limit=1`);
-        const data = await res.json();
-        return data?.length > 0 ? { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) } : null;
-      } catch { return null; }
+      const tryFetch = async (query: string) => {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+          const data = await res.json();
+          return data?.[0] ? { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) } : null;
+        } catch { return null; }
+      };
+
+      // Try 1: Full address
+      let result = await tryFetch(addr);
+      if (result) return result;
+
+      // Try 2: Simplified (remove house number)
+      const simplified = addr.split(',').slice(1).join(',').trim();
+      if (simplified) {
+        result = await tryFetch(simplified);
+        if (result) return result;
+      }
+
+      // Try 3: Basic Area/City
+      const parts = addr.split(',');
+      const basic = parts.length > 2 ? `${parts[parts.length-2]}, ${parts[parts.length-1]}` : addr;
+      return await tryFetch(basic);
     };
 
     // Kitchen position: use saved coordinates first (instant), fallback to geocoding if lat/lng are 0 or missing
@@ -179,13 +197,15 @@ export default function OrderTracker({
       setMapReady(true);
     }, 300);
 
-  }, [kitchenLocation, kitchenAddress, customerAddress, driverLocation]);
+  }, [kitchenLocation, kitchenAddress, customerAddress]); // Removed driverLocation to prevent re-init on move
 
   // Initialize map when showMap becomes true
   useEffect(() => {
     if (!showMap) return;
     // Small delay to ensure DOM is fully rendered
-    const timer = setTimeout(() => initMap(), 200);
+    const timer = setTimeout(() => {
+      initMap();
+    }, 200);
     return () => clearTimeout(timer);
   }, [showMap, initMap]);
 
@@ -208,12 +228,35 @@ export default function OrderTracker({
     const newPos: [number, number] = [driverLocation.lat, driverLocation.lng];
     driverMarkerRef.current.setLatLng(newPos);
     
-    const pts: [number, number][] = [];
-    if (coordsRef.current.rest) pts.push([coordsRef.current.rest.lat, coordsRef.current.rest.lng]);
-    pts.push(newPos);
-    if (coordsRef.current.home) pts.push([coordsRef.current.home.lat, coordsRef.current.home.lng]);
-    polylineRef.current?.setLatLngs(pts);
+    // Pan map to follow driver slightly
     mapRef.current.panTo(newPos, { animate: true, duration: 1 });
+
+    // Update road route from driver current position to customer home
+    const updateRoadRoute = async () => {
+      const home = coordsRef.current.home;
+      if (!home || !polylineRef.current) return;
+      
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${driverLocation.lng},${driverLocation.lat};${home.lng},${home.lat}?overview=full&geometries=geojson`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.routes?.[0]) {
+          const coords = data.routes[0].geometry.coordinates.map((c: any) => [c[1], c[0]]);
+          polylineRef.current.setLatLngs(coords);
+          // If we had a straight line with dashArray, remove it for solid road line
+          if (polylineRef.current.options.dashArray) {
+             polylineRef.current.setStyle({ dashArray: null, opacity: 0.85 });
+          }
+        }
+      } catch (e) {
+        // Fallback to simple line if road routing fails during update
+        if (polylineRef.current) {
+          polylineRef.current.setLatLngs([newPos, [home.lat, home.lng]]);
+        }
+      }
+    };
+
+    updateRoadRoute();
   }, [driverLocation]);
 
   const steps = [
