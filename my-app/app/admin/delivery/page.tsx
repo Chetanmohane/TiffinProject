@@ -497,29 +497,37 @@ export default function DailyDeliveryPage() {
                       const kPos = await geocode("${kitchenAddress}");
                       if (kPos) {
                         L.marker([kPos.lat, kPos.lon], { icon: createIcon('🏪', '#f59e0b') }).addTo(map);
-                      }
+                        const drawRoadRoute = async (from, to, mid) => {
+                          try {
+                            const mLat = mid.lat || mid.latitude;
+                            const mLng = mid.lng || mid.longitude || mid.lon;
+                            const url = \`https://router.project-osrm.org/route/v1/driving/\${from.lon},\${from.lat};\${mLng},\${mLat};\${to.lon},\${to.lat}?overview=full&geometries=geojson\`;
+                            const res = await fetch(url);
+                            const data = await res.json();
+                            if (data.routes?.[0]) {
+                              const coords = data.routes[0].geometry.coordinates.map((c) => [c[1], c[0]]);
+                              routeLine.setLatLngs(coords);
+                              return;
+                            }
+                          } catch (e) {}
+                          routeLine.setLatLngs([[from.lat, from.lon], [mid.lat || mid.latitude, mid.lng || mid.lon], [to.lat, to.lon]]);
+                        };
 
-                      const targetAddress = "${deliveries.find(d => (d.deliveryId || d.id) === activeTrackingId)?.address || "Bhopal"}";
-                      const homePos = await geocode(targetAddress);
-                      if (homePos) {
-                        L.marker([homePos.lat, homePos.lon], { icon: createIcon('🏠', '#1e293b') }).addTo(map);
-                        const points = [];
-                        if (kPos) points.push([kPos.lat, kPos.lon]);
-                        points.push([startLat, startLng]);
-                        points.push([homePos.lat, homePos.lon]);
-                        routeLine.setLatLngs(points);
-                        map.fitBounds(L.latLngBounds(points), { padding: [40, 40] });
-                      }
+                        const targetAddress = "${deliveries.find(d => (d.deliveryId || d.id) === activeTrackingId)?.address || "Bhopal"}";
+                        const hPos = await geocode(targetAddress);
 
-                      window._updateAdminMap = (lat, lng) => {
-                        if (!marker) return;
-                        marker.setLatLng([lat, lng]);
-                        const pts = [];
-                        if (kPos) pts.push([kPos.lat, kPos.lon]);
-                        pts.push([lat, lng]);
-                        if (homePos) pts.push([homePos.lat, homePos.lon]);
-                        routeLine.setLatLngs(pts);
-                      };
+                        if (hPos) {
+                          L.marker([hPos.lat, hPos.lon], { icon: createIcon('🏠', '#1e293b') }).addTo(map);
+                          drawRoadRoute(kPos, hPos, { lat: startLat, lng: startLng });
+                          map.fitBounds(L.latLngBounds([[kPos.lat, kPos.lon], [startLat, startLng], [hPos.lat, hPos.lon]]), { padding: [40, 40] });
+                        }
+
+                        window._updateAdminMap = (lat, lng) => {
+                          if (!marker) return;
+                          marker.setLatLng([lat, lng]);
+                          if (hPos) drawRoadRoute(kPos, hPos, { lat, lng });
+                        };
+                      }
                     }
 
                     if (!window.L) {
@@ -868,6 +876,45 @@ export default function DailyDeliveryPage() {
 }
 
 const AdminMapUpdater = ({ activeId }: { activeId: string | null }) => {
+  useEffect(() => {
+    if (!activeId) return;
+
+    let lastUpdate = 0;
+    const watchId = navigator.geolocation.watchPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        const now = Date.now();
+        
+        // Update local admin map instantly
+        if ((window as any)._updateAdminMap) {
+          (window as any)._updateAdminMap(latitude, longitude);
+        }
+
+        // Throttle API updates to every 5 seconds
+        if (now - lastUpdate > 5000) {
+          try {
+            await fetch("/api/admin/delivery/update-location", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                deliveryId: activeId,
+                lat: latitude,
+                lng: longitude
+              })
+            });
+            lastUpdate = now;
+          } catch (err) {
+            console.error("Live update failed", err);
+          }
+        }
+      },
+      (error) => console.error("GPS Watch Error:", error),
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [activeId]);
+
   return null;
 }
 
