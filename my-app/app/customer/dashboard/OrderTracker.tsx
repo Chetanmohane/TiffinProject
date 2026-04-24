@@ -25,21 +25,28 @@ export default function OrderTracker({
 }: Props) {
   const [showMap, setShowMap] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  const [liveEta, setLiveEta] = useState<string | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
+  const LRef = useRef<any>(null); // ← Store Leaflet ref to avoid global crash
   const driverMarkerRef = useRef<any>(null);
   const polylineRef = useRef<any>(null);
   const coordsRef = useRef<{rest?: any, home?: any}>({});
+  const isUpdatingRoute = useRef(false);
 
   // Auto-show map when "Out for Delivery"
   useEffect(() => {
     if (status === "Out for Delivery") setShowMap(true);
   }, [status]);
 
+  // Use eta from props if we don't have a live one yet
+  useEffect(() => {
+    if (eta && !liveEta) setLiveEta(eta);
+  }, [eta]);
+
   const initMap = useCallback(async () => {
     if (!mapContainerRef.current) return;
     if (mapRef.current) {
-      // Map already initialized, just invalidate size
       setTimeout(() => mapRef.current?.invalidateSize(), 100);
       return;
     }
@@ -68,6 +75,7 @@ export default function OrderTracker({
 
     const L = (window as any).L;
     if (!L || !mapContainerRef.current) return;
+    LRef.current = L; // ← Save to ref for use in live updates
 
     // Robust Geocode helper with retries
     const geocode = async (addr: string) => {
@@ -79,55 +87,47 @@ export default function OrderTracker({
         } catch { return null; }
       };
 
-      // Try 1: Full address
       let result = await tryFetch(addr);
       if (result) return result;
 
-      // Try 2: Simplified (remove house number)
       const simplified = addr.split(',').slice(1).join(',').trim();
       if (simplified) {
         result = await tryFetch(simplified);
         if (result) return result;
       }
 
-      // Try 3: Basic Area/City
       const parts = addr.split(',');
       const basic = parts.length > 2 ? `${parts[parts.length-2]}, ${parts[parts.length-1]}` : addr;
       return await tryFetch(basic);
     };
 
-    // Kitchen position: use saved coordinates first (instant), fallback to geocoding if lat/lng are 0 or missing
+    // Kitchen position
     const restPos = (kitchenLocation?.lat && kitchenLocation.lat !== 0)
       ? kitchenLocation
       : await geocode(kitchenAddress || "Karond, Bhopal, Madhya Pradesh, India");
 
-    // Customer home position - geocode the address
+    // Customer home
     const homePos = customerAddress ? await geocode(customerAddress) : null;
     
-    // Final coordinates for markers
     coordsRef.current = { 
-      rest: restPos || { lat: 23.2974, lng: 77.4025 }, // Fallback to Karond center if all fail
+      rest: restPos || { lat: 23.2974, lng: 77.4025 },
       home: homePos 
     };
 
-    // Starting position for driver marker
-    const startLat = driverLocation?.lat || restPos?.lat || 23.2599;
-    const startLng = driverLocation?.lng || restPos?.lng || 77.4126;
+    const startLat = driverLocation?.lat || restPos?.lat || 23.2974;
+    const startLng = driverLocation?.lng || restPos?.lng || 77.4025;
 
-    // Initialize map
     const map = L.map(mapContainerRef.current, { 
-      zoomControl: false, 
+      zoomControl: true, 
       scrollWheelZoom: true,
       attributionControl: false
-    }).setView([startLat, startLng], 15);
+    }).setView([startLat, startLng], 14);
     mapRef.current = map;
 
-    // Map tiles
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       maxZoom: 19
     }).addTo(map);
 
-    // Icon creator
     const createIcon = (emoji: string, bg: string, size = 44) => L.divIcon({
       className: '',
       html: `<div style="background:${bg};width:${size}px;height:${size}px;border-radius:${size/2.5}px;display:flex;align-items:center;justify-content:center;font-size:${size*0.55}px;border:3px solid white;box-shadow:0 8px 24px rgba(0,0,0,0.2);">${emoji}</div>`,
@@ -135,25 +135,22 @@ export default function OrderTracker({
       iconAnchor: [size/2, size/2]
     });
 
-    // Restaurant marker (always visible)
     if (restPos) {
       L.marker([restPos.lat, restPos.lng], { icon: createIcon('🏪', '#f59e0b', 48) }).addTo(map)
-       .bindPopup(`<b>Restaurant / Kitchen</b>`);
+       .bindPopup(`<b>Kitchen / Restaurant</b><br/><small>${kitchenAddress || 'Karond, Bhopal'}</small>`);
     }
 
-    // Customer home marker
     if (homePos) {
-      L.marker([homePos.lat, homePos.lng], { icon: createIcon('🏠', '#1e293b', 44) }).addTo(map)
-       .bindPopup(`<b>Delivery Location</b>`);
+      L.marker([homePos.lat, homePos.lng], { icon: createIcon('🏠', '#1e293b', 48) }).addTo(map)
+       .bindPopup(`<b>Your Delivery Address</b><br/><small>${customerAddress}</small>`).openPopup();
     }
 
-    // Driver (scooter) marker
     driverMarkerRef.current = L.marker([startLat, startLng], { 
       icon: createIcon('🛵', '#f97316', 52),
       zIndexOffset: 1000
-    }).addTo(map).bindPopup(`<b>Delivery Partner</b>`);
+    }).addTo(map).bindPopup(`<b>Delivery Partner</b><br/><small>Live tracking active</small>`);
 
-    // Route polyline - use OSRM for real road routing
+    // Draw initial route
     const drawRoute = async (from: {lat:number,lng:number}, to: {lat:number,lng:number}) => {
       try {
         const url = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
@@ -162,14 +159,15 @@ export default function OrderTracker({
         if (data.routes?.[0]) {
           const coords: [number,number][] = data.routes[0].geometry.coordinates.map((c: number[]) => [c[1], c[0]]);
           polylineRef.current = L.polyline(coords, {
-            color: '#f97316', weight: 5, opacity: 0.85,
+            color: '#f97316', weight: 6, opacity: 0.9,
             lineCap: 'round', lineJoin: 'round'
           }).addTo(map);
-          polylineRef.current._isRoadRoute = true;
+          // Live ETA from OSRM
+          const durationMins = Math.ceil(data.routes[0].duration / 60);
+          setLiveEta(String(durationMins));
           return coords;
         }
       } catch {}
-      // Fallback: simple line
       const pts: [number,number][] = [[from.lat,from.lng],[to.lat,to.lng]];
       polylineRef.current = L.polyline(pts, { color: '#f97316', weight: 5, opacity: 0.7, dashArray: '12, 8' }).addTo(map);
       return pts;
@@ -178,34 +176,26 @@ export default function OrderTracker({
     let pts: [number,number][] = [];
     if (restPos && homePos) {
       pts = await drawRoute(restPos, homePos);
-    } else {
-      pts = [];
-      if (restPos) pts.push([restPos.lat, restPos.lng]);
-      pts.push([startLat, startLng]);
-      if (homePos) pts.push([homePos.lat, homePos.lng]);
+    } else if (restPos) {
+      pts = [[restPos.lat, restPos.lng], [startLat, startLng]];
       polylineRef.current = L.polyline(pts, { color: '#f97316', weight: 5, opacity: 0.7, dashArray: '12, 8' }).addTo(map);
     }
 
-    // Fit map to show all markers
     if (pts.length > 1) {
       map.fitBounds(L.latLngBounds(pts), { padding: [60, 60] });
     }
 
-    // Critical: invalidate size after render
     setTimeout(() => {
       map.invalidateSize();
       setMapReady(true);
     }, 300);
 
-  }, [kitchenLocation, kitchenAddress, customerAddress]); // Removed driverLocation to prevent re-init on move
+  }, [kitchenLocation, kitchenAddress, customerAddress]);
 
   // Initialize map when showMap becomes true
   useEffect(() => {
     if (!showMap) return;
-    // Small delay to ensure DOM is fully rendered
-    const timer = setTimeout(() => {
-      initMap();
-    }, 200);
+    const timer = setTimeout(() => initMap(), 200);
     return () => clearTimeout(timer);
   }, [showMap, initMap]);
 
@@ -217,51 +207,58 @@ export default function OrderTracker({
         mapRef.current = null;
         driverMarkerRef.current = null;
         polylineRef.current = null;
+        LRef.current = null;
         setMapReady(false);
       }
     };
   }, []);
 
-  // Live driver position update
+  // 🔑 Live driver position update — uses LRef.current (not window.L) to avoid crash
   useEffect(() => {
-    if (!mapRef.current || !driverMarkerRef.current || !driverLocation?.lat) return;
+    const L = LRef.current;
+    if (!L || !mapRef.current || !driverMarkerRef.current || !driverLocation?.lat) return;
+    
     const newPos: [number, number] = [driverLocation.lat, driverLocation.lng];
-    // Move driver marker smoothly
     driverMarkerRef.current.setLatLng(newPos);
     
-    // Auto-fit bounds to keep driver and home in view if they are far apart
     const home = coordsRef.current.home;
-    if (home && mapRef.current) {
-       const bounds = L.latLngBounds([newPos, [home.lat, home.lng]]);
-       // Only fly to / fit if coordinates are valid
-       mapRef.current.fitBounds(bounds, { padding: [100, 100], animate: true, duration: 2 });
+    if (home) {
+      // Keep driver + home in view
+      const bounds = L.latLngBounds([newPos, [home.lat, home.lng]]);
+      mapRef.current.fitBounds(bounds, { padding: [80, 80], animate: true, duration: 1.5 });
     } else {
-       mapRef.current.panTo(newPos, { animate: true, duration: 1 });
+      mapRef.current.panTo(newPos, { animate: true, duration: 1 });
     }
 
-    // Update road route from driver current position to customer home
-    const updateRoadRoute = async () => {
-      if (!home || !polylineRef.current) return;
-      
+    // Update road route (throttled to avoid flooding OSRM)
+    if (isUpdatingRoute.current) return;
+    isUpdatingRoute.current = true;
+
+    const updateRoute = async () => {
       try {
+        if (!home || !polylineRef.current) return;
         const url = `https://router.project-osrm.org/route/v1/driving/${driverLocation.lng},${driverLocation.lat};${home.lng},${home.lat}?overview=full&geometries=geojson`;
         const res = await fetch(url);
         const data = await res.json();
         if (data.routes?.[0]) {
           const coords = data.routes[0].geometry.coordinates.map((c: any) => [c[1], c[0]]);
           polylineRef.current.setLatLngs(coords);
-          if (polylineRef.current.options.dashArray) {
-             polylineRef.current.setStyle({ dashArray: null, opacity: 0.9, weight: 6, color: '#f97316' });
-          }
+          polylineRef.current.setStyle({ color: '#f97316', weight: 6, opacity: 0.9, dashArray: null });
+          // Update live ETA
+          const mins = Math.ceil(data.routes[0].duration / 60);
+          setLiveEta(String(mins));
         }
-      } catch (e) {
+      } catch {
+        // Fallback: straight line to home
         if (polylineRef.current && home) {
           polylineRef.current.setLatLngs([newPos, [home.lat, home.lng]]);
         }
+      } finally {
+        isUpdatingRoute.current = false;
       }
     };
 
-    updateRoadRoute();
+    updateRoute();
   }, [driverLocation]);
 
   const steps = [
@@ -274,10 +271,12 @@ export default function OrderTracker({
   const activeIndex = steps.findLastIndex(s => s.matched.includes(status));
   if (status === "Paused" || (status && status.includes("Holiday"))) return null;
 
+  const displayEta = liveEta || eta;
+
   return (
-    <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-xl shadow-gray-200/40 border border-gray-50 relative overflow-hidden group transition-all duration-700 hover:border-orange-200">
+    <div className="bg-white rounded-[2.5rem] p-6 sm:p-8 shadow-xl shadow-gray-200/40 border border-gray-50 relative overflow-hidden transition-all duration-700 hover:border-orange-200">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 relative z-10">
+      <div className="flex items-center justify-between mb-6 relative z-10">
         <div>
           <p className="text-[10px] font-black text-orange-600 uppercase tracking-[0.2em] mb-1">Live Order Tracking</p>
           <h4 className="text-xl font-black text-gray-900 leading-none tracking-tight">Track Your {activeTab} 🍱</h4>
@@ -287,6 +286,32 @@ export default function OrderTracker({
            <button onClick={() => onTabChange?.("Dinner")} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeTab === 'Dinner' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>Dinner</button>
         </div>
       </div>
+
+      {/* Address + ETA Info Bar */}
+      {status === "Out for Delivery" && (
+        <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Delivery Address */}
+          <div className="bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100 flex items-start gap-3">
+            <span className="text-xl mt-0.5">🏠</span>
+            <div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Delivering To</p>
+              <p className="text-xs font-bold text-slate-800 leading-snug mt-0.5">
+                {customerAddress || "Fetching address..."}
+              </p>
+            </div>
+          </div>
+          {/* ETA */}
+          <div className="bg-orange-50 rounded-2xl px-4 py-3 border border-orange-100 flex items-start gap-3">
+            <span className="text-xl mt-0.5">⏱️</span>
+            <div>
+              <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest">Est. Arrival</p>
+              <p className="text-xl font-black text-orange-600 leading-tight">
+                {displayEta ? `${displayEta} min` : <span className="text-sm text-orange-300 animate-pulse">Calculating...</span>}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         {!showMap ? (
@@ -313,15 +338,13 @@ export default function OrderTracker({
             initial={{ opacity: 0, scale: 0.98 }} 
             animate={{ opacity: 1, scale: 1 }}
             className="relative rounded-[2rem] overflow-hidden border border-gray-100 shadow-inner"
-            style={{ height: '420px' }}
+            style={{ height: '380px' }}
           >
-            {/* The actual map div - MUST have explicit height */}
             <div 
               ref={mapContainerRef} 
               style={{ position: 'absolute', inset: 0, height: '100%', width: '100%', zIndex: 0 }} 
             />
 
-            {/* Loading overlay - shown while map initializes */}
             {!mapReady && (
               <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-orange-50 z-10 flex flex-col items-center justify-center gap-4">
                 <div className="text-5xl animate-bounce">🛵</div>
@@ -332,14 +355,11 @@ export default function OrderTracker({
               </div>
             )}
 
-            {/* Waiting for driver overlay */}
             {mapReady && !driverLocation?.lat && (
               <div className="absolute bottom-4 left-4 right-4 z-10">
                 <div className="bg-white/95 backdrop-blur-md px-5 py-3 rounded-2xl shadow-xl border border-orange-100 flex items-center gap-3">
                   <div className="w-2 h-2 bg-orange-500 rounded-full animate-ping" />
-                  <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
-                    Connecting to Driver GPS... 📡
-                  </p>
+                  <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Connecting to Driver GPS... 📡</p>
                 </div>
               </div>
             )}
@@ -351,17 +371,26 @@ export default function OrderTracker({
                 LIVE
               </div>
             )}
+
+            {/* ETA on map */}
+            {mapReady && displayEta && (
+              <div className="absolute top-4 right-4 z-10 bg-white/95 backdrop-blur text-gray-900 px-4 py-2 rounded-2xl text-xs font-black shadow-lg border border-orange-100 flex items-center gap-2">
+                ⏱️ <span className="text-orange-600">{displayEta} min</span> away
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Footer */}
-      <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
+      <div className="mt-6 pt-5 border-t border-gray-50 flex items-center justify-between">
          <div className="flex items-center gap-3">
             <div className={`w-2 h-2 rounded-full ${status === 'Delivered' ? 'bg-green-500' : 'bg-orange-500 animate-ping'}`} />
             <div>
                <p className="text-[10px] font-black text-gray-900 uppercase tracking-widest">STATUS: <span className="text-orange-600">{status || "Scheduled"}</span></p>
-               {eta && <p className="text-[9px] font-bold text-gray-400 mt-0.5 uppercase tracking-tighter">ESTIMATED: {eta} MINS</p>}
+               {displayEta && status === "Out for Delivery" && (
+                 <p className="text-[9px] font-bold text-gray-400 mt-0.5 uppercase tracking-tighter">ETA: {displayEta} MINS</p>
+               )}
             </div>
          </div>
          <button 
@@ -369,7 +398,7 @@ export default function OrderTracker({
              setShowMap(prev => !prev);
              if (!showMap) setMapReady(false);
            }} 
-           className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${showMap ? 'bg-gray-900 text-white' : 'bg-orange-600 text-white shadow-lg shadow-orange-200'}`}
+           className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${showMap ? 'bg-gray-900 text-white' : 'bg-orange-600 text-white shadow-lg shadow-orange-200'}`}
          >
            {showMap ? 'Show Progress' : '🗺️ Live Tracking'}
          </button>
