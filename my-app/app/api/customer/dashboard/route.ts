@@ -93,9 +93,7 @@ export async function GET(req: Request) {
     const sub = (customer.subscription || {}) as any;
 
     // Calculate live status and projected renewal
-    const now = new Date();
-    const renewalDate = sub.nextRenewal ? new Date(sub.nextRenewal) : null;
-    const isExpiredByDate = renewalDate && renewalDate < now;
+    const isExpiredByDate = sub.nextRenewal && sub.nextRenewal < today;
     const isExpiredByMeals = sub.mealsLeft <= 0;
     
     let liveStatus = sub.status || "Inactive";
@@ -132,6 +130,10 @@ export async function GET(req: Request) {
       const getDeliveryStatus = (mType: "Lunch" | "Dinner", timeStr: string) => {
          if (todayHoliday) return `Holiday: ${todayHoliday.title}`;
          if (isPaused) return "Paused";
+         if (!hasActivePlan) return "No Active Plan";
+         
+         const mealType = sub.mealType || "Both";
+         if (mealType !== "Both" && mealType !== mType) return "Not in Plan";
          
          const record = userDeliveries.find(d => d.type === mType);
          if (record) {
