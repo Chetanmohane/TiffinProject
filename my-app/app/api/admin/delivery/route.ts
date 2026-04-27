@@ -11,8 +11,7 @@ export async function GET() {
 
     // 1. Fetch all customers with an active or paused subscription
     const customers = await User.find({ 
-      role: "customer", 
-      "subscription.status": { $in: ["Active", "Paused"] } 
+      "subscription.status": { $in: ["Active", "Paused", "active", "paused"] } 
     }).lean() as any[];
 
     const PausedMeal = (await import("@/models/PausedMeal")).default;
@@ -25,8 +24,8 @@ export async function GET() {
       if (!sub) continue;
 
       // Skip if totally expired by date or meals
-      // Use today's date string for comparison to avoid timezone/time-of-day issues
-      if (sub.nextRenewal < today || sub.mealsLeft <= 0) continue;
+      // If plan hasn't started yet, skip. If nextRenewal exists and is in the past, skip. If mealsLeft is 0 or less, skip.
+      if ((sub.startDate && sub.startDate > today) || (sub.nextRenewal && sub.nextRenewal < today) || sub.mealsLeft <= 0) continue;
 
       // Check pause status for today
       const isPausedToday = await PausedMeal.findOne({
@@ -37,12 +36,13 @@ export async function GET() {
 
       // Determine which meal items to show (Lunch, Dinner, or Both)
       const mealTypesToShow: ("Lunch" | "Dinner")[] = [];
-      if (sub.mealType === "Both") {
+      const mealType = sub.mealType || "Both";
+
+      if (mealType === "Both") {
         mealTypesToShow.push("Lunch", "Dinner");
-      } else if (sub.mealType === "Lunch" || sub.mealType === "Dinner") {
-        mealTypesToShow.push(sub.mealType);
+      } else if (mealType === "Lunch" || mealType === "Dinner") {
+        mealTypesToShow.push(mealType);
       } else {
-        // Default to Both if not specified but active
         mealTypesToShow.push("Lunch", "Dinner");
       }
 
@@ -52,7 +52,7 @@ export async function GET() {
           (d) => d.customerId.toString() === customer._id.toString() && d.type === mType
         );
 
-        const isGloballyPaused = sub.status === "Paused";
+        const isGloballyPaused = sub.status?.toLowerCase() === "paused";
         
         let finalStatus = "Scheduled";
         if (isPausedToday || isGloballyPaused) {
