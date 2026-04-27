@@ -175,7 +175,7 @@ export async function GET(req: Request) {
         } : null,
         hasActivePlan: hasActivePlan,
       },
-      todayLunch: {
+      todayMeal: {
         items: isPaused
           ? "Your meal delivery is paused for today."
           : (todayMenu ? todayMenu.lunch : "No service scheduled for today. (Kitchen Closed)"),
