@@ -778,52 +778,16 @@ export default function OrderTracker({
                     </button>
                  )}
 
-                 {/* Admin Controls */}
-                 {isAdmin ? (
-                   <div className="p-4 bg-white rounded-3xl border border-gray-200 shadow-sm">
-                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Admin Controls ⚡</p>
-                      <div className="flex flex-wrap gap-2 sm:gap-3">
-                        <button 
-                          disabled={updating || status === "Prepared"}
-                          onClick={() => updateStatus("Prepared")}
-                          className={`flex-1 py-3 px-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                            status === "Prepared" ? "bg-orange-50 outline outline-2 outline-orange-200 text-orange-600" : "bg-gray-100 hover:bg-orange-500 hover:text-white"
-                          }`}
-                        >
-                          Mark Prepared
-                        </button>
-                        <button 
-                          disabled={updating || status === "Out for Delivery"}
-                          onClick={() => updateStatus("Out for Delivery")}
-                          className={`flex-1 py-3 px-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                            status === "Out for Delivery" ? "bg-green-50 outline outline-2 outline-green-200 text-green-600" : "bg-gray-100 hover:bg-green-600 hover:text-white"
-                          }`}
-                        >
-                          Mark Dispatched
-                        </button>
-                        <button 
-                          disabled={updating || status === "Delivered"}
-                          onClick={() => updateStatus("Delivered")}
-                          className={`flex-1 py-3 px-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                            status === "Delivered" ? "bg-blue-50 outline outline-2 outline-blue-200 text-blue-600" : "bg-gray-100 hover:bg-blue-600 hover:text-white"
-                          }`}
-                        >
-                          Mark Delivered
-                        </button>
-                      </div>
-                   </div>
-                 ) : (
-                   status === "Out for Delivery" && displayEta !== null && (
-                     <div className="p-5 bg-green-50 rounded-3xl border border-green-100 text-center">
-                        <p className="text-xs font-bold text-gray-700">
-                          Your delicious meal will arrive in approx{" "}
-                          <span className="text-green-600 font-black text-sm">
-                            {displayEta} min{displayEta !== 1 ? "s" : ""}
-                          </span>
-                        </p>
-                     </div>
-                   )
-                 )}
+                  {status === "Out for Delivery" && displayEta !== null && (
+                    <div className="p-5 bg-green-50 rounded-3xl border border-green-100 text-center">
+                       <p className="text-xs font-bold text-gray-700">
+                         Your delicious meal will arrive in approx{" "}
+                         <span className="text-green-600 font-black text-sm">
+                           {displayEta} min{displayEta !== 1 ? "s" : ""}
+                         </span>
+                       </p>
+                    </div>
+                  )}
               </div>
             </div>
 
