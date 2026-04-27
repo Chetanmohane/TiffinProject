@@ -21,6 +21,7 @@ export interface IUser extends Document {
   address: string;
   walletBalance: number;
   subscription?: ISubscription;
+  queuedSubscriptions?: ISubscription[];
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   createdAt: Date;
@@ -49,6 +50,7 @@ const UserSchema = new Schema<IUser>(
     address: { type: String, default: "" },
     walletBalance: { type: Number, default: 0 },
     subscription: { type: SubscriptionSchema, default: null },
+    queuedSubscriptions: { type: [SubscriptionSchema], default: [] },
     resetPasswordToken: { type: String, default: null },
     resetPasswordExpires: { type: Date, default: null },
   },

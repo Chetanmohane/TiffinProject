@@ -90,13 +90,56 @@ export async function GET(req: Request) {
 
     const todayMenu = await Menu.findOne({ day: currentDayName, isActive: { $ne: false } }).lean() as any;
     const isPaused = !!pauseEntry;
-    const sub = (customer.subscription || {}) as any;
-
-    // Calculate live status and projected renewal
+    let sub = (customer.subscription || {}) as any;
+    let liveStatus = sub.status || "Inactive";
     const isExpiredByDate = sub.nextRenewal && sub.nextRenewal < today;
     const isExpiredByMeals = sub.mealsLeft <= 0;
-    
-    let liveStatus = sub.status || "Inactive";
+
+    // Queue Activation Logic
+    if ((!sub.planName || liveStatus === "Expired" || isExpiredByMeals || isExpiredByDate) && customer.queuedSubscriptions?.length > 0) {
+        const nextSub = customer.queuedSubscriptions[0];
+        const remainingQueue = customer.queuedSubscriptions.slice(1);
+        
+        const nowIST = new Date(new Date().getTime() + IST_OFFSET);
+        const hourIST = nowIST.getUTCHours();
+        const isBefore11AM = hourIST < 11;
+        
+        const startDateObj = new Date(nowIST);
+        if (!isBefore11AM) startDateObj.setUTCDate(startDateObj.getUTCDate() + 1);
+        
+        const newStartDate = startDateObj.toISOString().split("T")[0];
+        const mealsPerDay = nextSub.mealType === "Both" ? 2 : 1;
+        const duration = Math.ceil(nextSub.totalMeals / mealsPerDay) || 30;
+        
+        const newNextRenewal = new Date(startDateObj.getTime() + duration * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0];
+
+        const updatedSub = {
+          ...nextSub,
+          status: "Active",
+          startDate: newStartDate,
+          nextRenewal: newNextRenewal,
+          lastDeductionDate: today
+        };
+
+        await User.updateOne(
+          { _id: customer._id },
+          { 
+            $set: { 
+              subscription: updatedSub,
+              queuedSubscriptions: remainingQueue
+            } 
+          }
+        );
+        
+        const reloaded = await User.findById(customer._id).lean() as any;
+        customer.subscription = reloaded.subscription;
+        customer.queuedSubscriptions = reloaded.queuedSubscriptions;
+        sub = customer.subscription;
+        liveStatus = "Active";
+    }
+
     if (sub.planName) {
       if (isExpiredByDate || isExpiredByMeals) {
         liveStatus = "Expired";
@@ -168,6 +211,7 @@ export async function GET(req: Request) {
         totalMeals: hasActivePlan ? (sub.totalMeals || 0) : 0,
         mealsLeft: hasActivePlan ? (sub.mealsLeft || 0) : 0,
         mealType: sub.mealType || "Both",
+        queuedSubscriptions: customer.queuedSubscriptions || [],
         pauseDetails: isPaused ? {
           from: pauseEntry.pauseFrom,
           to: pauseEntry.pauseTo,

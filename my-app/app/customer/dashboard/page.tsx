@@ -350,6 +350,30 @@ export default function Dashboard() {
                    </div>
                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Live Subscription</span>
                 </div>
+
+                {/* Queue Notice */}
+                {dashboardData?.user?.queuedSubscriptions?.length > 0 && (
+                  <div className="mb-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4 flex items-center gap-3 group/q transition-all hover:bg-orange-500/20">
+                     <div className="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center text-xl animate-pulse">
+                        🔄
+                     </div>
+                     <div className="flex-1">
+                        <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest leading-none mb-1">Next Plan Queued</p>
+                        <p className="text-[11px] font-bold text-white uppercase tracking-tight truncate">
+                           {dashboardData.user.queuedSubscriptions[0].planName}
+                        </p>
+                        <p className="text-[8px] font-black text-orange-200/60 uppercase mt-0.5">
+                           Activates after current ends
+                        </p>
+                     </div>
+                     {dashboardData.user.queuedSubscriptions.length > 1 && (
+                       <span className="bg-orange-500 text-white text-[8px] font-black px-2 py-1 rounded-full">
+                          +{dashboardData.user.queuedSubscriptions.length - 1}
+                       </span>
+                     )}
+                  </div>
+                )}
+
                 <h3 className="text-2xl sm:text-3xl font-black mb-1 group-hover:text-orange-500 transition-colors">
                    {dashboardData?.user?.hasActivePlan ? dashboardData?.user?.activePlanName : "No Active Plan"}
                 </h3>

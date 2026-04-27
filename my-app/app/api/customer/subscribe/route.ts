@@ -40,17 +40,38 @@ export async function POST(req: Request) {
       throw new Error("Insufficient wallet balance. Please recharge first.");
     }
 
-    customer.walletBalance = (customer.walletBalance || 0) - plan.price;
-    customer.subscription = {
+    const newSub = {
       planName: plan.name,
-      status: "Active",
+      status: "Active" as const,
       startDate,
       nextRenewal,
-      purchaseDate: new Date(),
+      purchaseDate: new Date() as any,
       mealsLeft: totalMeals,
       totalMeals,
+      mealType: plan.mealType || plan.type || "Both",
+      deliveryAddress: customer.subscription?.deliveryAddress || customer.address || ""
     };
-    await customer.save();
+
+    // Check if there is an existing active plan
+    const currentSub = customer.subscription;
+    const today = new Date(new Date().getTime() + IST_OFFSET).toISOString().split("T")[0];
+    
+    const isCurrentActive = currentSub && 
+                            (currentSub.status === "Active" || currentSub.status === "Paused") && 
+                            currentSub.mealsLeft > 0 && 
+                            (!currentSub.nextRenewal || currentSub.nextRenewal >= today);
+
+    if (isCurrentActive) {
+      // Queue the new plan
+      customer.queuedSubscriptions = [...(customer.queuedSubscriptions || []), newSub as any];
+      customer.walletBalance = (customer.walletBalance || 0) - plan.price;
+      await customer.save();
+    } else {
+      // Activate immediately
+      customer.walletBalance = (customer.walletBalance || 0) - plan.price;
+      customer.subscription = newSub as any;
+      await customer.save();
+    }
 
     await Payment.create({
       customerId: customer._id,
