@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { 
   Package, 
@@ -57,6 +57,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState("customer");
   const [activeTab, setActiveTab] = useState<"Lunch" | "Dinner">("Lunch");
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Checkout State
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
@@ -72,51 +73,105 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const userStr = localStorage.getItem("user");
     if (!userStr) {
       window.location.href = "/login";
       return;
     }
 
-    async function loadData() {
-      try {
-        const user = userStr ? JSON.parse(userStr) : null;
-        const emailQuery = user?.email ? `?email=${encodeURIComponent(user.email)}&_t=${Date.now()}` : `?_t=${Date.now()}`;
+    const user = JSON.parse(userStr);
+    if (!user?.email) {
+      window.location.href = "/login";
+      return;
+    }
 
-        // Pre-fill delivery info
-        if (user) {
-          setDeliveryInfo(prev => ({
-            ...prev,
-            name: user.name || "",
-            phone: user.phone || ""
-          }));
+    // AbortController to cancel in-flight fetches when component unmounts
+    let abortController = new AbortController();
+
+    // Pre-fill delivery info once
+    setDeliveryInfo(prev => ({
+      ...prev,
+      name: user.name || "",
+      phone: user.phone || ""
+    }));
+    setRole(user.role || "customer");
+
+    /** Poll only dashboard data (lightweight, used on interval) */
+    async function pollDashboard() {
+      try {
+        abortController = new AbortController();
+        const res = await fetch(
+          `/api/customer/dashboard?email=${encodeURIComponent(user.email)}&_t=${Date.now()}`,
+          { cache: "no-store", signal: abortController.signal }
+        );
+        if (!res.ok) return;
+        const dash = await res.json();
+        setDashboardData(dash);
+      } catch (err: any) {
+        // Silently ignore AbortError (navigation away) and network blips
+        if (err?.name !== "AbortError") {
+          console.warn("Dashboard poll failed:", err?.message);
         }
+      }
+    }
+
+    /** Full initial load — fetches dashboard + history + plans in parallel */
+    async function loadAll() {
+      try {
+        abortController = new AbortController();
+        const signal = abortController.signal;
+        const emailQuery = `?email=${encodeURIComponent(user.email)}&_t=${Date.now()}`;
 
         const [dashRes, histRes, plansRes] = await Promise.all([
-          fetch(`/api/customer/dashboard${emailQuery}`, { cache: 'no-store' }),
-          fetch(`/api/customer/history${emailQuery}`, { cache: 'no-store' }),
-          fetch(`/api/customer/plans`, { cache: 'no-store' }),
+          fetch(`/api/customer/dashboard${emailQuery}`, { cache: "no-store", signal }),
+          fetch(`/api/customer/history${emailQuery}`, { cache: "no-store", signal }),
+          fetch(`/api/customer/plans`, { cache: "no-store", signal }),
         ]);
+
         const dash = await dashRes.json();
         const hist = await histRes.json();
         const plansData = await plansRes.json();
-        
+
         setDashboardData(dash);
         setHistoryData(hist.history || []);
         setAvailablePlans(plansData.plans || []);
-        setRole(user?.role || "customer");
         window.dispatchEvent(new Event("walletUpdate"));
-      } catch (error) {
-        console.error("Failed to load dashboard data", error);
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          console.error("Dashboard initial load failed:", err?.message);
+        }
       } finally {
         setLoading(false);
       }
     }
-    loadData();
 
-    // High-frequency polling for real-time tracking (Swiggy-style)
-    const pollInterval = setInterval(loadData, 5000);
-    return () => clearInterval(pollInterval);
+    loadAll();
+
+    // Adaptive polling: 3s when a live delivery is active, 10s otherwise
+    function startPolling(interval: number) {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = setInterval(async () => {
+        await pollDashboard();
+        setDashboardData(prev => {
+          const isLiveNow =
+            prev?.todayMeal?.status === "Out for Delivery" ||
+            prev?.todayDinner?.status === "Out for Delivery";
+          const nextInterval = isLiveNow ? 3000 : 10000;
+          if (nextInterval !== interval) startPolling(nextInterval);
+          return prev;
+        });
+      }, interval);
+    }
+
+    startPolling(10000);
+
+    return () => {
+      // Cancel all in-flight requests and stop polling
+      abortController.abort();
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
   }, [router]);
 
   const confirmPurchase = async () => {
@@ -409,6 +464,16 @@ export default function Dashboard() {
             eta={activeTab === "Lunch" ? dashboardData?.todayMeal?.estimatedArrival : dashboardData?.todayDinner?.estimatedArrival}
             activeTab={activeTab}
             onTabChange={(tab) => setActiveTab(tab)}
+            role={role}
+            orderId={activeTab === "Lunch" ? dashboardData?.todayMeal?.deliveryId : dashboardData?.todayDinner?.deliveryId}
+            customerId={activeTab === "Lunch" ? dashboardData?.todayMeal?.customerId : dashboardData?.todayDinner?.customerId}
+            onRefresh={async () => {
+              const userStr = localStorage.getItem("user");
+              if (!userStr) return;
+              const user = JSON.parse(userStr);
+              const res = await fetch(`/api/customer/dashboard?email=${encodeURIComponent(user.email)}&_t=${Date.now()}`, { cache: "no-store" });
+              if (res.ok) setDashboardData(await res.json());
+            }}
           />
       </div>
 
@@ -520,9 +585,9 @@ export default function Dashboard() {
                         { id: 'Both', label: 'Both', price: selectedPlan.bothPrice || selectedPlan.price }
                     ].map((option) => (
                         <button key={option.id} onClick={() => setSelectedMealType(option.id as any)}
-                          className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all \${selectedMealType === option.id ? 'bg-orange-500 border-orange-500 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500 hover:border-orange-200'}`}>
+                          className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all ${selectedMealType === option.id ? 'bg-orange-500 border-orange-500 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500 hover:border-orange-200'}`}>
                           <span className="text-[10px] font-black uppercase tracking-tighter">{option.label}</span>
-                          <span className={`text-xs font-black \${selectedMealType === option.id ? 'text-white' : 'text-slate-900'}`}>₹{option.price}</span>
+                          <span className={`text-xs font-black ${selectedMealType === option.id ? 'text-white' : 'text-slate-900'}`}>₹{option.price}</span>
                         </button>
                     ))}
                   </div>
@@ -571,7 +636,7 @@ export default function Dashboard() {
 
 const Action = ({ label, icon, link, gradient, onClick }: any) => (
   <Link href={link} onClick={(e) => { if (onClick) { onClick(); if (link === "#") e.preventDefault(); } }}
-    className={`bg-gradient-to-br \${gradient} shadow-2xl shadow-gray-400/10 p-5 sm:p-6 rounded-[2.5rem] flex flex-col items-center justify-center gap-4 hover:shadow-xl hover:-translate-y-1.5 transition-all duration-500 group h-full min-h-[140px] relative overflow-hidden active:scale-95`}>
+    className={`bg-gradient-to-br ${gradient} shadow-2xl shadow-gray-400/10 p-5 sm:p-6 rounded-[2.5rem] flex flex-col items-center justify-center gap-4 hover:shadow-xl hover:-translate-y-1.5 transition-all duration-500 group h-full min-h-[140px] relative overflow-hidden active:scale-95`}>
     <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
     <div className="absolute -top-10 -right-10 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
     <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-inner relative z-10">

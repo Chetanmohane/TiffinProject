@@ -33,38 +33,55 @@ export default function AdminLayout({
 
   // Security Pulse: Check if role has changed in real-time
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let abortController = new AbortController();
+
     const checkRole = async () => {
       const userStr = localStorage.getItem("user");
       if (!userStr) return;
-      
+
       const user = JSON.parse(userStr);
+      if (!user?.email) return;
+
       try {
-        const res = await fetch(`/api/auth/verify-role?email=${encodeURIComponent(user.email)}`);
+        // Re-create controller for each request
+        abortController = new AbortController();
+        const res = await fetch(
+          `/api/auth/verify-role?email=${encodeURIComponent(user.email)}`,
+          { signal: abortController.signal }
+        );
+
+        if (!res.ok) return; // ignore non-200 silently
+
         const data = await res.json();
-        
+
         if (data.success) {
-          // If role changed to customer or user not found, force redirect
           if (data.role === "customer") {
-            // Update local storage and redirect
             localStorage.setItem("user", JSON.stringify({ ...user, role: "customer" }));
             window.location.href = "/customer/dashboard";
           } else if (data.role !== user.role) {
-             // Role changed but still has access, update local storage to sync UI
-             localStorage.setItem("user", JSON.stringify({ ...user, role: data.role }));
-             // No redirect needed, but UI will sync on next render
+            localStorage.setItem("user", JSON.stringify({ ...user, role: data.role }));
           }
         }
-      } catch (e) {
-        console.error("Pulse check failed", e);
+      } catch (e: any) {
+        // Silently ignore AbortError (component unmounted) and network errors
+        if (e?.name !== "AbortError") {
+          console.warn("Role pulse check skipped:", e?.message || e);
+        }
       }
     };
 
     // Initial check
     checkRole();
 
-    // Check every 5 seconds for "instant" revocation
-    const interval = setInterval(checkRole, 5000);
-    return () => clearInterval(interval);
+    // Check every 30 seconds (5s was too aggressive and caused fetch storms)
+    const interval = setInterval(checkRole, 30000);
+
+    return () => {
+      clearInterval(interval);
+      abortController.abort(); // cancel any in-flight request on unmount
+    };
   }, []);
 
   const allLinks = [

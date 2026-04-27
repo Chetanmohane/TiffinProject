@@ -67,9 +67,10 @@ export async function GET() {
           customerId: customer._id,
           customerName: customer.name,
           phone: customer.phone,
-          address: customer.address,
-          type: mType, // The specific slot (Lunch or Dinner)
-          planType: sub.mealType || "Both", // The overall plan (Lunch, Dinner, or Both)
+          // Use the subscription delivery address (entered at checkout) as primary
+          address: sub.deliveryAddress || customer.address || "",
+          type: mType,
+          planType: sub.mealType || "Both",
           status: finalStatus,
           paused: !!isPausedToday || isGloballyPaused,
           mealsLeft: sub.mealsLeft || 0,

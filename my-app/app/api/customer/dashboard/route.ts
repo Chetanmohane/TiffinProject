@@ -172,16 +172,18 @@ export async function GET(req: Request) {
         } : null,
         hasActivePlan: hasActivePlan,
       },
-      todayMeal: {
+      todayLunch: {
         items: isPaused
           ? "Your meal delivery is paused for today."
           : (todayMenu ? todayMenu.lunch : "No service scheduled for today. (Kitchen Closed)"),
         type: "Lunch",
         deliveryTime: (isPaused || !todayMenu) ? "--:-- PM" : (todayMenu.lunchTime || "01:00 PM"),
         status: !todayMenu ? "Closed ❌" : getDeliveryStatus("Lunch", todayMenu.lunchTime || "01:00 PM"),
+        deliveryId: userDeliveries.find(d => d.type === "Lunch")?._id || null,
         driverLocation: userDeliveries.find(d => d.type === "Lunch")?.driverLocation || null,
         estimatedArrival: userDeliveries.find(d => d.type === "Lunch")?.estimatedArrival || null,
-        address: sub.deliveryAddress || ""
+        address: sub.deliveryAddress || customer.address || "",
+        customerId: customer._id
       },
       todayDinner: {
         items: isPaused
@@ -190,9 +192,11 @@ export async function GET(req: Request) {
         type: "Dinner",
         deliveryTime: (isPaused || !todayMenu) ? "--:-- PM" : (todayMenu.dinnerTime || "08:00 PM"),
         status: !todayMenu ? "Closed ❌" : getDeliveryStatus("Dinner", todayMenu.dinnerTime || "08:00 PM"),
+        deliveryId: userDeliveries.find(d => d.type === "Dinner")?._id || null,
         driverLocation: userDeliveries.find(d => d.type === "Dinner")?.driverLocation || null,
         estimatedArrival: userDeliveries.find(d => d.type === "Dinner")?.estimatedArrival || null,
-        address: sub.deliveryAddress || ""
+        address: sub.deliveryAddress || customer.address || "",
+        customerId: customer._id
       },
       quickStats: [
         {

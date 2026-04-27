@@ -9,6 +9,7 @@ export interface ISubscription {
   totalMeals: number;
   mealType?: "Lunch" | "Dinner" | "Both";
   lastDeductionDate?: string;
+  deliveryAddress?: string;
 }
 
 export interface IUser extends Document {
@@ -35,6 +36,7 @@ const SubscriptionSchema = new Schema<ISubscription>({
   totalMeals: { type: Number, default: 0 },
   mealType: { type: String, enum: ["Lunch", "Dinner", "Both"], default: "Both" },
   lastDeductionDate: { type: String },
+  deliveryAddress: { type: String, default: "" },
 });
 
 const UserSchema = new Schema<IUser>(
