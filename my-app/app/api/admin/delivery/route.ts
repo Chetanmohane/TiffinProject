@@ -11,7 +11,7 @@ export async function GET() {
 
     // 1. Fetch all customers with an active or paused subscription
     const customers = await User.find({ 
-      "subscription.status": { $in: ["Active", "Paused", "active", "paused"] } 
+      "subscription.status": { $in: ["Active", "Paused", "active", "paused", "ACTIVE", "PAUSED"] } 
     }).lean() as any[];
 
     const PausedMeal = (await import("@/models/PausedMeal")).default;

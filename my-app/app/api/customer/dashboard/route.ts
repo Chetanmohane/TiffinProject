@@ -147,7 +147,8 @@ export async function GET(req: Request) {
          return "Scheduled";
       };
 
-    const hasActivePlan = !!(sub.planName && (liveStatus === "Active" || liveStatus === "Paused"));
+    const currentStatus = liveStatus.toLowerCase();
+    const hasActivePlan = !!(sub.planName && (currentStatus === "active" || currentStatus === "paused"));
 
     const SiteSettings = (await import("@/models/SiteSettings")).default;
     const settings = await SiteSettings.findOne().lean() as any;
