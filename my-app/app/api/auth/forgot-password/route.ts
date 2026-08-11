@@ -47,9 +47,16 @@ export async function POST(req: Request) {
     await user.save();
 
     // Create reset URL dynamically using request host
-    const host = req.headers.get("host") || "localhost:5001";
-    const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
-    const baseUrl = `${protocol}://${host}`;
+    const rawHost = req.headers.get("x-forwarded-host") || req.headers.get("host");
+    let baseUrl = "";
+    if (rawHost) {
+      const protocol = req.headers.get("x-forwarded-proto") || (rawHost.includes("localhost") || rawHost.includes("127.0.0.1") ? "http" : "https");
+      baseUrl = `${protocol}://${rawHost}`;
+    } else if (process.env.VERCEL_URL) {
+      baseUrl = `https://${process.env.VERCEL_URL}`;
+    } else {
+      baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5001";
+    }
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
     // Setup email transporter
