@@ -62,6 +62,10 @@ export async function POST(req: Request) {
       if (planEnd && item.from > planEnd) {
           throw new Error(`Pause start date cannot be after plan expiry (${planEnd}).`);
       }
+
+      if (planEnd && item.to > planEnd) {
+          throw new Error(`You cannot pause beyond your current plan expiry date (${planEnd}).`);
+      }
       
       const existingPauses = await PausedMeal.find({ customerId: customer._id }).lean();
       
@@ -89,8 +93,7 @@ export async function POST(req: Request) {
       await User.findOneAndUpdate(
         { _id: customer._id },
         { 
-          "subscription.nextRenewal": nextRenewalStr,
-          "subscription.status": "Paused" // Mark as paused if currently active
+          "subscription.nextRenewal": nextRenewalStr
         }
       );
 

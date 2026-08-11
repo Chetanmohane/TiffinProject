@@ -79,6 +79,7 @@ export default function RegisterPage() {
   const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
@@ -89,8 +90,7 @@ export default function RegisterPage() {
       if (data.success) {
         setResetSent(true);
       } else {
-        setError(data.error);
-        toast.error(data.error || "Failed to send reset link");
+        setError(data.error || "Failed to send reset link");
       }
     } catch (err) {
       setError("Failed to send reset link");

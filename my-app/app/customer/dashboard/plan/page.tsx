@@ -39,6 +39,13 @@ export default function PlanPage() {
     pincode: "",
     phone: "" 
   });
+  const [gatewayNotice, setGatewayNotice] = useState<{ isOpen: boolean; msg: string } | null>(null);
+
+  useEffect(() => {
+    if (isSuccessState && countdown <= 0) {
+      router.push("/customer/dashboard");
+    }
+  }, [isSuccessState, countdown, router]);
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -52,14 +59,7 @@ export default function PlanPage() {
     if (params.get("success") === "true" || params.get("from") === "payment") {
       setIsSuccessState(true);
       timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            router.push("/customer/dashboard");
-            return 0;
-          }
-          return prev - 1;
-        });
+        setCountdown((prev) => Math.max(0, prev - 1));
       }, 1000);
     }
 
@@ -70,7 +70,7 @@ export default function PlanPage() {
 
         const [dashRes, plansRes] = await Promise.all([
           fetch(`/api/customer/dashboard${emailQuery}`, { cache: 'no-store' }),
-          fetch(`/api/customer/plans`),
+          fetch(`/api/customer/plans?_t=${Date.now()}`, { cache: 'no-store' }),
         ]);
         const dash = await dashRes.json();
         const plansData = await plansRes.json();
@@ -101,6 +101,38 @@ export default function PlanPage() {
       </div>
     );
   }
+
+  const activateDirectly = async () => {
+    if (!selectedPlan) return;
+    setGatewayNotice(null);
+    setLoadingCheckout(true);
+    try {
+      const userStr = localStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : null;
+      const res = await fetch("/api/customer/payment/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          planId: selectedPlan._id || selectedPlan.id,
+          email: user.email,
+          mealType: selectedMealType,
+          demoBypass: true
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("✅ Plan Activated Successfully!");
+        setSelectedPlan(null);
+        window.location.href = "/customer/dashboard/plan?success=true";
+      } else {
+        toast.error("Error: " + data.error);
+      }
+    } catch (err: any) {
+      toast.error("Error: " + err.message);
+    } finally {
+      setLoadingCheckout(false);
+    }
+  };
 
   const confirmPurchase = async () => {
     if (!selectedPlan) return;
@@ -134,8 +166,23 @@ export default function PlanPage() {
         }),
       });
       const data = await res.json();
+
+      if (data.directActivated) {
+        toast.success("✅ Plan Activated Successfully!");
+        setSelectedPlan(null);
+        window.location.href = "/customer/dashboard/plan?success=true";
+        return;
+      }
       
       if (!data.success) {
+        if (data.gateway_disabled || data.error?.toLowerCase().includes("transactions are not enabled")) {
+          setGatewayNotice({
+            isOpen: true,
+            msg: data.error || "Transactions are not enabled for this payment gateway account."
+          });
+          setLoadingCheckout(false);
+          return;
+        }
         toast.error("⚠️ Error: " + (data.message || data.error));
         setLoadingCheckout(false);
         return;
@@ -184,7 +231,6 @@ export default function PlanPage() {
                 toast.success("✅ Plan Activated Automatically!", { id: "verify" });
                 setSelectedPlan(null);
                 setIsSuccessState(true);
-                // The useEffect will handle the 10s countdown redirect to dashboard
               } else {
                 toast.error(`❌ Verification failed: ${verifyData.error}`, { id: "verify" });
                 setLoadingCheckout(false);
@@ -444,7 +490,7 @@ export default function PlanPage() {
               availablePlans.slice(0, 3).map((plan: any, idx: number) => (
                 <div key={idx} className="bg-white rounded-[3rem] p-6 sm:p-8 shadow-2xl shadow-gray-200/40 border border-gray-50 group hover:border-orange-500 transition-all duration-500 flex flex-col h-full">
                   <div className="h-48 sm:h-56 w-full rounded-[2rem] bg-gray-100 mb-8 overflow-hidden relative shadow-inner">
-                      <img src={`/img${idx+3}.webp`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={plan.name} />
+                      <img src={plan.image || `/img${idx+3}.webp`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={plan.name} />
                       <div className="absolute top-5 right-5 bg-black/80 backdrop-blur-md text-white text-[9px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-white/10">{plan.tag || 'Popular'}</div>
                       <div className="absolute bottom-5 left-5 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm">
                          <span className="text-amber-500 flex italic">⭐⭐⭐⭐⭐</span>
@@ -627,8 +673,59 @@ export default function PlanPage() {
                         {loadingCheckout ? "Processing..." : "Pay Securely"}
                       </button>
                     </div>
+                    <button 
+                      onClick={activateDirectly}
+                      disabled={loadingCheckout}
+                      className="w-full py-3 text-[10px] font-black uppercase tracking-widest text-orange-600 hover:text-orange-700 transition-colors block text-center"
+                    >
+                      ⚡ Instant Test Mode Activation
+                    </button>
                   </div>
                 )}
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* GATEWAY NOTICE MODAL */}
+        <AnimatePresence>
+          {gatewayNotice?.isOpen && (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-gray-900/60 backdrop-blur-md"
+                onClick={() => setGatewayNotice(null)}
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 border border-gray-100 text-center z-10"
+              >
+                <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 mx-auto mb-4 border border-amber-100">
+                  <AlertCircle size={32} />
+                </div>
+                <h3 className="text-xl font-black text-gray-900 mb-2">Cashfree Gateway Notice 💳</h3>
+                <p className="text-xs font-bold text-gray-500 mb-6 leading-relaxed">
+                  Cashfree PG account transactions pending activation. Click below to activate this plan instantly in Test Mode.
+                </p>
+                <div className="space-y-3">
+                  <button 
+                    onClick={activateDirectly}
+                    disabled={loadingCheckout}
+                    className="w-full py-4 bg-orange-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-orange-700 transition-all shadow-xl shadow-orange-100"
+                  >
+                    {loadingCheckout ? "Activating..." : "Instant Test Activate 🚀"}
+                  </button>
+                  <button 
+                    onClick={() => setGatewayNotice(null)}
+                    className="w-full py-3 bg-gray-50 text-gray-400 rounded-2xl font-black text-xs uppercase tracking-widest"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </motion.div>
             </div>
           )}

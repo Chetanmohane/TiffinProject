@@ -89,7 +89,7 @@ async function performVerification(order_id: string, plan_id: string, email: str
     purchaseDate: new Date(),
     mealsLeft: totalMeals,
     totalMeals,
-    mealType: meal_type
+    mealType: (meal_type as "Lunch" | "Dinner" | "Both") || "Both"
   };
   await customer.save();
 

@@ -7,16 +7,30 @@ import crypto from "crypto";
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const { email } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const emailInput = body.email || body.identifier;
 
-    if (!email) {
-      return NextResponse.json({ success: false, error: "Email is required" }, { status: 400 });
+    if (!emailInput || typeof emailInput !== "string" || !emailInput.trim()) {
+      return NextResponse.json({ success: false, error: "Email or mobile number is required" }, { status: 400 });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const cleanInput = emailInput.trim();
+    const user = await User.findOne({
+      $or: [{ email: cleanInput.toLowerCase() }, { phone: cleanInput }],
+    });
+
     if (!user) {
-      // For security reasons, don't reveal that the user doesn't exist
-      return NextResponse.json({ success: true, message: "If an account with that email exists, we have sent a reset link." });
+      return NextResponse.json(
+        { success: false, error: "No account found with this email or mobile number." },
+        { status: 404 }
+      );
+    }
+
+    if (!user.email || user.email === "N/A") {
+      return NextResponse.json(
+        { success: false, error: "No email address linked to this account. Please contact support." },
+        { status: 400 }
+      );
     }
 
     // Generate token
@@ -32,18 +46,17 @@ export async function POST(req: Request) {
 
     await user.save();
 
-    // Create reset URL dynamically to support Vercel deployments seamlessly
-    const host = req.headers.get("host") || "localhost:3000";
+    // Create reset URL dynamically using request host
+    const host = req.headers.get("host") || "localhost:5001";
     const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
     const baseUrl = `${protocol}://${host}`;
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
     // Setup email transporter
-    // NOTE: User needs to provide EMAIL_USER and EMAIL_PASS in .env.local
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 465,
-      secure: true, // true for 465, false for other ports
+      secure: true,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -74,10 +87,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "If an account with that email exists, we have sent a reset link.",
+      message: `Reset link has been sent to ${user.email}. Check your inbox!`,
     });
   } catch (error: any) {
     console.error("Forgot Password Error:", error);
-    return NextResponse.json({ success: false, error: "Failed to send reset email" }, { status: 500 });
+    return NextResponse.json({ success: false, error: error?.message || "Failed to send reset email" }, { status: 500 });
   }
 }

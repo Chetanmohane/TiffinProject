@@ -102,14 +102,25 @@ export async function GET(req: Request) {
     
     if (customer.subscription) {
       const sub = customer.subscription;
+      let liveStatus = sub.status || "Active";
       
+      if (liveStatus === "Active") {
+        if (!sub.planName) sub.planName = "Active Plan";
+        if (!sub.totalMeals || sub.totalMeals <= 0) sub.totalMeals = 60;
+        if (sub.mealsLeft === undefined || sub.mealsLeft === null || (sub.mealsLeft <= 0 && (!sub.nextRenewal || sub.nextRenewal >= today))) {
+          sub.mealsLeft = sub.totalMeals;
+        }
+        if (!sub.nextRenewal || sub.nextRenewal < today) {
+          sub.nextRenewal = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000 + IST_OFFSET).toISOString().split("T")[0];
+        }
+      }
+
       // Calculate real status
       const now = new Date();
       const renewalDate = new Date(sub.nextRenewal);
       const isExpiredByDate = renewalDate < now;
-      const isExpiredByMeals = (sub.mealsLeft || 0) <= 0;
+      const isExpiredByMeals = sub.totalMeals > 0 ? (sub.mealsLeft <= 0) : false;
       
-      let liveStatus = sub.status || "Active";
       if (isExpiredByDate || isExpiredByMeals) {
         liveStatus = "Expired";
       } else if (isPausedToday) {

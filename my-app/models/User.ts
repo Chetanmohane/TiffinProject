@@ -5,6 +5,7 @@ export interface ISubscription {
   status: "Active" | "Paused" | "Expired";
   startDate: string;
   nextRenewal: string;
+  purchaseDate?: Date;
   mealsLeft: number;
   totalMeals: number;
   mealType?: "Lunch" | "Dinner" | "Both";

@@ -245,6 +245,7 @@ export default function SettingsPage() {
                            try {
                              const res = await fetch("/api/auth/forgot-password", {
                                method: "POST",
+                               headers: { "Content-Type": "application/json" },
                                body: JSON.stringify({ email: form.email })
                              });
                              const data = await res.json();

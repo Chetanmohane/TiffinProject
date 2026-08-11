@@ -276,16 +276,31 @@ export default function DailyDeliveryPage() {
               if ((window as any)._updateAdminMap) {
                 (window as any)._updateAdminMap(latitude, longitude);
               }
-              await fetch("/api/admin/delivery/update-location", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                  deliveryId: activeTrackingId,
-                  lat: latitude,
-                  lng: longitude,
-                  estimatedArrival: "Calculating..." // Real math could go here
-                })
-              });
+              
+              if (activeTrackingId === "ALL") {
+                 const outForDelivery = deliveries.filter(d => d.status === "Out for Delivery");
+                 await fetch("/api/admin/delivery/update-location", {
+                   method: "POST",
+                   headers: { "Content-Type": "application/json" },
+                   body: JSON.stringify({ 
+                     deliveryIds: outForDelivery.map(d => d.deliveryId || d.id),
+                     lat: latitude,
+                     lng: longitude,
+                     estimatedArrival: "Calculating..."
+                   })
+                 });
+              } else {
+                await fetch("/api/admin/delivery/update-location", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ 
+                    deliveryId: activeTrackingId,
+                    lat: latitude,
+                    lng: longitude,
+                    estimatedArrival: "Calculating..." // Real math could go here
+                  })
+                });
+              }
             } catch (e) { console.error("Sync error", e); }
           },
           (err) => {
@@ -297,7 +312,74 @@ export default function DailyDeliveryPage() {
       }
     }
     return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
-  }, [activeTrackingId]);
+  }, [activeTrackingId, deliveries]);
+
+  /* ---------------- BULK ACTIONS ---------------- */
+  const bulkMarkPrepared = async () => {
+    const toUpdate = filteredDeliveries.filter(d => d.status === "Scheduled" || d.status === "Pending" || d.status === "Confirmed");
+    if (toUpdate.length === 0) return toast.error("No pending deliveries to mark as prepared.");
+    toast.loading("Updating all...");
+    await Promise.all(toUpdate.map(item => fetch("/api/admin/delivery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          id: item.deliveryId || item.id,
+          status: "Prepared",
+          customerId: item.customerId,
+          type: item.type
+        })
+    })));
+    toast.dismiss();
+    toast.success(`Marked ${toUpdate.length} as Prepared`);
+    fetchDeliveries();
+  };
+
+  const bulkMarkDispatched = async () => {
+    const toUpdate = filteredDeliveries.filter(d => d.status === "Prepared");
+    if (toUpdate.length === 0) return toast.error("No prepared deliveries to mark as dispatched.");
+    toast.loading("Updating all...");
+    await Promise.all(toUpdate.map(item => fetch("/api/admin/delivery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          id: item.deliveryId || item.id,
+          status: "Out for Delivery",
+          customerId: item.customerId,
+          type: item.type
+        })
+    })));
+    toast.dismiss();
+    toast.success(`Marked ${toUpdate.length} as Dispatched`);
+    fetchDeliveries();
+  };
+
+  const bulkGoLive = async () => {
+    if (activeTrackingId === "ALL") {
+      setActiveTrackingId(null);
+      return;
+    }
+    const toUpdate = filteredDeliveries.filter(d => d.status !== "Delivered" && !d.paused);
+    if (toUpdate.length === 0) return toast.error("No active deliveries to go live.");
+    
+    toast.loading("Starting live tracking for all...");
+    const notDispatched = toUpdate.filter(d => d.status !== "Out for Delivery");
+    if (notDispatched.length > 0) {
+      await Promise.all(notDispatched.map(item => fetch("/api/admin/delivery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            id: item.deliveryId || item.id,
+            status: "Out for Delivery",
+            customerId: item.customerId,
+            type: item.type
+          })
+      })));
+    }
+    toast.dismiss();
+    toast.success("Live Tracking Broadcast Started!");
+    setActiveTrackingId("ALL");
+    fetchDeliveries();
+  };
 
   /* ---------------- DERIVED DATA ---------------- */
 
@@ -382,7 +464,7 @@ export default function DailyDeliveryPage() {
         </div>
 
         {/* CONTROLS */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
           <input
             placeholder="Search by name, address or phone..."
             value={search}
@@ -402,6 +484,29 @@ export default function DailyDeliveryPage() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* BULK ACTIONS TOOLBAR */}
+        <div className="mb-6 p-4 bg-white rounded-2xl border border-gray-100 flex flex-wrap gap-3 items-center shadow-sm">
+           <span className="text-xs font-black text-gray-500 uppercase tracking-widest mr-2">Bulk Actions:</span>
+           <button 
+             onClick={bulkMarkPrepared}
+             className="px-4 py-2.5 bg-amber-500 text-white rounded-xl text-[10px] font-black uppercase hover:bg-amber-600 transition-all shadow-md shadow-amber-100"
+           >
+             Mark All Prepared
+           </button>
+           <button 
+             onClick={bulkMarkDispatched}
+             className="px-4 py-2.5 bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase hover:bg-blue-600 transition-all shadow-md shadow-blue-100"
+           >
+             Mark All Dispatched
+           </button>
+           <button 
+             onClick={bulkGoLive}
+             className={`px-4 py-2.5 text-white rounded-xl text-[10px] font-black uppercase transition-all shadow-md animate-pulse ${activeTrackingId === "ALL" ? "bg-red-600" : "bg-green-600"}`}
+           >
+             {activeTrackingId === "ALL" ? "🛑 STOP ALL LIVE GPS" : "📡 GO LIVE FOR ALL"}
+           </button>
         </div>
         
         {/* LIVE TRACKING NAVIGATOR FOR DRIVER */}
@@ -431,20 +536,22 @@ export default function DailyDeliveryPage() {
                 
                 <div className="absolute bottom-6 left-6 right-6 z-20 flex flex-col sm:flex-row gap-3">
                    <a 
-                     href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(deliveries.find(d => (d.deliveryId || d.id) === activeTrackingId)?.address || "")}&travelmode=driving`}
+                     href={activeTrackingId === "ALL" ? "https://www.google.com/maps/dir/?api=1" : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(deliveries.find(d => (d.deliveryId || d.id) === activeTrackingId)?.address || "")}&travelmode=driving`}
                      target="_blank"
                      className="flex-1 px-8 py-5 bg-orange-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-orange-600/40 hover:scale-[1.02] active:scale-95 transition-all text-center flex items-center justify-center gap-2 pointer-events-auto"
                    >
-                      <MapPin size={18} /> Start Navigation
+                      <MapPin size={18} /> {activeTrackingId === "ALL" ? "Open Maps" : "Start Navigation"}
                    </a>
                    
                    <button 
                      onClick={() => {
-                       const item = deliveries.find(d => (d.deliveryId || d.id) === activeTrackingId);
-                       if (item) {
-                         updateStatus(item, "Delivered");
-                         setActiveTrackingId(null);
+                       if (activeTrackingId === "ALL") {
+                         deliveries.filter(d => d.status === "Out for Delivery").forEach(item => updateStatus(item, "Delivered"));
+                       } else {
+                         const item = deliveries.find(d => (d.deliveryId || d.id) === activeTrackingId);
+                         if (item) updateStatus(item, "Delivered");
                        }
+                       setActiveTrackingId(null);
                      }}
                      className="flex-1 px-8 py-5 bg-green-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-green-600/40 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 pointer-events-auto"
                    >
@@ -452,11 +559,11 @@ export default function DailyDeliveryPage() {
                    </button>
                 </div>
 
-                <div className="absolute top-6 left-6 z-20 pointer-events-none">
+                 <div className="absolute top-6 left-6 z-20 pointer-events-none">
                   <div className="bg-white/90 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl border border-white flex flex-col gap-1">
                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter leading-none">Destination</p>
                      <p className="text-[11px] font-black text-gray-900 uppercase truncate max-w-[200px]">
-                        {deliveries.find(d => (d.deliveryId || d.id) === activeTrackingId)?.address || "Detecting..."}
+                        {activeTrackingId === "ALL" ? "Broadcasting to All" : deliveries.find(d => (d.deliveryId || d.id) === activeTrackingId)?.address || "Detecting..."}
                      </p>
                   </div>
                 </div>
@@ -513,7 +620,7 @@ export default function DailyDeliveryPage() {
                           routeLine.setLatLngs([[from.lat, from.lon], [mid.lat || mid.latitude, mid.lng || mid.lon], [to.lat, to.lon]]);
                         };
 
-                        const targetAddress = "${deliveries.find(d => (d.deliveryId || d.id) === activeTrackingId)?.address || "Bhopal"}";
+                        const targetAddress = "${activeTrackingId === 'ALL' ? 'Bhopal' : deliveries.find(d => (d.deliveryId || d.id) === activeTrackingId)?.address || 'Bhopal'}";
                         const hPos = await geocode(targetAddress);
 
                         if (hPos) {

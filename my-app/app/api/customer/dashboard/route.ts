@@ -92,8 +92,20 @@ export async function GET(req: Request) {
     const isPaused = !!pauseEntry;
     let sub = (customer.subscription || {}) as any;
     let liveStatus = sub.status || "Inactive";
+
+    if (liveStatus === "Active") {
+      if (!sub.planName) sub.planName = "Active Plan";
+      if (!sub.totalMeals || sub.totalMeals <= 0) sub.totalMeals = 60;
+      if (sub.mealsLeft === undefined || sub.mealsLeft === null || (sub.mealsLeft <= 0 && (!sub.nextRenewal || sub.nextRenewal >= today))) {
+        sub.mealsLeft = sub.totalMeals;
+      }
+      if (!sub.nextRenewal || sub.nextRenewal < today) {
+        sub.nextRenewal = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000 + IST_OFFSET).toISOString().split("T")[0];
+      }
+    }
+
     const isExpiredByDate = sub.nextRenewal && sub.nextRenewal < today;
-    const isExpiredByMeals = sub.mealsLeft <= 0;
+    const isExpiredByMeals = sub.totalMeals > 0 ? (sub.mealsLeft <= 0) : false;
 
     // Queue Activation Logic
     if ((!sub.planName || liveStatus === "Expired" || isExpiredByMeals || isExpiredByDate) && customer.queuedSubscriptions?.length > 0) {

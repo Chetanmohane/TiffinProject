@@ -2,10 +2,6 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import { Groq } from "groq-sdk";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
-
 const SYSTEM_PROMPT = `
 You are the Tiffin Project AI Assistant, a friendly and helpful guide for a gourmet tiffin delivery service.
 Your goal is to help customers with their meal plans, delivery queries, and menu customizations.
@@ -27,6 +23,13 @@ export async function POST(req: Request) {
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: "Invalid messages format" }, { status: 400 });
     }
+
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: "AI Chat is not configured (missing GROQ_API_KEY)" }, { status: 500 });
+    }
+
+    const groq = new Groq({ apiKey });
 
     const completion = await groq.chat.completions.create({
       messages: [

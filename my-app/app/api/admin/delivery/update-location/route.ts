@@ -20,17 +20,41 @@ async function calcEta(driverLat: number, driverLng: number, destLat: number, de
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const { deliveryId, lat, lng, estimatedArrival } = await req.json();
+    const { deliveryId, deliveryIds, lat, lng, estimatedArrival } = await req.json();
 
-    if (!deliveryId) {
-      return NextResponse.json({ success: false, error: "Delivery ID is required" }, { status: 400 });
+    if (!deliveryId && (!deliveryIds || deliveryIds.length === 0)) {
+      return NextResponse.json({ success: false, error: "Delivery ID(s) required" }, { status: 400 });
+    }
+
+    if (deliveryIds && Array.isArray(deliveryIds)) {
+      const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+      const today = new Date(new Date().getTime() + IST_OFFSET).toISOString().split("T")[0];
+
+      for (const id of deliveryIds) {
+        let delivery: any;
+        if (id.toString().startsWith("temp-")) {
+          const parts = id.toString().split("-");
+          const customerId = parts[1];
+          const type = parts[2];
+          delivery = await Delivery.findOne({ customerId, type, date: today });
+        } else {
+          delivery = await Delivery.findById(id);
+        }
+
+        if (delivery) {
+          delivery.driverLocation = { lat, lng };
+          if (estimatedArrival) delivery.estimatedArrival = estimatedArrival;
+          await delivery.save();
+        }
+      }
+      return NextResponse.json({ success: true, message: "Bulk updated" });
     }
 
     let delivery: any;
 
     if (deliveryId.toString().startsWith("temp-")) {
       // Resolve temp ID → temp-customerId-type
-      const parts = deliveryId.split("-");
+      const parts = deliveryId.toString().split("-");
       const customerId = parts[1];
       const type = parts[2];
       const IST_OFFSET = 5.5 * 60 * 60 * 1000;

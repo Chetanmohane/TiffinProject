@@ -12,7 +12,7 @@ export default function Plans() {
   useEffect(() => {
     async function fetchPlans() {
       try {
-        const res = await fetch("/api/customer/plans");
+        const res = await fetch(`/api/customer/plans?_t=${Date.now()}`, { cache: "no-store" });
         const data = await res.json();
         setPlans(data.plans || []);
       } catch (err) {
@@ -100,7 +100,7 @@ export default function Plans() {
 /* ---------------- PLAN CARD ---------------- */
 function PlanCard({ plan, onSelect, idx }: { plan: any, onSelect: () => void, idx: number }) {
   const isPopular = plan.tag?.toLowerCase().includes("popular") || plan.tag?.toLowerCase().includes("best") || idx === 1;
-  const image = idx === 0 ? "/img3.webp" : (idx === 1 ? "/img4.webp" : "/img5.webp");
+  const image = plan.image || (idx === 0 ? "/img3.webp" : (idx === 1 ? "/img4.webp" : "/img5.webp"));
 
   return (
     <motion.div

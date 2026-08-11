@@ -82,6 +82,27 @@ export async function PATCH(req: Request) {
 
     if (!id) throw new Error("Customer ID required");
 
+    if (updates.subscription && updates.subscription.status === "Active") {
+      if (!updates.subscription.planName) {
+        updates.subscription.planName = "Active Plan";
+      }
+      if (!updates.subscription.totalMeals || updates.subscription.totalMeals <= 0) {
+        updates.subscription.totalMeals = updates.subscription.mealsLeft > 0 ? updates.subscription.mealsLeft : 60;
+      }
+      if (updates.subscription.mealsLeft === undefined || updates.subscription.mealsLeft === null || updates.subscription.mealsLeft <= 0) {
+        updates.subscription.mealsLeft = updates.subscription.totalMeals || 60;
+      }
+      const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+      const today = new Date(new Date().getTime() + IST_OFFSET).toISOString().split("T")[0];
+      if (!updates.subscription.nextRenewal || updates.subscription.nextRenewal < today) {
+        const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000 + IST_OFFSET).toISOString().split("T")[0];
+        updates.subscription.nextRenewal = nextMonth;
+      }
+      if (!updates.subscription.startDate) {
+        updates.subscription.startDate = today;
+      }
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       id,
       { $set: updates },

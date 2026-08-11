@@ -7,7 +7,7 @@ import Payment from "@/models/Payment";
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const { planId, email, mealType } = await req.json();
+    const { planId, email, mealType, demoBypass } = await req.json();
 
     if (!email) throw new Error("Email is required");
 
@@ -28,6 +28,58 @@ export async function POST(req: Request) {
     if (!customer) throw new Error("Customer not found");
 
     const orderId = `order_${Date.now()}_${customer._id}`;
+
+    // Demo/Test Mode direct activation (used when Cashfree PG is disabled or in test mode)
+    if (demoBypass) {
+      const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+      const nowIST = new Date(new Date().getTime() + IST_OFFSET);
+      const hourIST = nowIST.getUTCHours();
+      const isBefore11AM = hourIST < 11;
+      
+      let startDateObj = new Date(nowIST);
+      if (!isBefore11AM) startDateObj.setUTCDate(startDateObj.getUTCDate() + 1);
+      
+      const startDate = startDateObj.toISOString().split("T")[0];
+      const nextRenewal = new Date(startDateObj.getTime() + plan.duration * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+      
+      let mealsPerDay = plan.mealsPerDay || 1;
+      if (mealType === "Lunch" || mealType === "Dinner") mealsPerDay = 1;
+      else if (mealType === "Both") mealsPerDay = 2;
+
+      const totalMeals = plan.duration * mealsPerDay;
+
+      customer.subscription = {
+        planName: `${plan.name} (${mealType || 'Both'})`,
+        status: "Active",
+        startDate,
+        nextRenewal,
+        purchaseDate: new Date(),
+        mealsLeft: totalMeals,
+        totalMeals,
+        mealType: (mealType as any) || "Both"
+      };
+      await customer.save();
+
+      await Payment.create({
+        customerId: customer._id,
+        customerName: customer.name,
+        amount: orderAmount,
+        type: "Credit",
+        description: `${plan.name} (${mealType || 'Both'}) - Direct Activation`,
+        status: "Success",
+        date: startDate,
+        endDate: nextRenewal,
+        transactionId: orderId,
+        planName: plan.name
+      });
+
+      return NextResponse.json({ 
+        success: true, 
+        directActivated: true, 
+        order_id: orderId,
+        message: "Plan activated successfully!" 
+      });
+    }
 
     const appId = process.env.CASHFREE_APP_ID;
     const secretKey = process.env.CASHFREE_SECRET_KEY;
@@ -69,7 +121,16 @@ export async function POST(req: Request) {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "Failed to create Cashfree order");
+      const errMsg = data.message || "Failed to create Cashfree order";
+      const isGatewayDisabled = errMsg.toLowerCase().includes("transactions are not enabled") ||
+                                errMsg.toLowerCase().includes("not active") ||
+                                errMsg.toLowerCase().includes("kyc");
+      
+      return NextResponse.json({ 
+        success: false, 
+        gateway_disabled: isGatewayDisabled,
+        error: errMsg 
+      }, { status: 400 });
     }
 
     // Create a pending payment record in our DB

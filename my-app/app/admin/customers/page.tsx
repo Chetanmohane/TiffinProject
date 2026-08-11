@@ -522,7 +522,7 @@ export default function AdminCustomers() {
                               />
                            </div>
                            <div className="space-y-1">
-                              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">End Date</label>
+                              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">End / Renewal Date</label>
                               <input 
                                 type="date"
                                 className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-orange-500 outline-none"
@@ -532,6 +532,47 @@ export default function AdminCustomers() {
                                   subscription: { ...editingCustomer.subscription, nextRenewal: e.target.value } 
                                 })}
                               />
+                           </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                           <div className="space-y-1">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Total Meals</label>
+                              <input 
+                                type="number"
+                                className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-orange-500 outline-none"
+                                value={editingCustomer.subscription.totalMeals ?? 60}
+                                onChange={(e) => setEditingCustomer({
+                                  ...editingCustomer, 
+                                  subscription: { ...editingCustomer.subscription, totalMeals: Number(e.target.value) } 
+                                })}
+                              />
+                           </div>
+                           <div className="space-y-1">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Meals Left</label>
+                              <input 
+                                type="number"
+                                className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-orange-500 outline-none"
+                                value={editingCustomer.subscription.mealsLeft ?? 60}
+                                onChange={(e) => setEditingCustomer({
+                                  ...editingCustomer, 
+                                  subscription: { ...editingCustomer.subscription, mealsLeft: Number(e.target.value) } 
+                                })}
+                              />
+                           </div>
+                           <div className="space-y-1">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Meal Type</label>
+                              <select 
+                                className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-orange-500 outline-none"
+                                value={editingCustomer.subscription.mealType || "Both"}
+                                onChange={(e) => setEditingCustomer({
+                                  ...editingCustomer, 
+                                  subscription: { ...editingCustomer.subscription, mealType: e.target.value } 
+                                })}
+                              >
+                                 <option value="Both">Both (L+D)</option>
+                                 <option value="Lunch">Lunch</option>
+                                 <option value="Dinner">Dinner</option>
+                              </select>
                            </div>
                         </div>
                         <button 
@@ -560,7 +601,15 @@ export default function AdminCustomers() {
                          type="button" 
                          onClick={() => setEditingCustomer({
                            ...editingCustomer, 
-                           subscription: { planName: "Custom Plan", status: "Active", startDate: new Date().toISOString().split('T')[0], nextRenewal: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0] } 
+                           subscription: { 
+                             planName: "Monthly Standard Plan", 
+                             status: "Active", 
+                             startDate: new Date().toISOString().split('T')[0], 
+                             nextRenewal: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
+                             totalMeals: 60,
+                             mealsLeft: 60,
+                             mealType: "Both"
+                           } 
                          })}
                          className="text-xs font-bold text-orange-600 bg-orange-100 px-4 py-2 rounded-lg"
                        >

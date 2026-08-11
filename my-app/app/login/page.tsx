@@ -79,6 +79,7 @@ export default function LoginPage() {
   const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
@@ -86,8 +87,11 @@ export default function LoginPage() {
         body: JSON.stringify({ email: resetEmail }),
       });
       const data = await res.json();
-      if (data.success) setResetSent(true);
-      else setError(data.error);
+      if (data.success) {
+        setResetSent(true);
+      } else {
+        setError(data.error || "Failed to send reset link");
+      }
     } catch {
       setError("Failed to send reset link");
     } finally {
@@ -146,9 +150,9 @@ export default function LoginPage() {
                 ) : (
                   <form onSubmit={handleForgotSubmit} className="space-y-4">
                     <input
-                      type="email"
+                      type="text"
                       required
-                      placeholder="Enter your registered email"
+                      placeholder="Enter registered email or mobile number"
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
                       className="text-gray-700 w-full border-2 border-gray-100 px-5 py-4 rounded-2xl focus:outline-none focus:border-orange-400 transition-all font-bold text-sm"
@@ -230,7 +234,11 @@ export default function LoginPage() {
                         <div className="w-px h-4 bg-gray-200" />
                         <button
                           type="button"
-                          onClick={() => setForgotPassword(true)}
+                          onClick={() => {
+                            setForgotPassword(true);
+                            setError("");
+                            if (form.identifier) setResetEmail(form.identifier);
+                          }}
                           className="text-orange-500 text-[10px] font-black uppercase tracking-widest hover:underline"
                         >
                           Forgot?
