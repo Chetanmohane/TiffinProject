@@ -46,18 +46,25 @@ export async function POST(req: Request) {
 
     await user.save();
 
-    // Create reset URL dynamically using request host
+    // Create reset URL dynamically using request host or configured base URL
     const rawHost = req.headers.get("x-forwarded-host") || req.headers.get("host");
     let baseUrl = "";
-    if (rawHost) {
-      const protocol = req.headers.get("x-forwarded-proto") || (rawHost.includes("localhost") || rawHost.includes("127.0.0.1") ? "http" : "https");
+
+    if (process.env.NEXT_PUBLIC_BASE_URL && !process.env.NEXT_PUBLIC_BASE_URL.includes("localhost")) {
+      baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    } else if (rawHost && !rawHost.includes("localhost") && !rawHost.includes("127.0.0.1")) {
+      const protocol = req.headers.get("x-forwarded-proto") || "https";
       baseUrl = `${protocol}://${rawHost}`;
     } else if (process.env.VERCEL_URL) {
       baseUrl = `https://${process.env.VERCEL_URL}`;
+    } else if (rawHost) {
+      const protocol = req.headers.get("x-forwarded-proto") || "http";
+      baseUrl = `${protocol}://${rawHost}`;
     } else {
       baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:5001";
     }
-    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+
+    const resetUrl = `${baseUrl.replace(/\/$/, "")}/reset-password?token=${resetToken}`;
 
     // Setup email transporter
     const transporter = nodemailer.createTransport({
